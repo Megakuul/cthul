@@ -1,0 +1,7 @@
+# Ignore Emacs stuff
+*~
+\#*\#
+.\#*
+
+# Ignore VSCode stuff
+.vscode/**
