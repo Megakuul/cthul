@@ -1,0 +1,18 @@
+version: v2
+clean: true
+plugins:
+  - remote: buf.build/connectrpc/go:v1.17.0  # protoc-gen-connect-go
+    out: pkg/api/rune/v1
+    opt: paths=source_relative
+  - remote: buf.build/protocolbuffers/go:v1.34.2 # protoc-gen-go
+    out: pkg/api/rune/v1
+    opt: paths=source_relative
+    
+  - remote: buf.build/connectrpc/go:v1.17.0  # protoc-gen-connect-go
+    out: pkg/api/wave/v1
+    opt: paths=source_relative
+  - remote: buf.build/protocolbuffers/go:v1.34.2 # protoc-gen-go
+    out: pkg/api/wave/v1
+    opt: paths=source_relative
+inputs:
+  - directory: api

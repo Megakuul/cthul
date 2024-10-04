@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package api.rune.v1;
+
+option go_package = "cthul.io/cthul/pkg/api/rune/v1;runev1";
+
+
+message GetCertificateRequest {
+  int64 id = 1;
+}
+
+message GetCertificateResponse {
+  int64 id = 1;
+}

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package api.rune.v1;
+
+option go_package = "cthul.io/cthul/pkg/api/rune/v1;runev1";
+
+import "message.proto";
+
+service CertificateService {
+  rpc GetCertificate(GetCertificateRequest) returns (GetCertificateResponse) {}
+}
