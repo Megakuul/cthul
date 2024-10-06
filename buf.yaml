@@ -6,4 +6,4 @@ breaking:
   use:
     - FILE
 modules:
-  - path: api/rune/v1
+  - path: api

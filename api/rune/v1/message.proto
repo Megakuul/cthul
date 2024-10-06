@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package api.rune.v1;
+package rune.v1;
 
 option go_package = "cthul.io/cthul/pkg/api/rune/v1;runev1";
 

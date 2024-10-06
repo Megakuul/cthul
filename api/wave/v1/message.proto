@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package api.wave.v1;
+package wave.v1;
 
 option go_package = "cthul.io/cthul/pkg/api/wave/v1;wavev1";
 

@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.34.2
 // 	protoc        (unknown)
-// source: message.proto
+// source: rune/v1/message.proto
 
 package runev1
 
@@ -31,7 +31,7 @@ type GetCertificateRequest struct {
 func (x *GetCertificateRequest) Reset() {
 	*x = GetCertificateRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_message_proto_msgTypes[0]
+		mi := &file_rune_v1_message_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -44,7 +44,7 @@ func (x *GetCertificateRequest) String() string {
 func (*GetCertificateRequest) ProtoMessage() {}
 
 func (x *GetCertificateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_message_proto_msgTypes[0]
+	mi := &file_rune_v1_message_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -57,7 +57,7 @@ func (x *GetCertificateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCertificateRequest.ProtoReflect.Descriptor instead.
 func (*GetCertificateRequest) Descriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{0}
+	return file_rune_v1_message_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *GetCertificateRequest) GetId() int64 {
@@ -78,7 +78,7 @@ type GetCertificateResponse struct {
 func (x *GetCertificateResponse) Reset() {
 	*x = GetCertificateResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_message_proto_msgTypes[1]
+		mi := &file_rune_v1_message_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -91,7 +91,7 @@ func (x *GetCertificateResponse) String() string {
 func (*GetCertificateResponse) ProtoMessage() {}
 
 func (x *GetCertificateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_message_proto_msgTypes[1]
+	mi := &file_rune_v1_message_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -104,7 +104,7 @@ func (x *GetCertificateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCertificateResponse.ProtoReflect.Descriptor instead.
 func (*GetCertificateResponse) Descriptor() ([]byte, []int) {
-	return file_message_proto_rawDescGZIP(), []int{1}
+	return file_rune_v1_message_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *GetCertificateResponse) GetId() int64 {
@@ -114,39 +114,40 @@ func (x *GetCertificateResponse) GetId() int64 {
 	return 0
 }
 
-var File_message_proto protoreflect.FileDescriptor
+var File_rune_v1_message_proto protoreflect.FileDescriptor
 
-var file_message_proto_rawDesc = []byte{
-	0x0a, 0x0d, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12,
-	0x0b, 0x61, 0x70, 0x69, 0x2e, 0x72, 0x75, 0x6e, 0x65, 0x2e, 0x76, 0x31, 0x22, 0x27, 0x0a, 0x15,
-	0x47, 0x65, 0x74, 0x43, 0x65, 0x72, 0x74, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x65, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x03, 0x52, 0x02, 0x69, 0x64, 0x22, 0x28, 0x0a, 0x16, 0x47, 0x65, 0x74, 0x43, 0x65, 0x72, 0x74,
-	0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
-	0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x02, 0x69, 0x64, 0x42,
-	0x27, 0x5a, 0x25, 0x63, 0x74, 0x68, 0x75, 0x6c, 0x2e, 0x69, 0x6f, 0x2f, 0x63, 0x74, 0x68, 0x75,
-	0x6c, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x72, 0x75, 0x6e, 0x65, 0x2f, 0x76,
-	0x31, 0x3b, 0x72, 0x75, 0x6e, 0x65, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+var file_rune_v1_message_proto_rawDesc = []byte{
+	0x0a, 0x15, 0x72, 0x75, 0x6e, 0x65, 0x2f, 0x76, 0x31, 0x2f, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67,
+	0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x07, 0x72, 0x75, 0x6e, 0x65, 0x2e, 0x76, 0x31,
+	0x22, 0x27, 0x0a, 0x15, 0x47, 0x65, 0x74, 0x43, 0x65, 0x72, 0x74, 0x69, 0x66, 0x69, 0x63, 0x61,
+	0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x02, 0x69, 0x64, 0x22, 0x28, 0x0a, 0x16, 0x47, 0x65, 0x74,
+	0x43, 0x65, 0x72, 0x74, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52,
+	0x02, 0x69, 0x64, 0x42, 0x27, 0x5a, 0x25, 0x63, 0x74, 0x68, 0x75, 0x6c, 0x2e, 0x69, 0x6f, 0x2f,
+	0x63, 0x74, 0x68, 0x75, 0x6c, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x72, 0x75,
+	0x6e, 0x65, 0x2f, 0x76, 0x31, 0x3b, 0x72, 0x75, 0x6e, 0x65, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
-	file_message_proto_rawDescOnce sync.Once
-	file_message_proto_rawDescData = file_message_proto_rawDesc
+	file_rune_v1_message_proto_rawDescOnce sync.Once
+	file_rune_v1_message_proto_rawDescData = file_rune_v1_message_proto_rawDesc
 )
 
-func file_message_proto_rawDescGZIP() []byte {
-	file_message_proto_rawDescOnce.Do(func() {
-		file_message_proto_rawDescData = protoimpl.X.CompressGZIP(file_message_proto_rawDescData)
+func file_rune_v1_message_proto_rawDescGZIP() []byte {
+	file_rune_v1_message_proto_rawDescOnce.Do(func() {
+		file_rune_v1_message_proto_rawDescData = protoimpl.X.CompressGZIP(file_rune_v1_message_proto_rawDescData)
 	})
-	return file_message_proto_rawDescData
+	return file_rune_v1_message_proto_rawDescData
 }
 
-var file_message_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_message_proto_goTypes = []any{
-	(*GetCertificateRequest)(nil),  // 0: api.rune.v1.GetCertificateRequest
-	(*GetCertificateResponse)(nil), // 1: api.rune.v1.GetCertificateResponse
+var file_rune_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_rune_v1_message_proto_goTypes = []any{
+	(*GetCertificateRequest)(nil),  // 0: rune.v1.GetCertificateRequest
+	(*GetCertificateResponse)(nil), // 1: rune.v1.GetCertificateResponse
 }
-var file_message_proto_depIdxs = []int32{
+var file_rune_v1_message_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
 	0, // [0:0] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -154,13 +155,13 @@ var file_message_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_message_proto_init() }
-func file_message_proto_init() {
-	if File_message_proto != nil {
+func init() { file_rune_v1_message_proto_init() }
+func file_rune_v1_message_proto_init() {
+	if File_rune_v1_message_proto != nil {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_message_proto_msgTypes[0].Exporter = func(v any, i int) any {
+		file_rune_v1_message_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*GetCertificateRequest); i {
 			case 0:
 				return &v.state
@@ -172,7 +173,7 @@ func file_message_proto_init() {
 				return nil
 			}
 		}
-		file_message_proto_msgTypes[1].Exporter = func(v any, i int) any {
+		file_rune_v1_message_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*GetCertificateResponse); i {
 			case 0:
 				return &v.state
@@ -189,18 +190,18 @@ func file_message_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_message_proto_rawDesc,
+			RawDescriptor: file_rune_v1_message_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_message_proto_goTypes,
-		DependencyIndexes: file_message_proto_depIdxs,
-		MessageInfos:      file_message_proto_msgTypes,
+		GoTypes:           file_rune_v1_message_proto_goTypes,
+		DependencyIndexes: file_rune_v1_message_proto_depIdxs,
+		MessageInfos:      file_rune_v1_message_proto_msgTypes,
 	}.Build()
-	File_message_proto = out.File
-	file_message_proto_rawDesc = nil
-	file_message_proto_goTypes = nil
-	file_message_proto_depIdxs = nil
+	File_rune_v1_message_proto = out.File
+	file_rune_v1_message_proto_rawDesc = nil
+	file_rune_v1_message_proto_goTypes = nil
+	file_rune_v1_message_proto_depIdxs = nil
 }
