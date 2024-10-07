@@ -114,6 +114,8 @@ func WithIOLock(lock *sync.Mutex) RuntimeLoggerOption {
 	}
 }
 
+// ServeAndDetach starts the runtime log worker in a new goroutine and immediately returns.
+// The worker can be started only once.
 func (r *RuntimeLogger) ServeAndDetach() {
 	go func() {
 		for {

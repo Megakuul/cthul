@@ -5,33 +5,36 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"time"
+	golog "log"
 
 	"connectrpc.com/connect"
 	"cthul.io/cthul/pkg/api/wave/v1"
 	"cthul.io/cthul/pkg/api/wave/v1/wavev1connect"
+	"cthul.io/cthul/pkg/log"
+	"cthul.io/cthul/pkg/log/adapter"
+	"cthul.io/cthul/pkg/log/discard"
 )
 
 
 type ApiEndpoint struct {
 	server *http.Server
-	logger *log.Logger
+	logger log.Logger
 }
 
 type ApiEndpointOption func(*ApiEndpoint)
 
-func NewApiEndpoint(addr string, tls *tls.Config, opts ...ApiEndpointOption) *ApiEndpoint {
+func NewApiEndpoint(addr string, tls *tls.Config, logger log.Logger, opts ...ApiEndpointOption) *ApiEndpoint {
 	mux := http.NewServeMux()
 	mux.Handle(wavev1connect.NewDomainServiceHandler(&domainService{}))
 	return &ApiEndpoint{
-		logger: log.New(io.Discard, "", 0),
+		logger: discard.NewDiscardLogger(),
 		server: &http.Server{
 			Addr: addr,
 			TLSConfig: tls,
 			Handler: mux,
-			ErrorLog: log.New(io.Discard, "", 0),
+			ErrorLog: golog.New(io.Discard, "", 0),
 			IdleTimeout: 10 * time.Minute,
 		},
 	}
@@ -45,22 +48,23 @@ func WithIdleTimeout(timeout time.Duration) ApiEndpointOption {
 }
 
 // WithApplicationLog enables api logs and writes them to the specified logger.
-func WithApplicationLog(logger *log.Logger) ApiEndpointOption {
+func WithApplicationLog(logger log.Logger) ApiEndpointOption {
 	return func (a *ApiEndpoint) {
 		a.logger = logger
 	}
 }
 
-// WithSystemLog enables http system logs and writes them to the specified logger.
-func WithSystemLog(logger *log.Logger) ApiEndpointOption {
+// WithSystemLog enables http system error logs and writes them to the specified logger.
+// The logs are written as "error" with the category "api_http_logs".
+func WithSystemLog(logger log.Logger) ApiEndpointOption {
 	return func (a *ApiEndpoint) {
-		a.server.ErrorLog = logger
+		a.server.ErrorLog = golog.New(adapter.NewLogAdapter("api_http", logger.Err), "", 0)
 	}
 }
 
-// Serve starts the api endpoint and blocks until closed.
+// ServeAndDetach starts the api endpoint in a seperate goroutine and immediately returns.
 // The server can be started only once.
-func (a *ApiEndpoint) Serve() error {
+func (a *ApiEndpoint) ServeAndDetach() error {
 	return a.server.ListenAndServeTLS("", "")
 }
 
@@ -77,7 +81,10 @@ func (a *ApiEndpoint) Close(ctx context.Context) error {
 
 type domainService struct{}
 
-func (d *domainService) GetDomain(ctx context.Context, req *wavev1.GetDomainRequest) (*wavev1.GetDomainResponse, error) {
-
+func (d *domainService) GetDomain(
+	ctx context.Context,
+	req *connect.Request[wavev1.GetDomainRequest],
+) (*connect.Response[wavev1.GetDomainResponse], error) {
+	
 	return nil, fmt.Errorf("Not Implemented")
 }

@@ -1,0 +1,4 @@
+[logging]
+level = "info" # 'debug', 'info', 'warning', 'error', 'critical'
+trace = false # enable log traces (outputs file & line number)
+buffer = 256 # runtime log buffer size
