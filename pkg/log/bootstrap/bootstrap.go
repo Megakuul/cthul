@@ -45,18 +45,24 @@ type BootstrapLoggerOption func(*BootstrapLogger)
 // NewBootstrapLogger generates a BootstrapLogger. The specified component identifier is included in every log.
 // The defaults can be overriden using BootstrapLoggerOptions.
 func NewBootstrapLogger(component string, opts ...BootstrapLoggerOption) *BootstrapLogger {
-	return &BootstrapLogger{
+	logger := &BootstrapLogger{
 		level: structure.INFO,
 		component: component,
 		trace: false,
 		ioLock: &sync.Mutex{},
 	}
+
+	for _, opt := range opts {
+		opt(logger)
+	}
+
+	return logger
 }
 
 // WithTrace enables tracing, which includes information about file + line.
-func WithTrace() BootstrapLoggerOption {
+func WithTrace(enable bool) BootstrapLoggerOption {
 	return func (l *BootstrapLogger) {
-		l.trace = true
+		l.trace = enable
 	}
 }
 

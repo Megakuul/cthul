@@ -1,4 +1,13 @@
+[lifecycle]
+termination_ttl = 10 # ttl of the graceful termination process (seconds)
+
 [logging]
 level = "info" # 'debug', 'info', 'warning', 'error', 'critical'
 trace = false # enable log traces (outputs file & line number)
 buffer = 256 # runtime log buffer size
+
+[api]
+addr = "0.0.0.0:1870" # address the api listener is bound to (tcp)
+cert_file = "/etc/wave/cert/cert.pem" # file with public certificate chain (pem)
+key_file = "/etc/wave/cert/key.pem" # file with private key (pem)
+idle_ttl = 600 # ttl of idle connections (seconds)

@@ -19,9 +19,71 @@
 
 package app
 
+import (
+	"crypto/tls"
+	"fmt"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
+
+	"cthul.io/cthul/internal/wave/api"
+	"cthul.io/cthul/pkg/lifecycle"
+	"cthul.io/cthul/pkg/log/bootstrap"
+	"cthul.io/cthul/pkg/log/runtime"
+)
+
 // Run is the root entrypoint of the service.
 // This function does only fail if a critical error occurs while setting up the system,
 // otherwise it will run until an os level signal (SIGINT/TERM) is received.
 func Run(config *BaseConfig) error {
+	loggerIOLock := &sync.Mutex{}
+	
+	bootLogger := bootstrap.NewBootstrapLogger("wave",
+		bootstrap.WithIOLock(loggerIOLock),
+		bootstrap.WithLevel(config.Logging.Level),
+		bootstrap.WithTrace(config.Logging.Trace),
+	)
+
+	terminationManager := lifecycle.NewTerminationManager(
+		lifecycle.WithLogger(bootLogger),
+	)
+	defer terminationManager.TerminateParallel(
+		time.Second * time.Duration(config.Lifecycle.TerminationTTL),
+	)
+
+	coreLogger := runtime.NewRuntimeLogger("wave",
+		runtime.WithIOLock(loggerIOLock),
+		runtime.WithLevel(config.Logging.Level),
+		runtime.WithTrace(config.Logging.Trace),
+		runtime.WithLogBuffer(config.Logging.Buffer),
+	)
+	coreLogger.ServeAndDetach()
+	terminationManager.AddHook(coreLogger.Terminate)
+
+	apiCertificate, err := tls.LoadX509KeyPair(config.Api.CertFile, config.Api.KeyFile)
+	if err!=nil {
+		return err
+	}
+	apiEndpoint := api.NewApiEndpoint(config.Api.Addr, apiCertificate,
+		api.WithApplicationLog(coreLogger),
+		api.WithSystemLog(coreLogger),
+		api.WithIdleTimeout(time.Second * time.Duration(config.Api.IdleTTL)),
+	)
+	if err := apiEndpoint.ServeAndDetach(); err!=nil {
+		return err
+	}
+	terminationManager.AddHook(apiEndpoint.Terminate)
+
+
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+
+	exitSignal := <-signalChan
+	bootLogger.Info("service",
+		fmt.Sprintf("received %s; service is being shutdown...", exitSignal.String()),
+	)
+	
 	return nil
 }

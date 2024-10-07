@@ -21,7 +21,6 @@ package runtime
 
 import (
 	"context"
-	"log"
 	"os"
 	"runtime"
 	"sync"
@@ -68,10 +67,10 @@ type RuntimeLoggerOption func(*RuntimeLogger)
 
 // NewRuntimeLogger generates a RuntimeLogger. The specified component identifier is included in every log.
 // The defaults can be overriden using RuntimeLoggerOptions.
-func NewLogger(level string, component string, opts ...RuntimeLoggerOption) *RuntimeLogger {
+func NewRuntimeLogger(component string, opts ...RuntimeLoggerOption) *RuntimeLogger {
 	rootCtx, rootCtxCancel := context.WithCancel(context.Background())
 	workCtx, workCtxCancel := context.WithCancel(rootCtx)
-	return &RuntimeLogger{
+	logger := &RuntimeLogger{
 		rootCtx: rootCtx,
 		rootCtxCancel: rootCtxCancel,
 		workCtx: workCtx,
@@ -82,12 +81,18 @@ func NewLogger(level string, component string, opts ...RuntimeLoggerOption) *Run
 		trace:   false,
 		ioLock: &sync.Mutex{},
 	}
+
+	for _, opt := range opts {
+		opt(logger)
+	}
+
+	return logger
 }
 
 // WithTrace enables tracing, which includes information about file + line.
-func WithTrace() RuntimeLoggerOption {
-	return func(l *RuntimeLogger) {
-		l.trace = true
+func WithTrace(enable bool) RuntimeLoggerOption {
+	return func (l *RuntimeLogger) {
+		l.trace = enable
 	}
 }
 
@@ -143,15 +148,16 @@ func (r *RuntimeLogger) ServeAndDetach() {
 
 // Close stops reading logs and tries to flush out the remaining buffered logs.
 // If the provided context exceeds while flushing, flushing is cancelled immediately.
-func (r *RuntimeLogger) Close(ctx context.Context) {
+// Function will never return an error, it uses the error to adhere the cthul 'Terminate()' semantics.
+func (r *RuntimeLogger) Terminate(ctx context.Context) error {
 	r.workCtxCancel()
 	select {
 	case <-r.finChan:
-		return
+		return nil
 	case <-ctx.Done():
 		r.rootCtxCancel()
 		<-r.finChan
-		return
+		return nil
 	}
 }
 

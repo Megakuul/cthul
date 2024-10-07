@@ -25,16 +25,28 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-// BaseConfig represents the root configuration.
+// BaseConfig represents the configuration model
 type BaseConfig struct {
+	Lifecycle LifecycleConfig `toml:"lifecycle"`
 	Logging LoggingConfig `toml:"logging"`
+	Api ApiConfig `toml:"api"`
 }
 
-// LoggingConfig defines log related configuration.
+type LifecycleConfig struct {
+	TerminationTTL int64 `toml:"termination_ttl" validate:"required"`
+}
+
 type LoggingConfig struct {
 	Level string `toml:"level" validate:"required,oneof=debug info warning error critical"`
 	Trace bool `toml:"trace"`
 	Buffer int64 `toml:"buffer" validate:"gte=0,lte=4096"`
+}
+
+type ApiConfig struct {
+	Addr string `toml:"addr" validate:"required,tcp_addr"`
+	CertFile string `toml:"cert_file" validate:"required"`
+	KeyFile string `toml:"key_file" validate:"required"`
+	IdleTTL int64 `toml:"idle_ttl" validate:"required"`
 }
 
 // LoadConfig reads the configuration file, decodes it (toml) and validates it.

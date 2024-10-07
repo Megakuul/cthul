@@ -19,31 +19,48 @@ import (
 
 
 type ApiEndpoint struct {
-	server *http.Server
+	addr string
+	tlsConfig *tls.Config
 	logger log.Logger
+	server *http.Server
 }
 
 type ApiEndpointOption func(*ApiEndpoint)
 
-func NewApiEndpoint(addr string, tls *tls.Config, logger log.Logger, opts ...ApiEndpointOption) *ApiEndpoint {
+func NewApiEndpoint(addr string, cert tls.Certificate, opts ...ApiEndpointOption) *ApiEndpoint {
 	mux := http.NewServeMux()
 	mux.Handle(wavev1connect.NewDomainServiceHandler(&domainService{}))
-	return &ApiEndpoint{
+	endpoint := &ApiEndpoint{
+		addr: addr,
+		tlsConfig: &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		},
 		logger: discard.NewDiscardLogger(),
 		server: &http.Server{
-			Addr: addr,
-			TLSConfig: tls,
 			Handler: mux,
 			ErrorLog: golog.New(io.Discard, "", 0),
 			IdleTimeout: 10 * time.Minute,
 		},
 	}
+
+	for _, opt := range opts {
+		opt(endpoint)
+	}
+
+	return endpoint
 }
 
 // WithIdleTimeout sets a custom timeout for idle http connections.
 func WithIdleTimeout(timeout time.Duration) ApiEndpointOption {
 	return func (a *ApiEndpoint) {
 		a.server.IdleTimeout = timeout
+	}
+}
+
+// WithSkipInsecure enables skipping of insecure public certificates when mTLS is used.
+func WithSkipInsecure(skip bool) ApiEndpointOption {
+	return func (a *ApiEndpoint) {
+		a.server.TLSConfig.InsecureSkipVerify = skip
 	}
 }
 
@@ -55,23 +72,41 @@ func WithApplicationLog(logger log.Logger) ApiEndpointOption {
 }
 
 // WithSystemLog enables http system error logs and writes them to the specified logger.
-// The logs are written as "error" with the category "api_http_logs".
+// The logs are written as "error" with the category "api_server".
 func WithSystemLog(logger log.Logger) ApiEndpointOption {
 	return func (a *ApiEndpoint) {
-		a.server.ErrorLog = golog.New(adapter.NewLogAdapter("api_http", logger.Err), "", 0)
+		a.server.ErrorLog = golog.New(adapter.NewLogAdapter("api_server", logger.Err), "", 0)
 	}
 }
 
 // ServeAndDetach starts the api endpoint in a seperate goroutine and immediately returns.
 // The server can be started only once.
 func (a *ApiEndpoint) ServeAndDetach() error {
-	return a.server.ListenAndServeTLS("", "")
+	listener, err := tls.Listen("tcp", a.addr, a.tlsConfig)
+	if err!=nil {
+		return err
+	}
+	go func() {
+		defer func() {
+			// TODO Remove
+			err := listener.Close()
+			if err!=nil {
+				fmt.Println(err)
+			} else {
+				fmt.Println("Hey im closed it is fucking fine")
+			}
+		}()
+		if err := a.server.Serve(listener); err!=nil {
+			a.logger.Crit("api_server", fmt.Sprintf("unrecoverable api error: %s", err.Error())) 
+		}
+	}()
+	return nil
 }
 
-// Close tries to gracefully close the api endpoint (waiting for connections to finish)
+// Terminate tries to gracefully shutdown the api endpoint (waiting for connections to finish)
 // if this fails or exceeds the provided context window, the connection is forcefully closed.
 // If forcefully closing the connection fails too, an error is returned.
-func (a *ApiEndpoint) Close(ctx context.Context) error {
+func (a *ApiEndpoint) Terminate(ctx context.Context) error {
 	if err := a.server.Shutdown(ctx); err!=nil {
 		return a.server.Close()
 	}

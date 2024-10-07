@@ -33,9 +33,7 @@ func NewRootCmd() *cobra.Command {
 		Use:          "wave",
 		SilenceUsage: true,
 		Long: `wave is the core domain controller; it manages the virtual machines of the local node.
-It is installed on every cthul node that hosts virtual machines.
-
-wave directly communicates with the local libvirtd service.`,
+The service is installed on every cthul node that hosts virtual machines and directly communicates with the local libvirtd service.`,
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config, err := LoadConfig(flags.configPath)
