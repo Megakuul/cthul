@@ -28,6 +28,7 @@ import (
 type LogMessage struct {
 	Level LEVEL
 	Timestamp int64
+	Component string
 	Category string
 	Message string
 	Trace *LogTrace // If trace==nil it is not further processed.
@@ -55,6 +56,11 @@ func (l *LogMessage) Serialize() []byte {
 	buffer.WriteString(l.Level.String())
 	buffer.WriteString(`", `)
 
+	// field "component"
+	buffer.WriteString(`"component":"`)
+	buffer.WriteString(l.Component)
+	buffer.WriteString(`", `)
+	
 	// field "category"
 	buffer.WriteString(`"category":"`)
 	buffer.WriteString(l.Category)
