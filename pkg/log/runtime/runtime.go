@@ -75,6 +75,7 @@ func NewRuntimeLogger(component string, opts ...RuntimeLoggerOption) *RuntimeLog
 		rootCtxCancel: rootCtxCancel,
 		workCtx: workCtx,
 		workCtxCancel: workCtxCancel,
+		finChan: make(chan struct{}),
 		logQueue: make(chan *structure.LogMessage),
 		level:   structure.INFO,
 		component: component,

@@ -1,0 +1,71 @@
+# https://etcd.io/docs/v3.4/op-guide/configuration
+
+name: 'node001.etcd.cthul.io'
+
+data-dir: /var/lib/cthul/etcd
+
+# local url binding. note that uds support was implemented in v3.6
+listen-client-urls: unix:///var/run/cthul/etcd/etcd.sock
+
+# local url binding. used for etcdctl
+listen-client-http-urls: 127.0.0.1:2379
+
+# peer url that is bound
+listen-peer-urls: https://10.100.32.10:2380
+
+# peer url that is advertised (must be resolvable to listen-peer-url)
+initial-advertise-peer-urls: https://node001.etcd.cthul.io:2380
+
+# initial cluster configuration
+initial-cluster: "node001.etcd.cthul.io=https://node001.etcd.cthul.io:2380"
+
+# cluster token
+initial-cluster-token: 'etcd-cluster'
+
+# cluster state, this must be set to 'existing' on existing clusters
+initial-cluster-state: 'new'
+
+# etcd v2 api requests are enabled 
+enable-v2: true
+
+# proxy is not required as client connections go over the local etcd node.
+proxy: 'off'
+
+# tls for client endpoints is disabled because we use unix sockets
+client-transport-security:
+  client-cert-auth: false
+  auto-tls: false
+
+# tls for peer endpoints this should be configured with mTLS
+peer-transport-security:
+  cert-file: "/etc/cthul/etcd/cert/cert.pem"
+  key-file: "/etc/cthul/etcd/cert/key.pem"
+  # mTLS must be enabled in production to ensure only other nodes with *.etcd.cthul.io certificate can connect.
+  client-cert-auth: true
+  # no trusted ca file is specified as we use public trusted certificates.
+  trusted-ca-file:
+  # disabled as we use public trusted certificates.
+  auto-tls: false
+  # allowed cn is skipped as we work with SANs.
+  allowed-cn:
+  # allowed hostnames (aka SANs) of the certificate. This supports wildcard lookups as described here:
+  # https://etcd.io/docs/v3.3/op-guide/security/
+  allowed-hostname:
+    - "*.etcd.cthul.io"
+
+log-level: debug
+
+logger: zap
+
+force-new-cluster: false
+
+auto-compaction-mode: periodic
+auto-compaction-retention: "1"
+
+cipher-suites: [
+  TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+  TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+]
+
+tls-min-version: 'TLS1.2'
+tls-max-version: 'TLS1.3'

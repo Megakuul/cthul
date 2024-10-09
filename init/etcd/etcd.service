@@ -1,0 +1,10 @@
+[Unit]
+Description=cthul etcd database
+After=network.target
+
+[Service]
+User=cthul_etcd
+ExecStart=/usr/bin/etcd --config-file=/etc/cthul/etcd/config.yaml
+
+[Install]
+WantedBy=multi-user.target

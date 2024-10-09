@@ -20,6 +20,7 @@
 package app
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"os"
@@ -32,6 +33,7 @@ import (
 	"cthul.io/cthul/pkg/lifecycle"
 	"cthul.io/cthul/pkg/log/bootstrap"
 	"cthul.io/cthul/pkg/log/runtime"
+	"go.etcd.io/etcd/client/v3"
 )
 
 // Run is the root entrypoint of the service.
@@ -62,6 +64,22 @@ func Run(config *BaseConfig) error {
 	coreLogger.ServeAndDetach()
 	terminationManager.AddHook(coreLogger.Terminate)
 
+	dbClient, err := clientv3.New(clientv3.Config{
+		Endpoints: []string{config.Database.Addr},
+		Username: config.Database.Username,
+		Password: config.Database.Password,
+		DialTimeout: time.Second * time.Duration(config.Database.TimeoutTTL),
+	})
+	if err!=nil {
+		return err
+	}
+
+	res, err := dbClient.Auth.AuthStatus(context.TODO())
+	if err!=nil {
+		return err
+	}
+	fmt.Println(res.Enabled)
+	
 	apiCertificate, err := tls.LoadX509KeyPair(config.Api.CertFile, config.Api.KeyFile)
 	if err!=nil {
 		return err

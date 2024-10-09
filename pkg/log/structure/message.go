@@ -46,8 +46,8 @@ func (l *LogMessage) Serialize() []byte {
 	// object prefix
 	buffer.WriteByte(byte('{'))
 
-	// field "timestamp"
-	buffer.WriteString(`"timestamp":"`)
+	// field "ts"
+	buffer.WriteString(`"ts":"`)
 	buffer = bytes.NewBuffer(strconv.AppendInt(buffer.Bytes(), l.Timestamp, 10))
 	buffer.WriteString(`", `)
 	
@@ -79,7 +79,7 @@ func (l *LogMessage) Serialize() []byte {
 	}
 
 	// object suffix
-	buffer.WriteByte(byte('}'))
+	buffer.WriteString("}\n")
 
 	return buffer.Bytes()
 }

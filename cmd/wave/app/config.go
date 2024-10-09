@@ -29,6 +29,7 @@ import (
 type BaseConfig struct {
 	Lifecycle LifecycleConfig `toml:"lifecycle"`
 	Logging LoggingConfig `toml:"logging"`
+	Database DatabaseConfig `toml:"db"` 
 	Api ApiConfig `toml:"api"`
 }
 
@@ -40,6 +41,13 @@ type LoggingConfig struct {
 	Level string `toml:"level" validate:"required,oneof=debug info warning error critical"`
 	Trace bool `toml:"trace"`
 	Buffer int64 `toml:"buffer" validate:"gte=0,lte=4096"`
+}
+
+type DatabaseConfig struct {
+	Addr string `toml:"addr" validate:"required,tcp_addr|unix_addr"`
+	Username string `toml:"username" validate:"required"`
+	Password string `toml:"password" validate:"required"`
+	TimeoutTTL int64 `toml:"timeout_ttl" validate:"required"`
 }
 
 type ApiConfig struct {

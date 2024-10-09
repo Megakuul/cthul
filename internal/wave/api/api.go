@@ -87,15 +87,6 @@ func (a *ApiEndpoint) ServeAndDetach() error {
 		return err
 	}
 	go func() {
-		defer func() {
-			// TODO Remove
-			err := listener.Close()
-			if err!=nil {
-				fmt.Println(err)
-			} else {
-				fmt.Println("Hey im closed it is fucking fine")
-			}
-		}()
 		if err := a.server.Serve(listener); err!=nil {
 			a.logger.Crit("api_server", fmt.Sprintf("unrecoverable api error: %s", err.Error())) 
 		}
