@@ -1,0 +1,23 @@
+Wave
+----
+
+// Every node sets itself as leader if any of the conditions are met:
+// - leader uncontestet (old leader is offline)
+// - leader has a lower score then the node itself
+// It does this every 5 seconds. There is a race condition between reading the leader
+// and setting itself as reader, however this normalizes over time automatically.
+WAVE/LEADER: node001.wave.cthul.io|10 (5 Second)
+WAVE/NODE/node001.wave.cthul.io: 10 (5 Second)
+WAVE/NODE/node002.wave.cthul.io: 20 (5 Second)
+
+
+WAVE/DOMAIN/<DOM_ID>/MANAGER: node001.wave.cthul.io
+WAVE_DOMAIN_<DOM_ID>_STATE: ON
+WAVE_DOMAIN_<DOM_ID>_CONFIG: <LIBVIRTCONFIG>
+WAVE_DOMAIN_<DOM_ID>_DISK: <GRANIT_DISK_ID>
+
+WAVE_DOMAIN_<DOM_ID>_MANAGER: node002.wave.cthul.io
+WAVE_DOMAIN_<DOM_ID>_STATE: ON
+WAVE_DOMAIN_<DOM_ID>_CONFIG: <LIBVIRTCONFIG>
+WAVE_DOMAIN_<DOM_ID>_NETWORK: <PROTON_INTERFACE_ID>
+WAVE_DOMAIN_<DOM_ID>_DISK: <GRANIT_DISK_ID>

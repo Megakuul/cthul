@@ -1,3 +1,5 @@
+nodeid = node001.wave.cthul.io
+
 [lifecycle]
 termination_ttl = 10 # ttl of the graceful termination process (seconds)
 
@@ -11,6 +13,7 @@ addr = "unix:///var/run/cthul/etcd/etcd.sock" # address of the local etcd node (
 username = "wave" # db username
 password = "Supersecret" # db password
 timeout_ttl = 10 # ttl of db dial (seconds)
+cash = 10
 
 [api]
 addr = "0.0.0.0:1870" # address the api listener is bound to (tcp)
