@@ -20,17 +20,19 @@
 package app
 
 import (
-	"os"
 	"github.com/BurntSushi/toml"
 	"github.com/go-playground/validator/v10"
+	"os"
 )
 
 // BaseConfig represents the configuration model
 type BaseConfig struct {
+	NodeId    string          `toml:"nodeid" validate:"required"`
 	Lifecycle LifecycleConfig `toml:"lifecycle"`
-	Logging LoggingConfig `toml:"logging"`
-	Database DatabaseConfig `toml:"db"` 
-	Api ApiConfig `toml:"api"`
+	Logging   LoggingConfig   `toml:"logging"`
+	Database  DatabaseConfig  `toml:"db"`
+	Election  ElectionConfig  `toml:"election"`
+	Api       ApiConfig       `toml:"api"`
 }
 
 type LifecycleConfig struct {
@@ -38,42 +40,47 @@ type LifecycleConfig struct {
 }
 
 type LoggingConfig struct {
-	Level string `toml:"level" validate:"required,oneof=debug info warning error critical"`
-	Trace bool `toml:"trace"`
-	Buffer int64 `toml:"buffer" validate:"gte=0,lte=4096"`
+	Level  string `toml:"level" validate:"required,oneof=debug info warning error critical"`
+	Trace  bool   `toml:"trace"`
+	Buffer int64  `toml:"buffer" validate:"gte=0,lte=4096"`
 }
 
 type DatabaseConfig struct {
-	Addr string `toml:"addr" validate:"required,tcp_addr|unix_addr"`
-	Username string `toml:"username" validate:"required"`
-	Password string `toml:"password" validate:"required"`
-	TimeoutTTL int64 `toml:"timeout_ttl" validate:"required"`
+	Addr       string `toml:"addr" validate:"required,tcp_addr|unix_addr"`
+	Username   string `toml:"username" validate:"required"`
+	Password   string `toml:"password" validate:"required"`
+	TimeoutTTL int64  `toml:"timeout_ttl" validate:"required"`
+}
+
+type ElectionConfig struct {
+	Cash       int64 `toml:"cash"`
+	ContestTTL int64 `toml:"contest_ttl"`
 }
 
 type ApiConfig struct {
-	Addr string `toml:"addr" validate:"required,tcp_addr"`
+	Addr     string `toml:"addr" validate:"required,tcp_addr"`
 	CertFile string `toml:"cert_file" validate:"required"`
-	KeyFile string `toml:"key_file" validate:"required"`
-	IdleTTL int64 `toml:"idle_ttl" validate:"required"`
+	KeyFile  string `toml:"key_file" validate:"required"`
+	IdleTTL  int64  `toml:"idle_ttl" validate:"required"`
 }
 
 // LoadConfig reads the configuration file, decodes it (toml) and validates it.
 // If a step fails, an error is returned.
 func LoadConfig(path string) (*BaseConfig, error) {
 	rawConfig, err := os.ReadFile(path)
-	if err!=nil {
+	if err != nil {
 		return nil, err
 	}
 
 	config := &BaseConfig{}
 	_, err = toml.Decode(string(rawConfig), config)
-	if err!=nil {
+	if err != nil {
 		return nil, err
 	}
 
 	validate := validator.New(validator.WithRequiredStructEnabled())
 	err = validate.Struct(config)
-	if err!=nil {
+	if err != nil {
 		return nil, err
 	}
 

@@ -13,7 +13,10 @@ addr = "unix:///var/run/cthul/etcd/etcd.sock" # address of the local etcd node (
 username = "wave" # db username
 password = "Supersecret" # db password
 timeout_ttl = 10 # ttl of db dial (seconds)
-cash = 10
+
+[election]
+cash = 10 # cash balance of this node
+contest_ttl = 2 # ttl for every interval cycle (essentially keepalive interval) (seconds)
 
 [api]
 addr = "0.0.0.0:1870" # address the api listener is bound to (tcp)

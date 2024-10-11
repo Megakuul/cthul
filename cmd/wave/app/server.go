@@ -29,8 +29,8 @@ import (
 	"time"
 
 	"cthul.io/cthul/internal/wave/api"
-	"cthul.io/cthul/pkg/db"
 	"cthul.io/cthul/pkg/db/etcdv3"
+	"cthul.io/cthul/pkg/elect"
 	"cthul.io/cthul/pkg/lifecycle"
 	"cthul.io/cthul/pkg/log/bootstrap"
 	"cthul.io/cthul/pkg/log/runtime"
@@ -69,6 +69,14 @@ func Run(config *BaseConfig) error {
 		etcdv3.WithDialTimeout(time.Second * time.Duration(config.Database.TimeoutTTL)),
 	)
 	terminationManager.AddHook(dbClient.Terminate)
+
+	electController := elect.NewElectController(dbClient, "/WAVE/LEADER",
+		elect.WithContestTTL(config.Election.ContestTTL),
+		elect.WithLogger(coreLogger),
+		elect.WithLocalLeader(config.NodeId, config.Election.Cash),
+	)
+	electController.ServeAndDetach()
+	terminationManager.AddHook(electController.Terminate)
 	
 	apiCertificate, err := tls.LoadX509KeyPair(config.Api.CertFile, config.Api.KeyFile)
 	if err!=nil {
@@ -83,7 +91,6 @@ func Run(config *BaseConfig) error {
 		return err
 	}
 	terminationManager.AddHook(apiEndpoint.Terminate)
-
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
