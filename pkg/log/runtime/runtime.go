@@ -147,7 +147,7 @@ func (r *RuntimeLogger) ServeAndDetach() {
 	}()
 }
 
-// Close stops reading logs and tries to flush out the remaining buffered logs.
+// Terminate stops reading logs and tries to flush out the remaining buffered logs.
 // If the provided context exceeds while flushing, flushing is cancelled immediately.
 // Function will never return an error, it uses the error to adhere the cthul 'Terminate()' semantics.
 func (r *RuntimeLogger) Terminate(ctx context.Context) error {
