@@ -21,7 +21,6 @@ package elect
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -61,21 +60,19 @@ type ElectController struct {
 
 	// contestKey marks the database key which is used to contest the leader.
 	contestKey string
-	// contentTTL specifies the ttl of one contest cycle.
-	// After this the leader re-contested (if elected).
-	contestTTL int64
 
-	// localNode holds the leader information of this node.
+	// localNode holds information about the local node.
 	localNode node
+	
 	// leaderNode holds the leader information of the current leader.
-	leaderNode node
+	leaderNode clusterLeader
 	leaderNodeLock sync.RWMutex
 }
 
-// node provides information about a node relevant to contest the leader.
 type node struct {
-	Id string `json:"id"`
-	Cash int64 `json:"cash"`
+	id string
+	contestTTL int64
+	cash int64
 }
 
 type ElectControllerOption func(*ElectController)
@@ -93,9 +90,8 @@ func NewElectController(client db.Client, contestKey string, opts ...ElectContro
 		client: client,
 		logger: discard.NewDiscardLogger(),
 		contestKey: contestKey,
-		contestTTL: 5,
-		localNode: node{ Id: "", Cash: -1 },
-		leaderNode: node{ Id: "", Cash: -1 },
+		localNode: node{ id: "", contestTTL: 5, cash: -1 },
+		leaderNode: clusterLeader{ Id: "", Cash: -1 },
 		leaderNodeLock: sync.RWMutex{},
 	}
 
@@ -108,11 +104,12 @@ func NewElectController(client db.Client, contestKey string, opts ...ElectContro
 
 // WithLocalLeader enables the local node to contest the leader. The specified nodeId will be used as
 // leader id if this node contests. NodeCash determines the importance of this node; more cash = more important.
-func WithLocalLeader(nodeId string, nodeCash int64) ElectControllerOption {
+func WithLocalLeader(contest bool, nodeId string, nodeCash int64) ElectControllerOption {
 	return func (e *ElectController) {
-		e.localNode = node{
-			Id: nodeId,
-			Cash: nodeCash,
+		if contest {
+			e.localNode.id, e.localNode.cash = nodeId, nodeCash
+		} else {
+			e.localNode.id, e.localNode.cash = "", -1
 		}
 	}
 }
@@ -121,7 +118,7 @@ func WithLocalLeader(nodeId string, nodeCash int64) ElectControllerOption {
 // it does this in cycles based on this ttl.
 func WithContestTTL(ttl int64) ElectControllerOption {
 	return func (e *ElectController) {
-		e.contestTTL = ttl
+		e.localNode.contestTTL = ttl
 	}
 }
 
@@ -136,7 +133,7 @@ func WithLogger(logger log.Logger) ElectControllerOption {
 func (e *ElectController) GetLeader() string {
 	e.leaderNodeLock.RLock()
 	defer e.leaderNodeLock.RUnlock()
-	return ""
+	return e.leaderNode.Id
 }
 
 // ServeAndDetach launches two routines to check the current leader and contest it under given conditions.
@@ -194,15 +191,15 @@ func (e *ElectController) checkLeader() {
 }
 
 // electLeader analyzes the leaderStr and returns the new leader or nil if it should not be changed.
-func (e *ElectController) electLeader(leaderStr string) *node {
+func (e *ElectController) electLeader(leaderStr string) *clusterLeader {
 	if leaderStr=="" {
 		e.logger.Debug("elect_controller", "contesting leader; reason: leader is uncontested")
-		return &node{ Id: e.localNode.Id, Cash: e.localNode.Cash }
+		return &clusterLeader{ Id: e.localNode.id, Cash: e.localNode.cash }
 	}
-	newLeaderNode, err := e.parseNode(leaderStr)
+	newLeaderNode, err := parseClusterLeader(leaderStr)
 	if err!=nil {
 		e.logger.Debug("elect_controller", "contesting leader; reason: " + err.Error())
-		return &node{ Id: e.localNode.Id, Cash: e.localNode.Cash }
+		return &clusterLeader{ Id: e.localNode.id, Cash: e.localNode.cash }
 	}
 
 	// Important: If the local node == new leader the leader node should NOT be changed.
@@ -220,17 +217,17 @@ func (e *ElectController) electLeader(leaderStr string) *node {
 	// Because usually both controllers have the same schedule this will repeat itself.
 	// To avoid this, elections that have the local node as candidate are skipped instead of overwritting the
 	// current leader. With this, the leader is only overwritten if he actually has more cash.
-	if e.localNode.Id == newLeaderNode.Id {
+	if e.localNode.id == newLeaderNode.Id {
 		e.logger.Debug("elect_controller", "skipping leader; reason: local node is already leader")
 		return nil
 	}
-	if e.localNode.Cash <= newLeaderNode.Cash {
+	if e.localNode.cash <= newLeaderNode.Cash {
 		e.logger.Debug("elect_controller", "skipping leader; reason: local node has not enough cash")
-		return &node{ Id: newLeaderNode.Id, Cash: newLeaderNode.Cash }
+		return &clusterLeader{ Id: newLeaderNode.Id, Cash: newLeaderNode.Cash }
 	}
 	
 	e.logger.Debug("elect_controller", "contesting leader; reason: local node has more cash")
-	return &node{ Id: e.localNode.Id, Cash: e.localNode.Cash }
+	return &clusterLeader{ Id: e.localNode.id, Cash: e.localNode.cash }
 }
 
 
@@ -238,29 +235,34 @@ func (e *ElectController) electLeader(leaderStr string) *node {
 // If the local node is the reported leader, it will set the local node as leader
 // and repeat this step in the provided contestTTL interval.
 func (e *ElectController) contestLeader() {
+	if e.localNode.id == "" {
+		e.logger.Info("elect_controller", "local node will not serve as leader")
+		return
+	}
+	
 	for {
 		e.leaderNodeLock.RLock()
-		if e.leaderNode.Id != "" && e.leaderNode.Id == e.localNode.Id {
-			ctx, cancel := context.WithTimeout(e.workCtx, time.Second * time.Duration(e.contestTTL))
+		if e.leaderNode.Id != "" && e.leaderNode.Id == e.localNode.id {
+			ctx, cancel := context.WithTimeout(e.workCtx, time.Second * time.Duration(e.localNode.contestTTL))
 			defer cancel()
 			err := e.client.Set(ctx, e.contestKey,
-				e.serializeNode(&e.leaderNode), (e.contestTTL * 2),
+				serializeClusterLeader(&e.leaderNode), (e.localNode.contestTTL * 2),
 			)
 			if err!=nil {
-				e.logger.Err("elect_controller", err.Error())
+				e.logger.Err("elect_controller", "failed to contest leader")
 			}
 		}
 		e.leaderNodeLock.RUnlock()
 		select {
-		case <-time.After(time.Second * time.Duration(e.contestTTL)):
+		case <-time.After(time.Second * time.Duration(e.localNode.contestTTL)):
 			break
 		case <-e.workCtx.Done():
 			e.leaderNodeLock.RLock()
 			defer e.leaderNodeLock.RUnlock()
-			if e.leaderNode.Id != "" && e.leaderNode.Id == e.localNode.Id {
+			if e.leaderNode.Id != "" && e.leaderNode.Id == e.localNode.id {
 				// If the node is currently contesting leader, it sets leader explicitly to "" before termination
 				// so that other nodes can immediately contest the leader.
-				err := e.client.Set(e.rootCtx, e.contestKey, "", 0)
+				err := e.client.Delete(e.rootCtx, e.contestKey)
 				if err!=nil {
 					e.logger.Err("elect_controller", "failed to reset leader before termination")
 				}
@@ -270,25 +272,6 @@ func (e *ElectController) contestLeader() {
 	}
 }
 
-// parseNode parses the raw node string into a node struct.
-func (e *ElectController) parseNode(nodeStr string) (*node, error) {
-	var node node
-	err := json.Unmarshal([]byte(nodeStr), &node)
-	if err!=nil {
-		return nil, fmt.Errorf("cannot parse node information")
-	}
-
-	return &node, nil
-}
-
-// serializeNode serializes the node struct into a raw node string.
-func (e *ElectController) serializeNode(node *node) string {
-	nodeStr, err := json.Marshal(node)
-	if err!=nil {
-		return ""
-	}
-	return string(nodeStr)
-}
 
 // Terminate stops the election controller gracefully. If this node currently contested the leader
 // it tries to reset the contestKey in order to make other nodes immediately contest the leader.

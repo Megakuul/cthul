@@ -32,6 +32,7 @@ type BaseConfig struct {
 	Logging   LoggingConfig   `toml:"logging"`
 	Database  DatabaseConfig  `toml:"db"`
 	Election  ElectionConfig  `toml:"election"`
+	Scheduler SchedulerConfig `toml:"scheduler"`
 	Api       ApiConfig       `toml:"api"`
 }
 
@@ -53,8 +54,16 @@ type DatabaseConfig struct {
 }
 
 type ElectionConfig struct {
-	Cash       int64 `toml:"cash"`
-	ContestTTL int64 `toml:"contest_ttl"`
+	Contest    bool  `toml:"contest" validate:"required"`
+	Cash       int64 `toml:"cash" validate:"required"`
+	ContestTTL int64 `toml:"contest_ttl" validate:"required"`
+}
+
+type SchedulerConfig struct {
+	Register     bool  `toml:"register" validate:"required"`
+	RegisterTTL  int64 `toml:"register_ttl" validate:"required"`
+	CpuThreshold int64 `toml:"cpu_threshold" validate:"gte=0,lte=1000"`
+	MemThreshold int64 `toml:"mem_threshold" validate:"gte=0,lte=1000"`
 }
 
 type ApiConfig struct {

@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"cthul.io/cthul/internal/wave/api"
+	"cthul.io/cthul/internal/wave/scheduler"
 	"cthul.io/cthul/pkg/db/etcdv3"
 	"cthul.io/cthul/pkg/elect"
 	"cthul.io/cthul/pkg/lifecycle"
@@ -71,12 +72,21 @@ func Run(config *BaseConfig) error {
 	terminationManager.AddHook(dbClient.Terminate)
 
 	electController := elect.NewElectController(dbClient, "/WAVE/LEADER",
+		elect.WithLocalLeader(config.Election.Contest, config.NodeId, config.Election.Cash),
 		elect.WithContestTTL(config.Election.ContestTTL),
 		elect.WithLogger(coreLogger),
-		elect.WithLocalLeader(config.NodeId, config.Election.Cash),
 	)
 	electController.ServeAndDetach()
 	terminationManager.AddHook(electController.Terminate)
+
+	scheduler := scheduler.NewScheduler(dbClient,
+		scheduler.WithLocalNode(config.Scheduler.Register, config.NodeId),
+		scheduler.WithLocalResourceThreshold(config.Scheduler.CpuThreshold, config.Scheduler.MemThreshold),
+		scheduler.WithRegisterTTL(config.Scheduler.RegisterTTL),
+		scheduler.WithLogger(coreLogger),
+	)
+	scheduler.ServeAndDetach()
+	terminationManager.AddHook(scheduler.Terminate)
 	
 	apiCertificate, err := tls.LoadX509KeyPair(config.Api.CertFile, config.Api.KeyFile)
 	if err!=nil {

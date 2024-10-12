@@ -21,41 +21,35 @@ package scheduler
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"sync"
-	"time"
 
 	"cthul.io/cthul/pkg/db"
+	"cthul.io/cthul/pkg/log"
 )
 
 type Scheduler struct {
-	rootCtx context.Context
+	rootCtx       context.Context
 	rootCtxCancel context.CancelFunc
 
-	workCtx context.Context
+	workCtx       context.Context
 	workCtxCancel context.CancelFunc
-	
+
+	finChan chan struct{}
+
 	client db.Client
+	logger log.Logger
 
-	registerTTL int64
-	
 	localNode node
-	localNodeLock sync.RWMutex
 
-	leaderState bool
+	leaderState     bool
 	leaderStateLock sync.RWMutex
 }
 
 type node struct {
-	Id string `json:"id"`
-	Capacity capacity `json:"capacity"`
-}
-
-type capacity struct {
-	CPUs int64 `json:"cpus"`
-	Memory int64 `json:"memory"`
-	Storage int64 `json:"storage"`
+	id string
+	registerTTL int64
+	cpuFactor float64
+	memFactor float64
 }
 
 type SchedulerOption func(*Scheduler)
@@ -64,15 +58,14 @@ func NewScheduler(client db.Client, opts ...SchedulerOption) *Scheduler {
 	rootCtx, rootCtxCancel := context.WithCancel(context.Background())
 	workCtx, workCtxCancel := context.WithCancel(rootCtx)
 	scheduler := &Scheduler{
-		rootCtx: rootCtx,
-		rootCtxCancel: rootCtxCancel,
-		workCtx: workCtx,
-		workCtxCancel: workCtxCancel,
-		client: client,
-		leaderState: false,
+		rootCtx:         rootCtx,
+		rootCtxCancel:   rootCtxCancel,
+		workCtx:         workCtx,
+		workCtxCancel:   workCtxCancel,
+		client:          client,
+		localNode:       node{ id: "", registerTTL: 5, cpuFactor: 1, memFactor: 1 },
+		leaderState:     false,
 		leaderStateLock: sync.RWMutex{},
-		registerTTL: 5,
-		localNode: node{ active: false, id: "", capacity: -1 },
 	}
 
 	for _, opt := range opts {
@@ -82,6 +75,42 @@ func NewScheduler(client db.Client, opts ...SchedulerOption) *Scheduler {
 	return scheduler
 }
 
+// WithLocalNode registers this local node in the scheduler, allowing it to allocate domains to this node.
+func WithLocalNode(register bool, nodeId string) SchedulerOption {
+	return func(s *Scheduler) {
+		if register {
+			s.localNode.id = nodeId
+		} else {
+			s.localNode.id = ""
+		}
+	}
+}
+
+// WithRegisterTTL sets a custom ttl for the register cycle (essentially the keepalive interval).
+func WithRegisterTTL(registerTTL int64) SchedulerOption {
+	return func(s *Scheduler) {
+		s.localNode.registerTTL = registerTTL
+	}
+}
+
+// WithLocalResourceThreshold defines a custom resource threshold for this node.
+// The resource threshold must be provided as percentage and essentially serves as filter applied to the raw
+// host resources which are reported to the scheduler for deciding how to schedule domains.
+// E.g. mem/cpuThreshold of 80 with 10 cores and 10GB memory converts to reported 8 cores and 8GB memory.
+func WithLocalResourceThreshold(cpuThreshold, memThreshold int64) SchedulerOption {
+	return func(s *Scheduler) {
+		s.localNode.cpuFactor = float64(cpuThreshold) / 100
+		s.localNode.memFactor= float64(memThreshold) / 100
+	}
+}
+
+// WithLogger sets a custom logger for the scheduler.
+func WithLogger(logger log.Logger) SchedulerOption {
+	return func(s *Scheduler) {
+		s.logger = logger
+	}
+}
+
 func (s *Scheduler) SetState(leader bool) {
 	s.leaderStateLock.Lock()
 	defer s.leaderStateLock.Unlock()
@@ -89,35 +118,31 @@ func (s *Scheduler) SetState(leader bool) {
 }
 
 
-func (s *Scheduler) registerNode() {	
-	for {
-		if s.localNode.active && s.localNode.id != "" {
-			ctx, cancel := context.WithTimeout(s.workCtx, time.Second * time.Duration(s.registerTTL))
-			err := s.client.Set(ctx,
-				fmt.Sprintf("/WAVE/SCHEDULER/NODE/%s", s.localNode.Id),
-				s.serializeNode(&s.localNode),
-				(s.registerTTL * 2),
-			)		
-		}
-	}
+
+func (s *Scheduler) ServeAndDetach() {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		s.registerNode()
+	}()
+
+	go func() {
+		wg.Wait()
+		s.finChan <- struct{}{}
+	}()
 }
 
 
-// serializeNode serializes the node into a raw string.
-func (s *Scheduler) parseNode(nodeStr string) (*node, error) {
-	var node node
-	err := json.Unmarshal([]byte(nodeStr), node)
-	if err!=nil {
-		return nil, fmt.Errorf("cannot parse node information")
+func (s *Scheduler) Terminate(ctx context.Context) error {
+	s.workCtxCancel()
+	defer s.rootCtxCancel()
+	select {
+	case <-s.finChan:
+		return nil
+	case <-ctx.Done():
+		s.rootCtxCancel()
+		<-s.finChan
+		return nil
 	}
-	return &node, nil
-}
-
-// serializeNode serializes the node into a raw string.
-func (s *Scheduler) serializeNode(node *node) string {
-	nodeStr, err := json.Marshal(node)
-	if err!=nil {
-		return ""
-	}
-	return string(nodeStr)
 }

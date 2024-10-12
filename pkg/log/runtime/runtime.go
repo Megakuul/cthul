@@ -152,6 +152,7 @@ func (r *RuntimeLogger) ServeAndDetach() {
 // Function will never return an error, it uses the error to adhere the cthul 'Terminate()' semantics.
 func (r *RuntimeLogger) Terminate(ctx context.Context) error {
 	r.workCtxCancel()
+	defer r.rootCtxCancel()
 	select {
 	case <-r.finChan:
 		return nil

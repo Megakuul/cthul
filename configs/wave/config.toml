@@ -6,7 +6,7 @@ termination_ttl = 10 # ttl of the graceful termination process (seconds)
 [logging]
 level = "debug" # 'debug', 'info', 'warning', 'error', 'critical'
 trace = false # enable log traces (outputs file & line number)
-buffer = 256 # runtime log buffer size
+buffer = 256 # runtime log buffer size (items NOT bytes)
 
 [db]
 addr = "unix:///var/run/cthul/etcd/etcd.sock" # address of the local etcd node (unix|tcp)
@@ -15,8 +15,17 @@ password = "Supersecret" # db password
 timeout_ttl = 10 # ttl of db dial (seconds)
 
 [election]
+contest = true # allow this node to contest the leader
 cash = 10 # cash balance of this node
 contest_ttl = 2 # ttl for every interval cycle (essentially keepalive interval) (seconds)
+
+[scheduler]
+register = true # add this node to the scheduler, allowing it to move domains to this node
+register_ttl = 5 # ttl for every registration cycle (essentially keepalive interval) (seconds)
+cpu_threshold = 95 # host cpu resources that are taken into consideration for the schedule decisions (percentage)
+mem_threshold = 95 # host memory resources that are taken into consideration for schedule decisions (percentage)
+# thresholds can also be set higher then 100, however this should be done with caution, as the scheduler
+# will then move domains even if the host memory and cpu resources are exhausted.
 
 [api]
 addr = "0.0.0.0:1870" # address the api listener is bound to (tcp)
