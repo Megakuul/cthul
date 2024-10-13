@@ -19,24 +19,15 @@
 
 package adapter
 
-// LogAdapter provides a io.Writer implementation that writes to a Logger.
-type LogAdapter struct {
-	category string
-	logFunc func(string, string)
-}
+import (
+	"strconv"
+)
 
-// NewLogAdapter creates a new log adapter, the adapter uses the provided log function
-// to write incomming events.
-func NewLogAdapter(category string, logFunc func(string, string)) *LogAdapter {
-	return &LogAdapter{
-		category: category,
-		logFunc: logFunc,
-	}
-}
-
-// Write implements the io.Writer interface and is used to write to the adapter.
-// It will never return an error, the return types are just in place for to satisfy the interface.
-func (l *LogAdapter) Write(input []byte) (int, error) {
-	l.logFunc(l.category, string(input))
-	return len(input), nil
+// sanitizeLog removes escape characters that can break the loggers json representation.
+// This is not very efficient but ensures consistent logging for adapters that use external formats.
+func sanitizeLog(log string) string {
+	// currently Quote covers all characters that break the json.
+	// this function is employed to add other sanitization or faster implementations in the future.
+	sanitizedLog := strconv.Quote(log)
+	return sanitizedLog[1:len(sanitizedLog)-1] // trim the '"' added by Quote.
 }

@@ -21,9 +21,12 @@ package etcdv3
 
 import (
 	"context"
+	"crypto/tls"
+	"fmt"
 	"time"
 
 	"go.etcd.io/etcd/client/v3"
+	"go.uber.org/zap"
 )
 
 // EtcdClient provides a Client implementation for etcdv3.
@@ -39,7 +42,9 @@ func NewEtcdClient(endpoints []string, opts ...EtcdClientOption) *EtcdClient {
 	etcdClient := &EtcdClient{
 		config: clientv3.Config{
 			Endpoints: endpoints,
-			DialTimeout: time.Second * 5,
+			TLS: &tls.Config{},
+			DialTimeout: time.Second * 2,
+			Logger: zap.NewNop(),
 		},
 		client: nil,
 	}
@@ -66,6 +71,13 @@ func WithDialTimeout(timeout time.Duration) EtcdClientOption {
 	}
 }
 
+// WithSkipVerify skips tls public cert verification.
+func WithSkipVerify(skip bool) EtcdClientOption {
+	return func (c *EtcdClient) {
+		c.config.TLS.InsecureSkipVerify = skip
+	}
+}
+
 
 // initClient creates the underlying etcdv3 client if not already initialized.
 func (c *EtcdClient) initClient() error {
@@ -80,6 +92,23 @@ func (c *EtcdClient) initClient() error {
 	return nil
 }
 
+// CheckEndpointHealth reads the status for every database client endpoint.
+// If an error is found on one of the checked endpoints, it is returned immediately.
+func (c *EtcdClient) CheckEndpointHealth(ctx context.Context) error {
+	if err := c.initClient(); err!=nil {
+		return err
+	}
+	for _, endpoint := range c.config.Endpoints {
+		res, err := c.client.Maintenance.Status(ctx, endpoint)
+		if err!=nil {
+			return err
+		}
+		for _, err := range res.Errors {
+			return fmt.Errorf(err)
+		}
+	}
+	return nil
+}
 
 // Get returns a single key. If the key is empty or not existent, an empty string is returned.
 func (c *EtcdClient) Get(ctx context.Context, key string) (string, error) {
@@ -209,6 +238,7 @@ func (c *EtcdClient) startWatchCycle(watchChan clientv3.WatchChan, eventFunc fun
 // Terminate cleans up the underlying etcd client, terminating all client connections.
 // Connections are terminated forcefully, the context is only provided to match the cthul terminate pattern.
 func (c *EtcdClient) Terminate(ctx context.Context) error {
+	// c.rootCtxCancel()
 	if c.client!=nil {
 		return c.client.Close()
 	}

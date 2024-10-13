@@ -47,10 +47,12 @@ type LoggingConfig struct {
 }
 
 type DatabaseConfig struct {
-	Addr       string `toml:"addr" validate:"required,tcp_addr|unix_addr"`
-	Username   string `toml:"username" validate:"required"`
-	Password   string `toml:"password" validate:"required"`
-	TimeoutTTL int64  `toml:"timeout_ttl" validate:"required"`
+	Addr        string `toml:"addr" validate:"required,tcp_addr|unix_addr"`
+	Username    string `toml:"username" validate:"required"`
+	Password    string `toml:"password" validate:"required"`
+	TimeoutTTL  int64  `toml:"timeout_ttl" validate:"required"`
+	Healthcheck bool   `toml:"healthcheck"`
+	SkipVerify  bool   `toml:"skipverify"`
 }
 
 type ElectionConfig struct {

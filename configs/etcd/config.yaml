@@ -5,10 +5,11 @@ name: 'node001.etcd.cthul.io'
 data-dir: /var/lib/cthul/etcd
 
 # local url binding. note that uds support was implemented in v3.6
-listen-client-urls: unix:///var/run/cthul/etcd/etcd.sock
+# btw crazy that this supports unixs. ahead of time...
+listen-client-urls: unixs:///var/run/cthul/etcd/etcd.sock
 
 # local url binding. used for etcdctl
-listen-client-http-urls: 127.0.0.1:2379
+listen-client-http-urls: https://127.0.0.1:2379
 
 # peer url that is bound
 listen-peer-urls: https://10.100.32.10:2380
@@ -33,6 +34,8 @@ proxy: 'off'
 
 # tls for client endpoints is disabled because we use unix sockets
 client-transport-security:
+  cert-file: "/etc/cthul/etcd/cert/cert.pem"
+  key-file: "/etc/cthul/etcd/cert/key.pem"
   client-cert-auth: false
   auto-tls: false
 

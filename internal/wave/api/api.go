@@ -75,7 +75,7 @@ func WithApplicationLog(logger log.Logger) ApiEndpointOption {
 // The logs are written as "error" with the category "api_server".
 func WithSystemLog(logger log.Logger) ApiEndpointOption {
 	return func (a *ApiEndpoint) {
-		a.server.ErrorLog = golog.New(adapter.NewLogAdapter("api_server", logger.Err), "", 0)
+		a.server.ErrorLog = golog.New(adapter.NewCommonLogAdapter("api_server", logger.Err), "", 0)
 	}
 }
 

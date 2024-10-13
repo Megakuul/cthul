@@ -36,7 +36,7 @@ func (s *Scheduler) registerNode() {
 	
 	for {
 		s.logger.Debug("scheduler", "measuring local node resource capacity...")
-		localNodeCapacity, err := generateNodeCapacity(s.workCtx, 0, s.localNode.cpuFactor, s.localNode.memFactor)
+		localNodeCapacity, err := generateNodeCapacity(s.workCtx, s.localNode.cpuFactor, s.localNode.memFactor)
 		if err!=nil {
 			s.logger.Err("scheduler", err.Error())
 		}

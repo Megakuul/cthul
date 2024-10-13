@@ -4,6 +4,7 @@ After=network.target
 
 [Service]
 User=cthul_etcd
+ExecStartPre=mkdir -p /var/run/cthul/etcd
 ExecStart=/usr/bin/etcd --config-file=/etc/cthul/etcd/config.yaml
 
 [Install]

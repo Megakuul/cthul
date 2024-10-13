@@ -105,9 +105,8 @@ func (l *LogTrace) serialize() []byte {
 	buffer.WriteString(`", `)
 
 	// field "line"
-	buffer.WriteString(`"line": "`)
+	buffer.WriteString(`"line": `)
 	buffer = bytes.NewBuffer(strconv.AppendInt(buffer.Bytes(), int64(l.Line), 10))
-	buffer.WriteString(`"`)
 
 	// object suffix
 	buffer.WriteByte(byte('}'))

@@ -25,6 +25,7 @@ import (
 
 	"cthul.io/cthul/pkg/db"
 	"cthul.io/cthul/pkg/log"
+	"cthul.io/cthul/pkg/log/discard"
 )
 
 type Scheduler struct {
@@ -46,10 +47,10 @@ type Scheduler struct {
 }
 
 type node struct {
-	id string
+	id          string
 	registerTTL int64
-	cpuFactor float64
-	memFactor float64
+	cpuFactor   float64
+	memFactor   float64
 }
 
 type SchedulerOption func(*Scheduler)
@@ -62,8 +63,10 @@ func NewScheduler(client db.Client, opts ...SchedulerOption) *Scheduler {
 		rootCtxCancel:   rootCtxCancel,
 		workCtx:         workCtx,
 		workCtxCancel:   workCtxCancel,
+		finChan:         make(chan struct{}),
 		client:          client,
-		localNode:       node{ id: "", registerTTL: 5, cpuFactor: 1, memFactor: 1 },
+		logger:          discard.NewDiscardLogger(),
+		localNode:       node{id: "", registerTTL: 5, cpuFactor: 1, memFactor: 1},
 		leaderState:     false,
 		leaderStateLock: sync.RWMutex{},
 	}
@@ -100,7 +103,7 @@ func WithRegisterTTL(registerTTL int64) SchedulerOption {
 func WithLocalResourceThreshold(cpuThreshold, memThreshold int64) SchedulerOption {
 	return func(s *Scheduler) {
 		s.localNode.cpuFactor = float64(cpuThreshold) / 100
-		s.localNode.memFactor= float64(memThreshold) / 100
+		s.localNode.memFactor = float64(memThreshold) / 100
 	}
 }
 
@@ -117,8 +120,6 @@ func (s *Scheduler) SetState(leader bool) {
 	s.leaderState = leader
 }
 
-
-
 func (s *Scheduler) ServeAndDetach() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -132,7 +133,6 @@ func (s *Scheduler) ServeAndDetach() {
 		s.finChan <- struct{}{}
 	}()
 }
-
 
 func (s *Scheduler) Terminate(ctx context.Context) error {
 	s.workCtxCancel()

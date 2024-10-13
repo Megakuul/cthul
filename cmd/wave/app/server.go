@@ -20,6 +20,7 @@
 package app
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"os"
@@ -33,8 +34,10 @@ import (
 	"cthul.io/cthul/pkg/db/etcdv3"
 	"cthul.io/cthul/pkg/elect"
 	"cthul.io/cthul/pkg/lifecycle"
+	"cthul.io/cthul/pkg/log/adapter"
 	"cthul.io/cthul/pkg/log/bootstrap"
 	"cthul.io/cthul/pkg/log/runtime"
+	"google.golang.org/grpc/grpclog"
 )
 
 // Run is the root entrypoint of the service.
@@ -65,11 +68,29 @@ func Run(config *BaseConfig) error {
 	coreLogger.ServeAndDetach()
 	terminationManager.AddHook(coreLogger.Terminate)
 
+	grpclog.SetLoggerV2(adapter.NewGrpcLogAdapter("grpc",
+		adapter.WithWarnLog(coreLogger.Warn),
+		adapter.WithErrLog(coreLogger.Err),
+		adapter.WithCritLog(coreLogger.Crit),
+	))
+
 	dbClient := etcdv3.NewEtcdClient([]string{config.Database.Addr},
 		etcdv3.WithAuth(config.Database.Username, config.Database.Password),
 		etcdv3.WithDialTimeout(time.Second * time.Duration(config.Database.TimeoutTTL)),
+		etcdv3.WithSkipVerify(config.Database.SkipVerify),
 	)
 	terminationManager.AddHook(dbClient.Terminate)
+
+	if config.Database.Healthcheck {
+		ctx, cancel := context.WithTimeout(
+			context.Background(), time.Second * time.Duration(config.Database.TimeoutTTL),
+		)
+		if err := dbClient.CheckEndpointHealth(ctx); err!=nil {
+			cancel()
+			return fmt.Errorf("database healthcheck failed: %s", err.Error())
+		}
+		cancel()
+	}
 
 	electController := elect.NewElectController(dbClient, "/WAVE/LEADER",
 		elect.WithLocalLeader(config.Election.Contest, config.NodeId, config.Election.Cash),
