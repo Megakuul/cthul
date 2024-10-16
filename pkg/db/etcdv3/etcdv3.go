@@ -22,7 +22,6 @@ package etcdv3
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"time"
 
 	"go.etcd.io/etcd/client/v3"
@@ -92,21 +91,13 @@ func (c *EtcdClient) initClient() error {
 	return nil
 }
 
-// CheckEndpointHealth reads the status for every database client endpoint.
-// If an error is found on one of the checked endpoints, it is returned immediately.
+// CheckEndpointHealth initially checks if the database endpoint is reachable.
+// This method is used to ensure the database connection works before launching various components.
 func (c *EtcdClient) CheckEndpointHealth(ctx context.Context) error {
 	if err := c.initClient(); err!=nil {
 		return err
 	}
-	for _, endpoint := range c.config.Endpoints {
-		res, err := c.client.Maintenance.Status(ctx, endpoint)
-		if err!=nil {
-			return err
-		}
-		for _, err := range res.Errors {
-			return fmt.Errorf(err)
-		}
-	}
+	// Function currently only initializes the client, the idea is to add more 'health' checks in the future.
 	return nil
 }
 
@@ -146,30 +137,29 @@ func (c *EtcdClient) GetRange(ctx context.Context, prefix string) (map[string]st
 }
 
 
-// Set upserts a kv to the database. If ttl is set to 0 the kv never expires.
-func (c *EtcdClient) Set(ctx context.Context, key, value string, ttl int64) error {
+// Set upserts a kv to the database and returns the previous value. If ttl is set to 0 the kv never expires.
+func (c *EtcdClient) Set(ctx context.Context, key, value string, ttl int64) (string, error) {
 	if err := c.initClient(); err!=nil {
-		return err
+		return "", err
 	}
+	opts := []clientv3.OpOption{}
 	if ttl!=0 {
 		// utilizing lease checking, keep-alive, revokation, etc. hardly overcomplicates this usecase
 		// therefore we just grant a new lease every time the key is set.
 		lease, err := c.client.Lease.Grant(ctx, ttl)
 		if err!=nil {
-			return err
+			return "", err
 		}
-		_, err = c.client.KV.Put(ctx, key, value, clientv3.WithLease(lease.ID))
-		if err!=nil {
-			return err
-		}
-	} else {
-		_, err := c.client.KV.Put(ctx, key, value)
-		if err!=nil {
-			return err
-		}
+		opts = append(opts, clientv3.WithLease(lease.ID))
 	}
-
-	return nil
+	res, err := c.client.KV.Put(ctx, key, value, opts...)
+		if err!=nil {
+			return "", err
+		}
+		if res.PrevKv != nil {
+			return string(res.PrevKv.Value), nil
+		}
+		return "", nil
 }
 
 // Delete deletes one specific kv by key.

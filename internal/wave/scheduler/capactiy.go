@@ -63,7 +63,6 @@ func serializeNodeCapacity(capacity *nodeCapacity) string {
 // generateNodeCapacity generates a nodeCapacity struct from the resources of the local machine.
 // The cpu and mem factor is applied to all total resources before calculating further.
 func generateNodeCapacity(ctx context.Context, cpuFactor float64, memFactor float64) (*nodeCapacity, error) {
-
 	capacity := nodeCapacity{}
 
 	cpuCores, err := cpu.InfoWithContext(ctx)
@@ -82,7 +81,7 @@ func generateNodeCapacity(ctx context.Context, cpuFactor float64, memFactor floa
 		return nil, fmt.Errorf("failed to measure cpu load")
 	}
 	// cpu factor - cpu load * total cpu cores (e.g. (0.8 - 0.4) * 10 = 4 cores)
-	capacity.AvailableCpuCores = (cpuFactor - cpuLoad[0]) * float64(totalCpuCores)
+	capacity.AvailableCpuCores = (cpuFactor * 100 - cpuLoad[0]) / 100 * float64(totalCpuCores)
 
 	memUsage, err := mem.VirtualMemoryWithContext(ctx)
 	if err != nil {

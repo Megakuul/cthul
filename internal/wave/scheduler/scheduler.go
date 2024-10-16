@@ -42,8 +42,11 @@ type Scheduler struct {
 
 	localNode node
 
+	
 	leaderState     bool
 	leaderStateLock sync.RWMutex
+
+	cycleTTL int64
 }
 
 type node struct {
@@ -132,6 +135,18 @@ func (s *Scheduler) ServeAndDetach() {
 		wg.Wait()
 		s.finChan <- struct{}{}
 	}()
+}
+
+func (s *Scheduler) Nodes() {
+	ctx, cancel := context.WithCancel(s.workCtx)
+	defer cancel()
+
+	err := s.client.WatchRange(ctx, "/WAVE/SCHEDULER/NODE/", func(key, value string, err error) {
+
+	})
+	if err != nil {
+		s.logger.Crit("scheduler", "unrecoverable watch error occured: "+err.Error())
+	}
 }
 
 func (s *Scheduler) Terminate(ctx context.Context) error {

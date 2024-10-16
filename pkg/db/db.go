@@ -28,8 +28,9 @@ type Client interface {
 	Get(context.Context, string) (string, error)
 	// GetRange returns a map of kvs based on the provided prefix.
 	GetRange(context.Context, string) (map[string]string, error)
-	// Set upserts a kv with the specified ttl. If ttl is 0 the kv does not expire.
-	Set(context.Context, string, string, int64) error
+	// Set upserts a kv with the specified ttl and atomically returns the previous value.
+	// If ttl is 0 the kv does not expire. Returns "" if the previous key was empty OR didn't exist.
+	Set(context.Context, string, string, int64) (string, error)
 	// Delete removes a kv from the database.
 	Delete(context.Context, string) error
 	// DeleteRange removes all kvs from the database by prefix.

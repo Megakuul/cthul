@@ -173,7 +173,6 @@ func (e *ElectController) checkLeader() {
 	}
 	
 	err = e.client.Watch(ctx, e.contestKey, func(_, value string, err error) {
-		e.logger.Debug("elect_controller", "received new leader update: " + value)
 		if err!=nil {
 			e.logger.Err("elect_controller", err.Error())
 			return

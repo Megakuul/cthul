@@ -5,7 +5,7 @@ termination_ttl = 4 # ttl of the graceful termination process (seconds)
 
 [logging]
 level = "debug" # 'debug', 'info', 'warning', 'error', 'critical'
-trace = true # enable log traces (outputs file & line number)
+trace = false # enable log traces (outputs file & line number)
 buffer = 256 # runtime log buffer size (items NOT bytes)
 
 [db]
