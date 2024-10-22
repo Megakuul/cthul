@@ -47,6 +47,7 @@ type Scheduler struct {
 	leaderStateLock sync.RWMutex
 
 	cycleTTL int64
+	rescheduleCycles int64
 }
 
 type node struct {

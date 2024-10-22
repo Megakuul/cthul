@@ -29,6 +29,9 @@ mem_threshold = 95 # host memory resources that are taken into consideration for
 # thresholds can also be set higher then 100, however this should be done with caution, as the scheduler
 # will then move domains even if the host memory and cpu resources are exhausted.
 
+cycle_ttl = 2 # ttl for every scheduler cycle (essentially keepalive interval) (seconds)
+domain_reschedule_threshold = 2 # cycles that must evaluate a domain reschedule in a row before rescheduling
+
 [api]
 addr = "0.0.0.0:1870" # address the api listener is bound to (tcp)
 cert_file = "/etc/wave/cert/cert.pem" # file with public certificate chain (pem)

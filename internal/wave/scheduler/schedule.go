@@ -21,10 +21,11 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
 	"strconv"
+	"strings"
 	"time"
 )
-
 
 // startSchedulerCycle starts a scheduler cycle. This cycle executes periodically based next schedule stored
 // in the database. When starting a cycle, the scheduler updates this schedule with the current time + cycleTTL,
@@ -68,12 +69,14 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 
 		schedulerNodes, err := s.client.GetRange(s.workCtx, "/WAVE/SCHEDULER/NODE/")
 		if err!=nil {
-			panic("alarm")
+			s.logger.Err("scheduler", "failed to load scheduler nodes: " + err.Error())
+			continue
 		}
 		
 		domainNodes, err := s.client.GetRange(s.workCtx, "/WAVE/DOMAIN/NODE/")
 		if err!=nil {
 			s.logger.Err("scheduler", "failed to load domain nodes: " + err.Error())
+			continue
 		}
 
 		for domain, node := range domainNodes {
@@ -84,13 +87,128 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 			} else {
 				unmanagedDomains[domain] = 0
 			}
-		}
 
-		// TODO: Perform the re scheduling for domains with more then 1 retry (or config)
+			if unmanagedDomains[domain] >= int(s.rescheduleCycles) {
+				newNode, newCap, err := s.findNode(domain, schedulerNodes)
+				if err!=nil {
+					s.logger.Warn("scheduler", "skipping reschedule: " + err.Error())
+					continue
+				}
+				_, err = s.client.Set(s.workCtx, fmt.Sprintf("/WAVE/DOMAIN/NODE/%s", domain), newNode, 0)
+				if err!=nil {
+					s.logger.Err("scheduler", "failed to reschedule node: " + err.Error())
+					continue
+				}
+				schedulerNodes[newNode] = newCap
+			}
+		}
 	}
 }
 
+// findNode evaluates the optimal node to move the domain to.
+// Returns the node id and its assumed new capacity (guessed based on heuristics).
+func (s *Scheduler) findNode(ctx context.Context, domain string, nodes map[string]nodeResources) (string, *nodeResources, error) {
+	domainCpuStr, err := s.client.Get(ctx, fmt.Sprintf("/WAVE/DOMAIN/CPU/%s", domain))
+	if err != nil {
+		return "", nil, err
+	}
+	domainCpu, err := strconv.ParseFloat(domainCpuStr, 64)
+	if err!=nil {
+		return "", nil, fmt.Errorf("failed to parse domain cpu cores")
+	}
+	domainMemStr, err := s.client.Get(ctx, fmt.Sprintf("/WAVE/DOMAIN/MEM/%s", domain))
+	if err != nil {
+		return "", nil, err
+	}
+	domainMem, err := strconv.Atoi(domainMemStr)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to parse domain memory")
+	}
 
+	// constants define the usage factor that a domain is assumed to consume.
+	// this is a heuristic to "guess" how much cpu/mem the domain will actually consume on the cluster node.
+	// defaulting to 100% is a pretty dumb idea because most domains don't use 100% of their provisioned capacity.
+	const DOMAIN_CPU_USAGE_FACTOR_HEURISTIC = 0.3
+	const DOMAIN_MEM_USAGE_FACTOR_HEURISTIC = 0.6
+	
+	domainCpu = domainCpu * DOMAIN_CPU_USAGE_FACTOR_HEURISTIC
+	domainMem = int(float64(domainMem) * DOMAIN_MEM_USAGE_FACTOR_HEURISTIC)
+
+	// filter out nodes that currently do not provide enough available resources.
+	// This is done to prevent moving a domain to a node that has currently not sufficient capacity.
+	// For example if a high load cluster node failsover, instead of moving all domains at once to another
+	// available node, every cycle just moves the amount of nodes the currently fit within the current capacity.
+	availableNodes := map[string]nodeResources{}
+	for node, cap := range nodes {
+		if cap.AvailableCpuCores > domainCpu && cap.AvailableMemBytes > int64(domainMem) {
+			availableNodes[node] = cap
+		}
+	}
+	if len(availableNodes) < 1 {
+		return "", nil, fmt.Errorf("no cluster node provides sufficient available resources for this domain")
+	}
+
+	theChosenNode := ""
+	for node, cap := range availableNodes {
+		if chosen, ok := availableNodes[theChosenNode]; ok {
+
+		}
+	}
+	
+	return "", nil, nil
+}
+
+// indexDomainResources performs a full resource index of all domains in the cluster.
+// This operation is used to avoid high pressure on etcd; it only performs few lighweight range requests.
+// It returns a map with all nodes and their managed domains.
+func (s *Scheduler) indexDomainResources(ctx context.Context) (map[string]map[string]domainResources, error) {
+	domainNodes, err := s.client.GetRange(ctx, "/WAVE/DOMAIN/NODE/")
+	if err!=nil {
+		return nil, err
+	}
+
+	domainCpus, err := s.client.GetRange(ctx, "/WAVE/DOMAIN/CPU/")
+	if err!=nil {
+		return nil, err
+	}
+
+	domainMems, err := s.client.GetRange(ctx, "/WAVE/DOMAIN/MEM/")
+	if err!=nil {
+		return nil, err
+	}
+
+	indexMap := map[string]map[string]domainResources{}
+	for key, node := range domainNodes {
+		domain := strings.TrimPrefix("/WAVE/DOMAIN/NODE/", key)
+		if indexMap[node] == nil {
+			indexMap[node] = make(map[string]domainResources)
+		}
+		cpuCores, err := strconv.ParseFloat(domainCpus["/WAVE/DOMAIN/CPU/" + domain], 64)
+		if err!=nil {
+			s.logger.Warn("scheduler", fmt.Sprintf(
+				"failed to parse cpu for domain %s; using zero value...", domain,
+			))
+			cpuCores = 0
+		}
+		memBytes, err := strconv.Atoi(domainMems["/WAVE/DOMAIN/MEM/" + domain])
+		if err!=nil {
+			s.logger.Warn("scheduler", fmt.Sprintf(
+				"failed to parse memory for domain %s; using zero value...", domain,
+			))
+			memBytes = 0
+		}
+		resources, err := generateDomainResources(cpuCores, int64(memBytes))
+		if err!=nil {
+			s.logger.Warn("scheduler", fmt.Sprintf(
+				"failed to generate resources for domain %s; using zero values...", domain,
+			))
+			continue
+		}
+		indexMap[node][domain] = *resources
+	}
+
+	return indexMap, nil
+}
 
 // parseTime converts a unix timestamp (sec) as string to time.Time. Returns 01.01.1970 if it fails to parse.
 func parseTime(unixString string) time.Time {

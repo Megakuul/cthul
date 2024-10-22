@@ -44,7 +44,7 @@ func (s *Scheduler) registerNode() {
 		if localNodeCapacity!=nil {
 			ctx, cancel := context.WithTimeout(s.workCtx, time.Second*time.Duration(s.localNode.registerTTL))
 			defer cancel()
-			err := s.client.Set(ctx,
+			_, err := s.client.Set(ctx,
 				fmt.Sprintf("/WAVE/SCHEDULER/NODE/%s", s.localNode.id),
 				serializeNodeCapacity(localNodeCapacity),
 				(s.localNode.registerTTL * 2),

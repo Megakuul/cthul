@@ -244,7 +244,7 @@ func (e *ElectController) contestLeader() {
 		if e.leaderNode.Id != "" && e.leaderNode.Id == e.localNode.id {
 			ctx, cancel := context.WithTimeout(e.workCtx, time.Second * time.Duration(e.localNode.contestTTL))
 			defer cancel()
-			err := e.client.Set(ctx, e.contestKey,
+			_, err := e.client.Set(ctx, e.contestKey,
 				serializeClusterLeader(&e.leaderNode), (e.localNode.contestTTL * 2),
 			)
 			if err!=nil {
