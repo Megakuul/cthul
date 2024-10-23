@@ -25,6 +25,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"cthul.io/cthul/internal/wave/scheduler/resource"
 )
 
 // startSchedulerCycle starts a scheduler cycle. This cycle executes periodically based next schedule stored
@@ -37,6 +39,8 @@ import (
 // The schedulerCtx can be cancelled to stop the scheduler, this will stop the scheduler AFTER the current cycle.
 func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 	unmanagedDomains := map[string]int{}
+
+	resourceOperator := resource.NewResourceOperator(s.client, resource.WithLogger(s.logger))
 	
 	next, err := s.client.Get(schedulerCtx, "/WAVE/SCHEDULER/NEXT")
 	if err!=nil {
@@ -67,20 +71,25 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 			continue
 		}
 
-		schedulerNodes, err := s.client.GetRange(s.workCtx, "/WAVE/SCHEDULER/NODE/")
-		if err!=nil {
-			s.logger.Err("scheduler", "failed to load scheduler nodes: " + err.Error())
+		clusterNodeResources, err := resourceOperator.IndexNodeResources(s.workCtx, "/WAVE/SCHEDULER/NODE/")
+		if err!= nil {
+			s.logger.Err("scheduler", "failed to index scheduler nodes: " + err.Error())
 			continue
 		}
+		
+		// clusterDomainResources holds the full cluster domain resource information
+		// for performance reasons, this is lazy loaded only if a node must be rescheduled.
+		var clusterDomainResources map[string]map[string]resource.DomainResources = nil
 		
 		domainNodes, err := s.client.GetRange(s.workCtx, "/WAVE/DOMAIN/NODE/")
 		if err!=nil {
 			s.logger.Err("scheduler", "failed to load domain nodes: " + err.Error())
 			continue
 		}
-
-		for domain, node := range domainNodes {
-			_, ok := schedulerNodes[node]
+		
+		for key, node := range domainNodes {
+			domain := strings.TrimPrefix("/WAVE/DOMAIN/NODE/", key)
+			_, ok := clusterNodeResources[node]
 			if !ok {
 				retries := unmanagedDomains[domain]
 				unmanagedDomains[domain] = retries + 1
@@ -89,7 +98,17 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 			}
 
 			if unmanagedDomains[domain] >= int(s.rescheduleCycles) {
-				newNode, newCap, err := s.findNode(domain, schedulerNodes)
+				if clusterDomainResources == nil {
+					clusterDomainResources, err = resourceOperator.IndexDomainResources(s.workCtx, "/WAVE/DOMAIN")
+					if err!=nil {
+						s.logger.Err("scheduler", "failed to index cluster domain resources: " + err.Error())
+						continue
+					}
+				}
+				newNode, newNodeResources, err := s.findNode(s.workCtx, domain,
+					clusterNodeResources,
+					clusterDomainResources,
+				)
 				if err!=nil {
 					s.logger.Warn("scheduler", "skipping reschedule: " + err.Error())
 					continue
@@ -99,7 +118,7 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 					s.logger.Err("scheduler", "failed to reschedule node: " + err.Error())
 					continue
 				}
-				schedulerNodes[newNode] = newCap
+				clusterNodeResources[newNode] = *newNodeResources
 			}
 		}
 	}
@@ -107,24 +126,11 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 
 // findNode evaluates the optimal node to move the domain to.
 // Returns the node id and its assumed new capacity (guessed based on heuristics).
-func (s *Scheduler) findNode(ctx context.Context, domain string, nodes map[string]nodeResources) (string, *nodeResources, error) {
-	domainCpuStr, err := s.client.Get(ctx, fmt.Sprintf("/WAVE/DOMAIN/CPU/%s", domain))
-	if err != nil {
-		return "", nil, err
-	}
-	domainCpu, err := strconv.ParseFloat(domainCpuStr, 64)
-	if err!=nil {
-		return "", nil, fmt.Errorf("failed to parse domain cpu cores")
-	}
-	domainMemStr, err := s.client.Get(ctx, fmt.Sprintf("/WAVE/DOMAIN/MEM/%s", domain))
-	if err != nil {
-		return "", nil, err
-	}
-	domainMem, err := strconv.Atoi(domainMemStr)
-	if err != nil {
-		return "", nil, fmt.Errorf("failed to parse domain memory")
-	}
-
+func (s *Scheduler) findNode(ctx context.Context, domain string,
+	nodeResources map[string]resource.NodeResources,
+	domainResources map[string]map[string]resource.DomainResources,
+) (string, *resource.NodeResources, error) {
+	
 	// constants define the usage factor that a domain is assumed to consume.
 	// this is a heuristic to "guess" how much cpu/mem the domain will actually consume on the cluster node.
 	// defaulting to 100% is a pretty dumb idea because most domains don't use 100% of their provisioned capacity.
@@ -156,58 +162,6 @@ func (s *Scheduler) findNode(ctx context.Context, domain string, nodes map[strin
 	}
 	
 	return "", nil, nil
-}
-
-// indexDomainResources performs a full resource index of all domains in the cluster.
-// This operation is used to avoid high pressure on etcd; it only performs few lighweight range requests.
-// It returns a map with all nodes and their managed domains.
-func (s *Scheduler) indexDomainResources(ctx context.Context) (map[string]map[string]domainResources, error) {
-	domainNodes, err := s.client.GetRange(ctx, "/WAVE/DOMAIN/NODE/")
-	if err!=nil {
-		return nil, err
-	}
-
-	domainCpus, err := s.client.GetRange(ctx, "/WAVE/DOMAIN/CPU/")
-	if err!=nil {
-		return nil, err
-	}
-
-	domainMems, err := s.client.GetRange(ctx, "/WAVE/DOMAIN/MEM/")
-	if err!=nil {
-		return nil, err
-	}
-
-	indexMap := map[string]map[string]domainResources{}
-	for key, node := range domainNodes {
-		domain := strings.TrimPrefix("/WAVE/DOMAIN/NODE/", key)
-		if indexMap[node] == nil {
-			indexMap[node] = make(map[string]domainResources)
-		}
-		cpuCores, err := strconv.ParseFloat(domainCpus["/WAVE/DOMAIN/CPU/" + domain], 64)
-		if err!=nil {
-			s.logger.Warn("scheduler", fmt.Sprintf(
-				"failed to parse cpu for domain %s; using zero value...", domain,
-			))
-			cpuCores = 0
-		}
-		memBytes, err := strconv.Atoi(domainMems["/WAVE/DOMAIN/MEM/" + domain])
-		if err!=nil {
-			s.logger.Warn("scheduler", fmt.Sprintf(
-				"failed to parse memory for domain %s; using zero value...", domain,
-			))
-			memBytes = 0
-		}
-		resources, err := generateDomainResources(cpuCores, int64(memBytes))
-		if err!=nil {
-			s.logger.Warn("scheduler", fmt.Sprintf(
-				"failed to generate resources for domain %s; using zero values...", domain,
-			))
-			continue
-		}
-		indexMap[node][domain] = *resources
-	}
-
-	return indexMap, nil
 }
 
 // parseTime converts a unix timestamp (sec) as string to time.Time. Returns 01.01.1970 if it fails to parse.
