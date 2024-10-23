@@ -22,7 +22,6 @@ package scheduler
 import (
 	"context"
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -126,6 +125,9 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 					continue
 				}
 				clusterNodeResources[newNode] = *newNodeResources
+				if clusterDomainResources[newNode] != nil {
+					clusterDomainResources[newNode][domain] = *domainResources
+				}
 			}
 		}
 	}
@@ -145,8 +147,8 @@ func (s *Scheduler) findNode(ctx context.Context,
 	const DOMAIN_CPU_USAGE_FACTOR_HEURISTIC = 0.3
 	const DOMAIN_MEM_USAGE_FACTOR_HEURISTIC = 0.6
 	
-	domain.TotalCpuCores = domain.TotalCpuCores * DOMAIN_CPU_USAGE_FACTOR_HEURISTIC
-	domain.TotalMemBytes = int64(float64(domain.TotalMemBytes) * DOMAIN_MEM_USAGE_FACTOR_HEURISTIC)
+	assumedCpuUsage := domain.TotalCpuCores * DOMAIN_CPU_USAGE_FACTOR_HEURISTIC
+	assumedMemUsage := int64(float64(domain.TotalMemBytes) * DOMAIN_MEM_USAGE_FACTOR_HEURISTIC)
 
 	// filter out nodes that currently do not provide enough available resources.
 	// This is done to prevent moving a domain to a node that has currently not sufficient capacity.
@@ -154,7 +156,7 @@ func (s *Scheduler) findNode(ctx context.Context,
 	// available node, every cycle just moves the amount of nodes the currently fit within the current capacity.
 	availableNodes := map[string]resource.NodeResources{}
 	for node, resources := range clusterNodes {
-		if resources.AvailableCpuCores > domain.TotalCpuCores && resources.AvailableMemBytes > domain.TotalMemBytes {
+		if resources.AvailableCpuCores > assumedCpuUsage && resources.AvailableMemBytes > assumedMemUsage {
 			availableNodes[node] = resources
 		}
 	}
@@ -203,6 +205,8 @@ func (s *Scheduler) findNode(ctx context.Context,
 	}
 
 	chosenResources := availableNodes[chosenNode]
+	chosenResources.AvailableCpuCores -= assumedCpuUsage
+	chosenResources.AvailableMemBytes -= assumedMemUsage
 	return chosenNode, &chosenResources, nil
 }
 
