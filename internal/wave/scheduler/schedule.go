@@ -162,17 +162,23 @@ func (s *Scheduler) findNode(ctx context.Context,
 		return "", nil, fmt.Errorf("no cluster node provides sufficient available resources for this domain")
 	}
 
-	// variables define how much cpu/mem is required to obtain 1 rating point.
-	// The rating points are used to find the node with most cpu & mem resources available.
-	// This influences the algorithm to weight either cpu or mem stronger (based on the resource requirements of
-	// the domain)
+	// constants define what factor is applied to the resources to normalize them as rating points.
+	// this defines the relation between cpu cores and memory bytes which is set to 1 core = 1 gb = 1 point
+	const (
+		CPU_POINT_FACTOR = 1.0
+		MEM_POINT_FACTOR = 0.000000001
+	)
+
+	// variables define a weight for cpu/mem that is multiplied with the cpu/mem points.
+	// This influences the algorithm to weight either cpu or mem stronger, therefore it is set to the resource
+	// requirements of the domain (e.g. if domain has 8 cores and 2GB memory, the cpu weight is 8 and the mem 2)
 	var (
-		CPU_PER_POINT = float64(domain.TotalCpuCores)
-		MEM_PER_POINT = float64(domain.TotalMemBytes)
+		CPU_POINT_WEIGHT = float64(domain.TotalCpuCores) * CPU_POINT_FACTOR
+		MEM_POINT_WEIGHT = float64(domain.TotalMemBytes) * MEM_POINT_FACTOR
 	)
 
 	// search the node with the highest rating, rating points are calculated based on a simple formula:
-	// ((nodeTotalCpu - nodeAllocatedCpu) / CPU_PER_POINT) + ((nodeTotalMem - nodeAllocatedMem) / MEM_PER_POINT)
+	// ((nodeTotalCpu - nodeAllocatedCpu) * CPU_WEIGHT) + ((nodeTotalMem - nodeAllocatedMem) * MEM_WEIGHT)
 	// This finds the node that best fits the capacity of the domain in question.
 	chosenNode, chosenRating := "", 0.0
 	for node, nodeResources := range availableNodes {
@@ -185,19 +191,9 @@ func (s *Scheduler) findNode(ctx context.Context,
 			}
 		}
 
-		// rating points are calculated absolute, this is important because otherwise a negative rating
-		// is increased by the UNIT_PER_POINT factor instead of being decreased.
-		nodeRating := 0.0
-		if unallocatedCpu < 0 {
-			nodeRating -= math.Abs(unallocatedCpu) / CPU_PER_POINT
-		} else {
-			nodeRating += unallocatedCpu / CPU_PER_POINT
-		}
-		if unallocatedMem < 0 {
-			nodeRating -= math.Abs(float64(unallocatedMem)) / MEM_PER_POINT
-		} else {
-			nodeRating += float64(unallocatedMem) / MEM_PER_POINT
-		}
+		cpuRating := unallocatedCpu * CPU_POINT_FACTOR * CPU_POINT_WEIGHT
+		memRating := float64(unallocatedMem) * MEM_POINT_FACTOR * MEM_POINT_WEIGHT
+		nodeRating := cpuRating + memRating
 		
 		if chosenNode == "" {
 			chosenNode, chosenRating = node, nodeRating
