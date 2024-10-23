@@ -22,6 +22,7 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -161,11 +162,14 @@ func (s *Scheduler) findNode(ctx context.Context,
 		return "", nil, fmt.Errorf("no cluster node provides sufficient available resources for this domain")
 	}
 
-	// constants define how much cpu/mem is required to obtain 1 rating point.
+	// variables define how much cpu/mem is required to obtain 1 rating point.
 	// The rating points are used to find the node with most cpu & mem resources available.
-	// By tweaking the constants, either cpu or memory can be weighted stronger (1C/2GB is a good balance).
-	const CPU_PER_POINT = 1.0
-	const MEM_PER_POINT = 2000000000
+	// This influences the algorithm to weight either cpu or mem stronger (based on the resource requirements of
+	// the domain)
+	var (
+		CPU_PER_POINT = float64(domain.TotalCpuCores)
+		MEM_PER_POINT = float64(domain.TotalMemBytes)
+	)
 
 	// search the node with the highest rating, rating points are calculated based on a simple formula:
 	// ((nodeTotalCpu - nodeAllocatedCpu) / CPU_PER_POINT) + ((nodeTotalMem - nodeAllocatedMem) / MEM_PER_POINT)
@@ -181,7 +185,19 @@ func (s *Scheduler) findNode(ctx context.Context,
 			}
 		}
 
-		nodeRating := (unallocatedCpu / CPU_PER_POINT) + (float64(unallocatedMem) / MEM_PER_POINT)
+		// rating points are calculated absolute, this is important because otherwise a negative rating
+		// is increased by the UNIT_PER_POINT factor instead of being decreased.
+		nodeRating := 0.0
+		if unallocatedCpu < 0 {
+			nodeRating -= math.Abs(unallocatedCpu) / CPU_PER_POINT
+		} else {
+			nodeRating += unallocatedCpu / CPU_PER_POINT
+		}
+		if unallocatedMem < 0 {
+			nodeRating -= math.Abs(float64(unallocatedMem)) / MEM_PER_POINT
+		} else {
+			nodeRating += float64(unallocatedMem) / MEM_PER_POINT
+		}
 		
 		if chosenNode == "" {
 			chosenNode, chosenRating = node, nodeRating
