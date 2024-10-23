@@ -105,7 +105,13 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 						continue
 					}
 				}
-				newNode, newNodeResources, err := s.findNode(s.workCtx, domain,
+				domainResources, err := resourceOperator.GetDomainResources(s.workCtx, "/WAVE/DOMAIN", domain)
+				if err!=nil {
+					s.logger.Err("scheduler", "failed to read domain resources: " + err.Error())
+					continue
+				}
+				newNode, newNodeResources, err := s.findNode(s.workCtx,
+					*domainResources,
 					clusterNodeResources,
 					clusterDomainResources,
 				)
@@ -126,9 +132,10 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 
 // findNode evaluates the optimal node to move the domain to.
 // Returns the node id and its assumed new capacity (guessed based on heuristics).
-func (s *Scheduler) findNode(ctx context.Context, domain string,
-	nodeResources map[string]resource.NodeResources,
-	domainResources map[string]map[string]resource.DomainResources,
+func (s *Scheduler) findNode(ctx context.Context,
+	domain resource.DomainResources,
+	clusterNodes map[string]resource.NodeResources,
+	clusterDomains map[string]map[string]resource.DomainResources,
 ) (string, *resource.NodeResources, error) {
 	
 	// constants define the usage factor that a domain is assumed to consume.
@@ -137,32 +144,56 @@ func (s *Scheduler) findNode(ctx context.Context, domain string,
 	const DOMAIN_CPU_USAGE_FACTOR_HEURISTIC = 0.3
 	const DOMAIN_MEM_USAGE_FACTOR_HEURISTIC = 0.6
 	
-	domainCpu = domainCpu * DOMAIN_CPU_USAGE_FACTOR_HEURISTIC
-	domainMem = int(float64(domainMem) * DOMAIN_MEM_USAGE_FACTOR_HEURISTIC)
+	domain.TotalCpuCores = domain.TotalCpuCores * DOMAIN_CPU_USAGE_FACTOR_HEURISTIC
+	domain.TotalMemBytes = int64(float64(domain.TotalMemBytes) * DOMAIN_MEM_USAGE_FACTOR_HEURISTIC)
 
 	// filter out nodes that currently do not provide enough available resources.
 	// This is done to prevent moving a domain to a node that has currently not sufficient capacity.
 	// For example if a high load cluster node failsover, instead of moving all domains at once to another
 	// available node, every cycle just moves the amount of nodes the currently fit within the current capacity.
-	availableNodes := map[string]nodeResources{}
-	for node, cap := range nodes {
-		if cap.AvailableCpuCores > domainCpu && cap.AvailableMemBytes > int64(domainMem) {
-			availableNodes[node] = cap
+	availableNodes := map[string]resource.NodeResources{}
+	for node, resources := range clusterNodes {
+		if resources.AvailableCpuCores > domain.TotalCpuCores && resources.AvailableMemBytes > domain.TotalMemBytes {
+			availableNodes[node] = resources
 		}
 	}
 	if len(availableNodes) < 1 {
 		return "", nil, fmt.Errorf("no cluster node provides sufficient available resources for this domain")
 	}
 
-	theChosenNode := ""
-	for node, cap := range availableNodes {
-		if chosen, ok := availableNodes[theChosenNode]; ok {
+	// constants define how much cpu/mem is required to obtain 1 rating point.
+	// The rating points are used to find the node with most cpu & mem resources available.
+	// By tweaking the constants, either cpu or memory can be weighted stronger (1C/2GB is a good balance).
+	const CPU_PER_POINT = 1.0
+	const MEM_PER_POINT = 2000000000
 
+	// search the node with the highest rating, rating points are calculated based on a simple formula:
+	// ((nodeTotalCpu - nodeAllocatedCpu) / CPU_PER_POINT) + ((nodeTotalMem - nodeAllocatedMem) / MEM_PER_POINT)
+	// This finds the node that best fits the capacity of the domain in question.
+	chosenNode, chosenRating := "", 0.0
+	for node, nodeResources := range availableNodes {
+		unallocatedCpu := nodeResources.TotalCpuCores
+		unallocatedMem := nodeResources.TotalMemBytes
+		if nodeDomains, ok := clusterDomains[node]; ok {
+			for _, domainResources := range nodeDomains {
+				unallocatedCpu -= domainResources.TotalCpuCores
+				unallocatedMem -= domainResources.TotalMemBytes
+			}
+		}
+
+		nodeRating := (unallocatedCpu / CPU_PER_POINT) + (float64(unallocatedMem) / MEM_PER_POINT)
+		
+		if chosenNode == "" {
+			chosenNode, chosenRating = node, nodeRating
+		} else if chosenRating < nodeRating {
+			chosenNode, chosenRating = node, nodeRating
 		}
 	}
-	
-	return "", nil, nil
+
+	chosenResources := availableNodes[chosenNode]
+	return chosenNode, &chosenResources, nil
 }
+
 
 // parseTime converts a unix timestamp (sec) as string to time.Time. Returns 01.01.1970 if it fails to parse.
 func parseTime(unixString string) time.Time {
