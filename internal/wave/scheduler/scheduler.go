@@ -28,37 +28,46 @@ import (
 	"cthul.io/cthul/pkg/log/discard"
 )
 
+// Scheduler provides a component responsible for advertising the local node and its resources to the cluster.
+// If the scheduler is set as the leader scheduler, it indexes the advertised nodes and moves unmanaged domains
+// (domains located on nodes that are NOT advertised) to advertised nodes based on available resources.
 type Scheduler struct {
+	// root context runs until the scheduler is fully terminated.
 	rootCtx       context.Context
 	rootCtxCancel context.CancelFunc
 
+	// work context runs as long as the scheduler is operating.
+	// cancel it to initiate scheduler termination.
 	workCtx       context.Context
 	workCtxCancel context.CancelFunc
 
+	// finChan is used to send the absolute exist signal
+	// if the channel emits, this indicates that the controller is fully cleaned up.
 	finChan chan struct{}
 
 	client db.Client
 	logger log.Logger
 
-	localNode node
+	// leaderStateChan is used to emit the state of the leader.
+	leaderStateChan chan bool
 
-	
-	leaderState     bool
-	leaderStateLock sync.RWMutex
-
+	// cycleTTL specifies the interval for scheduler cycles.
 	cycleTTL int64
+	// rescheduleCycles specifies the number of cycles that a domain must be unmanaged
+	// in a row until it is rescheduled.
 	rescheduleCycles int64
-}
 
-type node struct {
-	id          string
+	// register paramters specify how the local node registers itself on the scheduler
+	// this happens independent of the leader state.
+	registerId string
 	registerTTL int64
-	cpuFactor   float64
-	memFactor   float64
+	registerCpuFactor float64
+	registerMemFactor float64
 }
 
 type SchedulerOption func(*Scheduler)
 
+// NewScheduler creates a new scheduler instance.
 func NewScheduler(client db.Client, opts ...SchedulerOption) *Scheduler {
 	rootCtx, rootCtxCancel := context.WithCancel(context.Background())
 	workCtx, workCtxCancel := context.WithCancel(rootCtx)
@@ -70,9 +79,13 @@ func NewScheduler(client db.Client, opts ...SchedulerOption) *Scheduler {
 		finChan:         make(chan struct{}),
 		client:          client,
 		logger:          discard.NewDiscardLogger(),
-		localNode:       node{id: "", registerTTL: 5, cpuFactor: 1, memFactor: 1},
-		leaderState:     false,
-		leaderStateLock: sync.RWMutex{},
+		leaderStateChan: make(chan bool),
+		cycleTTL: 5,
+		rescheduleCycles: 2,
+		registerId: "",
+		registerTTL: 5,
+		registerCpuFactor: 1,
+		registerMemFactor: 1,
 	}
 
 	for _, opt := range opts {
@@ -86,9 +99,9 @@ func NewScheduler(client db.Client, opts ...SchedulerOption) *Scheduler {
 func WithLocalNode(register bool, nodeId string) SchedulerOption {
 	return func(s *Scheduler) {
 		if register {
-			s.localNode.id = nodeId
+			s.registerId = nodeId
 		} else {
-			s.localNode.id = ""
+			s.registerId = ""
 		}
 	}
 }
@@ -96,7 +109,7 @@ func WithLocalNode(register bool, nodeId string) SchedulerOption {
 // WithRegisterTTL sets a custom ttl for the register cycle (essentially the keepalive interval).
 func WithRegisterTTL(registerTTL int64) SchedulerOption {
 	return func(s *Scheduler) {
-		s.localNode.registerTTL = registerTTL
+		s.registerTTL = registerTTL
 	}
 }
 
@@ -106,8 +119,8 @@ func WithRegisterTTL(registerTTL int64) SchedulerOption {
 // E.g. mem/cpuThreshold of 80 with 10 cores and 10GB memory converts to reported 8 cores and 8GB memory.
 func WithLocalResourceThreshold(cpuThreshold, memThreshold int64) SchedulerOption {
 	return func(s *Scheduler) {
-		s.localNode.cpuFactor = float64(cpuThreshold) / 100
-		s.localNode.memFactor = float64(memThreshold) / 100
+		s.registerCpuFactor = float64(cpuThreshold) / 100
+		s.registerMemFactor = float64(memThreshold) / 100
 	}
 }
 
@@ -118,12 +131,14 @@ func WithLogger(logger log.Logger) SchedulerOption {
 	}
 }
 
+
+// SetState changes the state of the scheduler. Emitting true enables the scheduler leader mode.
+// Emitting false disables the scheduler leader mode gracefully. This operation is idempotent.
 func (s *Scheduler) SetState(leader bool) {
-	s.leaderStateLock.Lock()
-	defer s.leaderStateLock.Unlock()
-	s.leaderState = leader
+	s.leaderStateChan <- leader
 }
 
+// ServeAndDetach starts the scheduler registration and the leader scheduler in a detached goroutine.
 func (s *Scheduler) ServeAndDetach() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -132,24 +147,48 @@ func (s *Scheduler) ServeAndDetach() {
 		s.registerNode()
 	}()
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		for {
+			select {
+			case <-s.workCtx.Done():
+				return
+			case leaderState := <-s.leaderStateChan:
+				if leaderState {
+					s.runSchedulerCycle()
+				}
+				break
+			}
+		}
+	}()
+
 	go func() {
 		wg.Wait()
 		s.finChan <- struct{}{}
 	}()
 }
 
-func (s *Scheduler) Nodes() {
-	ctx, cancel := context.WithCancel(s.workCtx)
-	defer cancel()
-
-	err := s.client.WatchRange(ctx, "/WAVE/SCHEDULER/NODE/", func(key, value string, err error) {
-
-	})
-	if err != nil {
-		s.logger.Crit("scheduler", "unrecoverable watch error occured: "+err.Error())
+// runSchedulerCycle starts a scheduler leader cycle and blocks until the leaderStateChan emits false.
+func (s *Scheduler) runSchedulerCycle() {
+	cycleCtx, cycleCtxCancel := context.WithCancel(s.workCtx)
+	defer cycleCtxCancel()
+	go s.startSchedulerCycle(cycleCtx)
+	for {
+		select {
+		case <-cycleCtx.Done():
+			return
+		case leaderState := <-s.leaderStateChan:
+			if !leaderState {
+				return
+			}
+		}
 	}
 }
 
+// Terminate shuts down the scheduler gracefully, if shutdown did not complete in the provided context window
+// the scheduler is terminated forcefully. Never returns an error (just there to match termination pattern).
 func (s *Scheduler) Terminate(ctx context.Context) error {
 	s.workCtxCancel()
 	defer s.rootCtxCancel()

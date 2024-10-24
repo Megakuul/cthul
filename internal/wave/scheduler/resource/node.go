@@ -111,13 +111,13 @@ func (r *ResourceOperator) GenerateNodeResources(ctx context.Context, cpuFactor 
 }
 
 // SetNodeResources sets the node resources for one single node.
-func (r *ResourceOperator) SetNodeResources(ctx context.Context, key string, resources *NodeResources) error {
+func (r *ResourceOperator) SetNodeResources(ctx context.Context, key string, ttl int64, resources *NodeResources) error {
 	nodeResourceStr, err := json.Marshal(resources)
 	if err != nil {
 		return fmt.Errorf("failed to serialize node resources")
 	}
 
-	_, err = r.client.Set(ctx, key, string(nodeResourceStr), 0)
+	_, err = r.client.Set(ctx, key, string(nodeResourceStr), ttl)
 	if err!=nil {
 		return err
 	}

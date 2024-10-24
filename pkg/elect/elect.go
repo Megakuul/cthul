@@ -251,6 +251,7 @@ func (e *ElectController) contestLeader() {
 				e.logger.Err("elect_controller", "failed to contest leader")
 			}
 		}
+		
 		e.leaderNodeLock.RUnlock()
 		select {
 		case <-time.After(time.Second * time.Duration(e.localNode.contestTTL)):

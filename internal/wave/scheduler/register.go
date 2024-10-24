@@ -20,34 +20,40 @@
 package scheduler
 
 import (
+	"context"
 	"fmt"
 	"time"
-	"context"
+
+	"cthul.io/cthul/internal/wave/scheduler/resource"
 )
 
 // registerNode registers the local node periodically in the scheduler space on the database.
 // As long as the node is registered, the scheduler assumes that it can move domains to the node.
 // On every cycle the node resource capacity is measured and reported to the scheduler.
 func (s *Scheduler) registerNode() {
-	if s.localNode.id=="" {
+	if s.registerId=="" {
 		s.logger.Info("scheduler", "local node will not be registered")
 		return
 	}
+
+	resourceOperator := resource.NewResourceOperator(s.client, resource.WithLogger(s.logger))
 	
 	for {
 		s.logger.Debug("scheduler", "measuring local node resource capacity...")
-		localNodeCapacity, err := generateNodeCapacity(s.workCtx, s.localNode.cpuFactor, s.localNode.memFactor)
+		nodeResources, err := resourceOperator.GenerateNodeResources(s.workCtx,
+			s.registerCpuFactor, s.registerMemFactor,
+		)
 		if err!=nil {
 			s.logger.Err("scheduler", err.Error())
 		}
 		
-		if localNodeCapacity!=nil {
-			ctx, cancel := context.WithTimeout(s.workCtx, time.Second*time.Duration(s.localNode.registerTTL))
+		if nodeResources!=nil {
+			ctx, cancel := context.WithTimeout(s.workCtx, time.Second*time.Duration(s.registerTTL))
 			defer cancel()
-			_, err := s.client.Set(ctx,
-				fmt.Sprintf("/WAVE/SCHEDULER/NODE/%s", s.localNode.id),
-				serializeNodeCapacity(localNodeCapacity),
-				(s.localNode.registerTTL * 2),
+			err := resourceOperator.SetNodeResources(ctx,
+				fmt.Sprintf("/WAVE/SCHEDULER/NODE/%s", s.registerId),
+				(s.registerTTL * 2),
+				nodeResources,
 			)
 			if err != nil {
 				s.logger.Err("scheduler", "failed to register node")
@@ -55,10 +61,10 @@ func (s *Scheduler) registerNode() {
 		}
 
 		select {
-		case <-time.After(time.Second*time.Duration(s.localNode.registerTTL)):
+		case <-time.After(time.Second*time.Duration(s.registerTTL)):
 			break
 		case <-s.workCtx.Done():
-			err := s.client.Delete(s.rootCtx, fmt.Sprintf("/WAVE/SCHEDULER/NODE/%s", s.localNode.id))
+			err := s.client.Delete(s.rootCtx, fmt.Sprintf("/WAVE/SCHEDULER/NODE/%s", s.registerId))
 			if err != nil {
 				s.logger.Err("scheduler", "failed to unregister node before termination")
 			}
