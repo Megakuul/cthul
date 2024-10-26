@@ -17,35 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package elect
+package domain
 
-import (
-	"encoding/json"
-	"fmt"
-)
+type Snapshot struct {
 
-// clusterLeader contains information about a cluster leader node.
-type clusterLeader struct {
-	Id   string `json:"id"`
-	Cash int64  `json:"cash"`
-}
-
-// parseClusterLeader parses the leader string into a cluster leader.
-func parseClusterLeader(leaderStr string) (*clusterLeader, error) {
-	leader := clusterLeader{}
-	err := json.Unmarshal([]byte(leaderStr), &leader)
-	if err != nil {
-		return nil, fmt.Errorf("cannot parse node information")
-	}
-
-	return &leader, nil
-}
-
-// serializeClusterLeader serializes the cluster leader into a string.
-func serializeClusterLeader(leader *clusterLeader) string {
-	leaderStr, err := json.Marshal(leader)
-	if err != nil {
-		return ""
-	}
-	return string(leaderStr)
 }

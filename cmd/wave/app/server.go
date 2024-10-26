@@ -92,14 +92,6 @@ func Run(config *BaseConfig) error {
 		cancel()
 	}
 
-	electController := elect.NewElectController(dbClient, "/WAVE/LEADER",
-		elect.WithLocalLeader(config.Election.Contest, config.NodeId, config.Election.Cash),
-		elect.WithContestTTL(config.Election.ContestTTL),
-		elect.WithLogger(coreLogger),
-	)
-	electController.ServeAndDetach()
-	terminationManager.AddHook(electController.Terminate)
-
 	scheduler := scheduler.NewScheduler(dbClient,
 		scheduler.WithLocalNode(config.Scheduler.Register, config.NodeId),
 		scheduler.WithLocalResourceThreshold(config.Scheduler.CpuThreshold, config.Scheduler.MemThreshold),
@@ -108,7 +100,7 @@ func Run(config *BaseConfig) error {
 	)
 	scheduler.ServeAndDetach()
 	terminationManager.AddHook(scheduler.Terminate)
-	
+
 	apiCertificate, err := tls.LoadX509KeyPair(config.Api.CertFile, config.Api.KeyFile)
 	if err!=nil {
 		return err
@@ -122,6 +114,16 @@ func Run(config *BaseConfig) error {
 		return err
 	}
 	terminationManager.AddHook(apiEndpoint.Terminate)
+
+	electController := elect.NewElectController(dbClient, "/WAVE/LEADER",
+		elect.WithLocalLeader(config.Election.Contest, config.NodeId, config.Election.Cash),
+		elect.WithContestTTL(config.Election.ContestTTL),
+		elect.WithContestHooks(scheduler.SetLeaderState, apiEndpoint.SetLeaderState),
+		elect.WithLogger(coreLogger),
+	)
+	electController.ServeAndDetach()
+	terminationManager.AddHook(electController.Terminate)
+	
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)

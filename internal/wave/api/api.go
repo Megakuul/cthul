@@ -5,9 +5,10 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"net/http"
-	"time"
 	golog "log"
+	"net/http"
+	"sync"
+	"time"
 
 	"connectrpc.com/connect"
 	"cthul.io/cthul/pkg/api/wave/v1"

@@ -132,10 +132,14 @@ func WithLogger(logger log.Logger) SchedulerOption {
 }
 
 
-// SetState changes the state of the scheduler. Emitting true enables the scheduler leader mode.
-// Emitting false disables the scheduler leader mode gracefully. This operation is idempotent.
-func (s *Scheduler) SetState(leader bool) {
-	s.leaderStateChan <- leader
+// SetLeaderState changes the state of the schedule leader. Local set to true enables the scheduler leader mode.
+// Setting it to false disables the scheduler leader mode gracefully. This operation is idempotent.
+// Currently the leader id (first param) is unused, it is in place for future expansion.
+func (s *Scheduler) SetLeaderState(_ string, local bool) {
+	select {
+	case <-s.workCtx.Done():
+	case s.leaderStateChan <- local:
+	}
 }
 
 // ServeAndDetach starts the scheduler registration and the leader scheduler in a detached goroutine.
@@ -159,7 +163,6 @@ func (s *Scheduler) ServeAndDetach() {
 				if leaderState {
 					s.runSchedulerCycle()
 				}
-				break
 			}
 		}
 	}()
