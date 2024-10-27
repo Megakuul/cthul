@@ -28,27 +28,56 @@ type Domain struct {
 	Name string
 	Title string
 	Description string
-	
-	BootConfig BootConfig
+
 	ResourceConfig ResourceConfig
-}
-
-type BootConfig struct {
-	SecureBoot bool
-	BootDevices []BootDevice
-}
-
-const (
-	BOOT_DEVICE_HD = "hd"
-	BOOT_DEVICE_CD = "cd"
-	BOOT_DEVICE_NETWORK = "network"
-)
-
-type BootDevice struct {
-	Type string
+	BootConfig BootConfig
+	BlockDevices []BlockDevice
+	NetworkDevices []NetworkDevice
+	SerialDevices []SerialDevice
+	GraphicDevices []GraphicDevice
+	PCIDevices []PCIDevice
+	USBDevices []USBDevice
 }
 
 type ResourceConfig struct {
 	VCPUs int64
 	Memory int64
+}
+
+type BOOT_OPTION string
+const (
+	BOOT_HD BOOT_OPTION = "cthul::boot::hd"
+	BOOT_CD BOOT_OPTION = "cthul::boot::cd"
+	BOOT_NETWORK BOOT_OPTION = "cthul::boot::network"
+)
+
+type BootConfig struct {
+	SecureBoot bool
+	BootOptions []BOOT_OPTION
+}
+
+type BlockDevice struct {
+	GranitId string
+	Virtio bool
+}
+
+type NetworkDevice struct {
+	ProtonId string
+	Virtio bool
+}
+
+type SerialDevice struct {
+	
+}
+
+type GraphicDevice struct {
+	
+}
+
+type PCIDevice struct {
+
+}
+
+type USBDevice struct {
+	
 }
