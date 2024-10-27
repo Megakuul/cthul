@@ -19,65 +19,56 @@
 
 package domain
 
-
 // Domain represents a cthul domain. This format is used by the underlying domain controller
 // to build up the vendor specific config (e.g. libvirt xml).
 // Struct is annotated with json, yaml, and toml for easy external serialization/deserialization.
 type Domain struct {
-	UUID string
-	Name string
-	Title string
-	Description string
+	UUID        string `json:"uuid" yaml:"uuid" toml:"uuid"`
+	Name        string `json:"name" yaml:"name" toml:"name"`
+	Title       string `json:"title" yaml:"title" toml:"title"`
+	Description string `json:"description" yaml:"description" toml:"description"`
 
-	ResourceConfig ResourceConfig
-	BootConfig BootConfig
-	BlockDevices []BlockDevice
-	NetworkDevices []NetworkDevice
-	SerialDevices []SerialDevice
-	GraphicDevices []GraphicDevice
-	PCIDevices []PCIDevice
-	USBDevices []USBDevice
+	ResourceConfig ResourceConfig `json:"resource_config" yaml:"resource_config" toml:"resource_config"`
+	BootConfig     BootConfig     `json:"boot_config" yaml:"boot_config" toml:"boot_config"`
+
+	BlockDevices   []BlockDevice   `json:"block_devices" yaml:"block_devices" toml:"block_devices"`
+	NetworkDevices []NetworkDevice `json:"network_devices" yaml:"network_devices" toml:"network_devices"`
+	SerialDevices  []SerialDevice  `json:"serial_devices" yaml:"serial_devices" toml:"serial_devices"`
+	GraphicDevices []GraphicDevice `json:"graphic_devices" yaml:"graphic_devices" toml:"graphic_devices"`
 }
 
 type ResourceConfig struct {
-	VCPUs int64
-	Memory int64
+	VCPUs  int64 `json:"vcpus" yaml:"vcpus" toml:"vcpus"`
+	Memory int64 `json:"memory" yaml:"memory" toml:"memory"`
 }
 
 type BOOT_OPTION string
+
 const (
-	BOOT_HD BOOT_OPTION = "cthul::boot::hd"
-	BOOT_CD BOOT_OPTION = "cthul::boot::cd"
+	BOOT_HD      BOOT_OPTION = "cthul::boot::hd"
+	BOOT_CD      BOOT_OPTION = "cthul::boot::cd"
 	BOOT_NETWORK BOOT_OPTION = "cthul::boot::network"
 )
 
 type BootConfig struct {
-	SecureBoot bool
-	BootOptions []BOOT_OPTION
+	SecureBoot  bool          `json:"secure_boot" yaml:"secure_boot" toml:"secure_boot"`
+	BootOptions []BOOT_OPTION `json:"boot_options" yaml:"boot_options" toml:"boot_options"`
 }
 
 type BlockDevice struct {
-	GranitId string
-	Virtio bool
+	GranitBlockDeviceId string `json:"device_id" yaml:"device_id" toml:"device_id"`
+	Virtio              bool   `json:"virtio" yaml:"virtio" toml:"virtio"`
 }
 
 type NetworkDevice struct {
-	ProtonId string
-	Virtio bool
+	ProtonNetworkDeviceId string `json:"device_id" yaml:"device_id" toml:"device_id"`
+	Virtio                bool   `json:"virtio" yaml:"virtio" toml:"virtio"`
 }
 
 type SerialDevice struct {
-	
+	WaveSerialDeviceId string `json:"device_id" yaml:"device_id" toml:"device_id"`
 }
 
 type GraphicDevice struct {
-	
-}
-
-type PCIDevice struct {
-
-}
-
-type USBDevice struct {
-	
+	WaveGraphicDeviceId string `json:"device_id" yaml:"device_id" toml:"device_id"`
 }
