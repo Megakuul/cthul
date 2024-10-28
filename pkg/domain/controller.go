@@ -30,18 +30,18 @@ type DomainController interface {
 	// Destroy removes a domain from the local machine. The domain is identified by uuid. Operation is idempotent.
 	Destroy(context.Context, string) error
 
-	// Start starts the domain. Operation is idempotent.
-	Start(context.Context, string) error
+	// Start starts the domain.
+	Start(string) error
 	// Reboot reboots the domain if in running state.
-	Reboot(context.Context, string) error
-	// Pause freezes the domain state if in running state. Operation is idempotent.
-	Pause(context.Context, string) error
-	// Resume unfreezes the domain state if in paused state. Operation is idempotent.
-	Resume(context.Context, string) error
-	// Shutdown stops the domain gracefully. Operation is idempotent.
-	Shutdown(context.Context, string) error
-	// Kill stops the domain forcefully. Operation is idempotent.
-	Kill(context.Context, string) error
+	Reboot(string) error
+	// Pause freezes the domain state if in running state.
+	Pause(string) error
+	// Resume unfreezes the domain state if in paused state.
+	Resume(string) error
+	// Shutdown stops the domain gracefully.
+	Shutdown(string) error
+	// Kill stops the domain forcefully.
+	Kill(string) error
 
 	// CreateSnapshot creates a domain snapshot based on the specified config.
 	CreateSnapshot(context.Context, Snapshot) error

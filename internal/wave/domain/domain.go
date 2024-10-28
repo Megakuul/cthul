@@ -48,5 +48,5 @@ func NewDomainController(opts ...DomainControllerOption) *DomainController {
 func (d *DomainController) ServeAndDetach() error {
 	uri, _ := url.Parse(string(libvirt.QEMUSystem))
 	l, err := libvirt.ConnectToURI(uri)
-	l.
+	
 }

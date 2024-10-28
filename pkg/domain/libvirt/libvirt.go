@@ -20,7 +20,11 @@
 package libvirt
 
 import (
+	"context"
+	"encoding/hex"
+	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/digitalocean/go-libvirt"
 )
@@ -33,7 +37,7 @@ type LibvirtControllerOption func(*LibvirtController)
 
 func NewLibvirtController(opts ...LibvirtControllerOption) *LibvirtController {
 	controller := &LibvirtController{
-
+		client: nil,
 	}
 
 	for _, opt := range opts {
@@ -55,5 +59,32 @@ func (l *LibvirtController) initClient() error {
 		return err
 	}
 	l.client = client
+	return nil
+}
+
+// parseUUID tries to convert a uuid string (either with or without hyphens) into a libvirt.UUID.
+func (l *LibvirtController) parseUUID(id string) (libvirt.UUID, error) {
+	rawStr := strings.ReplaceAll(id, "-", "")
+	if len(rawStr) != 2 * libvirt.UUIDBuflen {
+		return [libvirt.UUIDBuflen]byte{}, fmt.Errorf(
+			"failed to parse uuid: expected %d characters", libvirt.UUIDBuflen,
+		)
+	}
+
+	uuidBuffer, err := hex.DecodeString(rawStr)
+	if err!=nil {
+		return [libvirt.UUIDBuflen]byte{}, fmt.Errorf("failed to parse uuid: cannot hex decode id")
+	}
+	uuid := [libvirt.UUIDBuflen]byte{}
+	copy(uuid[:], uuidBuffer)
+	return uuid, nil
+}
+
+// Terminate stops and closes the libvirt controller.
+// The context is currently not utilized due to the lack of context handling in the underlying libvirt library.
+func (l* LibvirtController) Terminate(ctx context.Context) error {
+	if l.client != nil {
+		return l.client.Disconnect()
+	}
 	return nil
 }
