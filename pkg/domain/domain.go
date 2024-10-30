@@ -19,56 +19,59 @@
 
 package domain
 
-// Domain represents a cthul domain. This format is used by the underlying domain controller
-// to build up the vendor specific config (e.g. libvirt xml).
-// Struct is annotated with json, yaml, and toml for easy external serialization/deserialization.
-type Domain struct {
-	UUID        string `json:"uuid" yaml:"uuid" toml:"uuid"`
-	Name        string `json:"name" yaml:"name" toml:"name"`
-	Title       string `json:"title" yaml:"title" toml:"title"`
-	Description string `json:"description" yaml:"description" toml:"description"`
+import (
+	"context"
 
-	ResourceConfig ResourceConfig `json:"resource_config" yaml:"resource_config" toml:"resource_config"`
-	BootConfig     BootConfig     `json:"boot_config" yaml:"boot_config" toml:"boot_config"`
-
-	BlockDevices   []BlockDevice   `json:"block_devices" yaml:"block_devices" toml:"block_devices"`
-	NetworkDevices []NetworkDevice `json:"network_devices" yaml:"network_devices" toml:"network_devices"`
-	SerialDevices  []SerialDevice  `json:"serial_devices" yaml:"serial_devices" toml:"serial_devices"`
-	GraphicDevices []GraphicDevice `json:"graphic_devices" yaml:"graphic_devices" toml:"graphic_devices"`
-}
-
-type ResourceConfig struct {
-	VCPUs  int64 `json:"vcpus" yaml:"vcpus" toml:"vcpus"`
-	Memory int64 `json:"memory" yaml:"memory" toml:"memory"`
-}
-
-type BOOT_OPTION string
-
-const (
-	BOOT_HD      BOOT_OPTION = "cthul::boot::hd"
-	BOOT_CD      BOOT_OPTION = "cthul::boot::cd"
-	BOOT_NETWORK BOOT_OPTION = "cthul::boot::network"
+	"cthul.io/cthul/pkg/domain/structure"
 )
 
-type BootConfig struct {
-	SecureBoot  bool          `json:"secure_boot" yaml:"secure_boot" toml:"secure_boot"`
-	BootOptions []BOOT_OPTION `json:"boot_options" yaml:"boot_options" toml:"boot_options"`
+// DomainController provides a domain abstraction layer.
+// It ensures that the underlying domain (vm) system can be replaced without much effort (even if not planned).
+type DomainController interface {
+	// List returns a list with uuids from all domains on the host.
+	ListDomains(context.Context) ([]string, error)
+	// Apply updates the domain to the specified state. Updates that can be hotplugged are hotplugged, other
+	// updates are applied at next reboot. Operation is idempotent.
+	ApplyDomain(context.Context, structure.Domain) error
+	// Destroy removes a domain from the local machine. Operation is idempotent.
+	DestroyDomain(context.Context, structure.Domain) error
+	// Start starts the domain.
+	StartDomain(context.Context, string) error
+	// Reboot reboots the domain if in running state.
+	RebootDomain(context.Context, string) error
+	// Pause freezes the domain state if in running state.
+	PauseDomain(context.Context, string) error
+	// Resume unfreezes the domain state if in paused state.
+	ResumeDomain(context.Context, string) error
+	// Shutdown stops the domain gracefully.
+	ShutdownDomain(context.Context, string) error
+	// Kill stops the domain forcefully.
+	KillDomain(context.Context, string) error
+
+	// CreateSnapshot creates a domain snapshot based on the specified config.
+	CreateSnapshot(context.Context, structure.Snapshot) error
+	// RevertSnapshot reverts the domain to a previous snapshot. The snapshot is identified by uuid.
+	RevertSnapshot(context.Context, string) error
+	// ConsolidateSnapshot consolidates the specified snapshots into the base image.
+	// The snapshot is identified by uuid. Operation is idempotent.
+	ConsolidateSnapshot(context.Context, string) error
+
+	// GetTextConsole starts a tty console session to the domain. Returns a send and recv channel, closing both
+	// channels deallocates the session. Data is transfered in raw tty chunks and must be handled manually.
+	GetTextConsole(context.Context, string) (chan<-[]byte, <-chan []byte, error)
+	// GetSpiceConsole starts a spice session to the domain. Returns a send and recv channel, closing both
+	// channels deallocates the session. Data is transfered in raw spice chunks and must be handled manually.
+	GetSpiceConsole(context.Context, string) (chan<-[]byte, <-chan []byte, error)
+
+	// GetDomainStats fetches overall domain stats. The domain is identified by uuid.
+	GetDomainStats(context.Context, string) (*structure.DomainStats, error)
+	// GetCpuStats fetches cpu stats of the domain. The domain is identified by uuid.
+	GetCpuStats(context.Context, string) (*structure.CpuStats, error)
+	// GetMemoryStats fetches memory stats of the domain. The domain is identified by uuid.
+	GetMemoryStats(context.Context, string) (*structure.MemoryStats, error)
+	// GetInterfaceStats fetches interface stats of the domain. The domain is identified by uuid.
+	GetInterfaceStats(context.Context, string) (*structure.InterfaceStats, error)
+	// GetBlockStats fetches block device stats of the domain. The domain is identified by uuid.
+	GetBlockStats(context.Context, string) (*structure.BlockStats, error)
 }
 
-type BlockDevice struct {
-	GranitBlockDeviceId string `json:"device_id" yaml:"device_id" toml:"device_id"`
-	Virtio              bool   `json:"virtio" yaml:"virtio" toml:"virtio"`
-}
-
-type NetworkDevice struct {
-	ProtonNetworkDeviceId string `json:"device_id" yaml:"device_id" toml:"device_id"`
-	Virtio                bool   `json:"virtio" yaml:"virtio" toml:"virtio"`
-}
-
-type SerialDevice struct {
-	WaveSerialDeviceId string `json:"device_id" yaml:"device_id" toml:"device_id"`
-}
-
-type GraphicDevice struct {
-	WaveGraphicDeviceId string `json:"device_id" yaml:"device_id" toml:"device_id"`
-}

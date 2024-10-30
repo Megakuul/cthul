@@ -17,8 +17,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package domain
+package structure
 
-type Snapshot struct {
+type GRAPHICS_TYPE string
+const (
+	SPICE GRAPHICS_TYPE = "spice"
+)
 
+type Graphics struct {
+	MetaType GRAPHICS_TYPE `xml:"type,attr,omitempty"`
+	Listen *GraphicsListen `xml:"listen,omitempty"`
+}
+
+type GRAPHICS_LISTEN_TYPE string
+const (
+	SOCKET GRAPHICS_LISTEN_TYPE = "socket"
+)
+
+type GraphicsListen struct {
+	MetaType GRAPHICS_LISTEN_TYPE `xml:"type,attr,omitempty"`
+	MetaPath string `xml:"path,attr,omitempty"`
 }

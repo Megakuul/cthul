@@ -26,18 +26,26 @@ import (
 	"net/url"
 	"strings"
 
+	"cthul.io/cthul/pkg/domain/libvirt/generator"
+	"cthul.io/cthul/pkg/log"
+	"cthul.io/cthul/pkg/log/discard"
 	"github.com/digitalocean/go-libvirt"
 )
 
 type LibvirtController struct {
 	client *libvirt.Libvirt
+	logger log.Logger
+
+	generator *generator.LibvirtGenerator
 }
 
 type LibvirtControllerOption func(*LibvirtController)
 
-func NewLibvirtController(opts ...LibvirtControllerOption) *LibvirtController {
+func NewLibvirtController(generator *generator.LibvirtGenerator, opts ...LibvirtControllerOption) *LibvirtController {
 	controller := &LibvirtController{
 		client: nil,
+		logger: discard.NewDiscardLogger(),
+		generator: generator,
 	}
 
 	for _, opt := range opts {
@@ -47,6 +55,12 @@ func NewLibvirtController(opts ...LibvirtControllerOption) *LibvirtController {
 	return controller
 }
 
+// WithLogger adds a logger to the libvirt controller.
+func WithLogger(logger log.Logger) LibvirtControllerOption {
+	return func (l *LibvirtController) {
+		l.logger = logger
+	}
+}
 
 // initClient creates the underlying libvirt connection client if not already initialized.
 func (l *LibvirtController) initClient() error {
@@ -78,6 +92,18 @@ func (l *LibvirtController) parseUUID(id string) (libvirt.UUID, error) {
 	uuid := [libvirt.UUIDBuflen]byte{}
 	copy(uuid[:], uuidBuffer)
 	return uuid, nil
+}
+
+// serializeUUID converts a libvirt uuid into a uuid string with hyphens.
+func (l *LibvirtController) serializeUUID(uuid libvirt.UUID) (string, error) {
+	uuidStr := hex.EncodeToString(uuid[:])
+	if len(uuidStr) != 32 {
+		return "", fmt.Errorf("failed to serialize uuid: expected encoded hex string with %d characters", 32)
+	}
+	return fmt.Sprintf(
+		"%s-%s-%s-%s-%s",
+		uuidStr[:8], uuidStr[8:12], uuidStr[12:16], uuidStr[16:20], uuidStr[20:32],
+	), nil
 }
 
 // Terminate stops and closes the libvirt controller.

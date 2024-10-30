@@ -17,24 +17,35 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package domain
+package libvirt
 
-type DomainStats struct {
-	
+import (
+	"context"
+	"fmt"
+
+	"cthul.io/cthul/pkg/domain/structure"
+)
+
+func (l *LibvirtController) CreateSnapshot(ctx context.Context, snapshot structure.Snapshot) error {
+	err := l.initClient()
+	if err!=nil {
+		return err
+	}
+	return fmt.Errorf("not implemented")
 }
 
-type CpuStats struct {
-	
+func (l *LibvirtController) RevertSnapshot(ctx context.Context, id string) error {
+	err := l.initClient()
+	if err!=nil {
+		return err
+	}
+	return fmt.Errorf("not implemented")
 }
 
-type MemoryStats struct {
-	
-}
-
-type InterfaceStats struct {
-	
-}
-
-type BlockStats struct {
-	
+func (l *LibvirtController) ConsolidateSnapshot(ctx context.Context, id string) error {
+	err := l.initClient()
+	if err!=nil {
+		return err
+	}
+	return fmt.Errorf("not implemented")
 }
