@@ -17,11 +17,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package libvirt
+package structure
 
+type SERIAL_TYPE string
+const (
+	UNIX SERIAL_TYPE = "unix"
+)
 
-// Serial ports will be bound to a sock, but that sock is provisioned and managed by a wave device.
-// <serial type="unix">
-//   <source mode="bind" path="/tmp/vm-serial.sock"/>
-//   <target port="0"/>
-// </serial>
+type Serial struct {
+	MetaType SERIAL_TYPE `xml:"type,attr,omitempty"`
+	Source *SerialSource `xml:"source,omitempty"`
+	Target *SerialTarget `xml:"target,omitempty"`
+}
+
+type SERIAL_SOURCE_MODE string
+const (
+	BIND SERIAL_SOURCE_MODE = "bind"
+)
+
+type SerialSource struct {
+	MetaMode SERIAL_SOURCE_MODE `xml:"mode,attr,omitempty"`
+	MetaPath string `xml:"path,attr,omitempty"`
+}
+
+type SerialTarget struct {
+	MetaPort int64 `xml:"port,attr,omitempty"`
+}
