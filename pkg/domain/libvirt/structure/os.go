@@ -20,53 +20,57 @@
 package structure
 
 type OS struct {
-	Type *OSType `xml:"type,omitempty"`
+	Type   *OSType   `xml:"type,omitempty"`
 	Loader *OSLoader `xml:"loader,omitempty"`
-	Nvram *OSNvram `xml:"nvram,omitempty"`
-	Nvrams *OSNvram `xml:"nvrams,omitempty"`
+	Nvram  *OSNvram  `xml:"nvram,omitempty"`
+	Nvrams *OSNvram  `xml:"nvrams,omitempty"`
 }
 
 type OS_ARCH string
+
 const (
-	X86_64 OS_ARCH = "x86_64"
+	X86_64  OS_ARCH = "x86_64"
 	AARCH64 OS_ARCH = "aarch64"
 )
 
 type OS_CHIPSET string
+
 const (
 	I440FX OS_CHIPSET = "pc"
-	Q35 OS_CHIPSET = "q35"
-	VIRT OS_CHIPSET = "virt"
+	Q35    OS_CHIPSET = "q35"
+	VIRT   OS_CHIPSET = "virt"
 )
 
 type OSType struct {
-	Arch OS_ARCH `xml:"arch,attr,omitempty"`
+	Arch    OS_ARCH    `xml:"arch,attr,omitempty"`
 	Machine OS_CHIPSET `xml:"machine,attr,omitempty"`
-	Data string `xml:",charset"`
+	Data    string     `xml:",charset"`
 }
 
 type OS_LOADER_TYPE string
+
 const (
 	SEABIOS OS_LOADER_TYPE = "seabios"
-	OVMF OS_CHIPSET = "pflash"
+	OVMF    OS_CHIPSET     = "pflash"
 )
 
 type OSLoader struct {
-	MetaReadonly bool `xml:"readonly,attr,omitempty"`
-	MetaSecure bool `xml:"secure,attr,omitempty"`
-	MetaType OS_LOADER_TYPE `xml:"type,attr,omitempty"`
-	Data string `xml:",charset"`
+	MetaReadonly bool           `xml:"readonly,attr,omitempty"`
+	MetaSecure   bool           `xml:"secure,attr,omitempty"`
+	MetaType     OS_LOADER_TYPE `xml:"type,attr,omitempty"`
+	Data         string         `xml:",charset"`
 }
 
 type OS_NVRAM_TYPE string
+
 const (
 	FILE OS_NVRAM_TYPE = "file"
 )
 
 type OSNvram struct {
-	MetaType OS_NVRAM_TYPE `xml:"type,attr,omitempty"`
-	MetaTemplate string `xml:"template,attr,omitempty"`
-	Source OSNvramSource `xml:"source"`
+	MetaType     OS_NVRAM_TYPE `xml:"type,attr,omitempty"`
+	MetaTemplate string        `xml:"template,attr,omitempty"`
+	Source       OSNvramSource `xml:"source"`
 }
 
 type OSNvramSource struct {

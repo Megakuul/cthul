@@ -17,18 +17,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package structure
+package device
 
-type Video struct {
-	Model *VideoModel `xml:"model,omitempty"`
+import "cthul.io/cthul/pkg/db"
+
+// DeviceController provides a controller interface for the granit device operator.
+// It provides operations to request, manage and release granit devices.
+type DeviceController struct {
+	client db.Client
 }
 
-type VIDEO_MODEL_TYPE string
+type DeviceControllerOption func(*DeviceController)
 
-const (
-	QX1 VIDEO_MODEL_TYPE = "qx1"
-)
+func NewDeviceController(client db.Client, opts ...DeviceControllerOption) *DeviceController {
+	controller := &DeviceController{
+		client: client,
+	}
 
-type VideoModel struct {
-	MetaType VIDEO_MODEL_TYPE `xml:"type,attr,omitempty"`
+	for _, opt := range opts {
+		opt(controller)
+	}
+
+	return controller
 }

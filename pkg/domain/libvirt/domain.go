@@ -24,8 +24,9 @@ import (
 	"encoding/xml"
 	"fmt"
 
-	"cthul.io/cthul/pkg/domain/structure"
 	"github.com/digitalocean/go-libvirt"
+	"cthul.io/cthul/pkg/domain/libvirt/hotplug"
+	"cthul.io/cthul/pkg/domain/structure"
 )
 
 // ListDomains fetches the uuid of all domains located on this node.
@@ -58,31 +59,12 @@ func (l *LibvirtController) ApplyDomain(ctx context.Context, domainCfg structure
 		return err
 	}
 
-	for _, device := range domainCfg.BlockDevices {
-		// PoC: l.granit.AttachBlock(device.GranitBlockDeviceId)
-		_ = device
-	}
-
-	for _, device := range domainCfg.NetworkDevices {
-		// PoC: l.proton.AttachInterface(device.ProtonNetworkDeviceId)
-		_ = device
-	}
-
-	for _, device := range domainCfg.SerialDevices {
-		// PoC: l.wave.AttachSerial(device.WaveSerialDeviceId)
-		_ = device
-	}
-
-	for _, device := range domainCfg.GraphicDevices {
-		// PoC: l.wave.AttachGraphic(device.WaveGraphicDeviceId)
-		_ = device
-	}
-	err = l.generator.Prepare(domainCfg)
+	err = l.generator.Attach(&domainCfg)
 	if err!=nil {
 		return err
 	}
 
-	domain, err := l.generator.Generate(domainCfg)
+	domain, err := l.generator.Generate(&domainCfg)
 	if err!=nil {
 		return err
 	}
@@ -96,8 +78,9 @@ func (l *LibvirtController) ApplyDomain(ctx context.Context, domainCfg structure
 	if err!=nil {
 		return err
 	}
-
-	err = l.hotplugger.Hotplug(domain)
+	
+	hotplugger := hotplug.NewLibvirtHotplugger(l.client)
+	err = hotplugger.Hotplug(domain)
 	if err!=nil {
 		return err
 	}
@@ -112,29 +95,9 @@ func (l *LibvirtController) DestroyDomain(ctx context.Context, domainCfg structu
 		return err
 	}
 
-	err = l.generator.Release(domainCfg)
+	err = l.generator.Detach(&domainCfg)
 	if err!=nil {
 		return err
-	}
-	
-	for _, device := range domainCfg.BlockDevices {
-		// PoC: l.granit.ReleaseBlock(device.GranitBlockDeviceId)
-		_ = device
-	}
-
-	for _, device := range domainCfg.NetworkDevices {
-		// PoC: l.proton.ReleaseInterface(device.ProtonNetworkDeviceId)
-		_ = device
-	}
-
-	for _, device := range domainCfg.SerialDevices {
-		// PoC: l.wave.ReleaseSerial(device.WaveSerialDeviceId)
-		_ = device
-	}
-
-	for _, device := range domainCfg.GraphicDevices {
-		// PoC: l.wave.ReleaseGraphic(device.WaveGraphicDeviceId)
-		_ = device
 	}
 
 	uuid, err := l.parseUUID(domainCfg.UUID)

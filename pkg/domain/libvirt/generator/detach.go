@@ -17,29 +17,35 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package hotplug
+package generator
 
 import (
 	"fmt"
 
-	libvirtStruct "cthul.io/cthul/pkg/domain/libvirt/structure"
-	"github.com/digitalocean/go-libvirt"
+	cthulstruct "cthul.io/cthul/pkg/domain/structure"
 )
 
-// LibvirtHotplugger provides methods to hotplug libvirt changes based on the xml configuration.
-// Simply defining the xml does only change the domains persistent config but does not hotplug updates,
-// the hotplugger takes components that are hotpluggable and updates them with the appropriate libvirt rpc calls.
-type LibvirtHotplugger struct {
-	client *libvirt.Libvirt
-}
-
-func NewLibvirtHotplugger(client *libvirt.Libvirt) *LibvirtHotplugger {
-	return &LibvirtHotplugger{
-		client: client,
+// Detach releases all devices that were used by the domain config.
+func (l *LibvirtGenerator) Detach(config *cthulstruct.Domain) error {
+	for _, device := range config.BlockDevices {
+		// PoC: l.granit.ReleaseBlock(device.GranitBlockDeviceId)
+		_ = device
 	}
-}
 
+	for _, device := range config.NetworkDevices {
+		// PoC: l.proton.ReleaseInterface(device.ProtonNetworkDeviceId)
+		_ = device
+	}
 
-func (l *LibvirtHotplugger) Hotplug(config *libvirtStruct.Domain) error {
-	return fmt.Errorf("not implemented")
+	for _, device := range config.SerialDevices {
+		// PoC: l.wave.ReleaseSerial(device.WaveSerialDeviceId)
+		_ = device
+	}
+
+	for _, device := range config.GraphicDevices {
+		// PoC: l.wave.ReleaseGraphic(device.WaveGraphicDeviceId)
+		_ = device
+	}
+	
+	return fmt.Errorf("not implemented mr")
 }

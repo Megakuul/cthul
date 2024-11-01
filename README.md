@@ -1,3 +1,6 @@
+# Cthul
+
+Work in progress - The stuff below is irrelevant, just notes so my sievebrain doesn't forget to document it.
 
 
 ### Cthul api
@@ -30,3 +33,18 @@ etcdctl auth enable
 
 # TODO: Document component specific user and role creation.
 ```
+
+
+### Concepts
+
+Cthul components all use a `controller` and `operator` architecture. Components have internal operators, usually located at `internal/<comp>/<operator>`, which handle events (e.g. creation of a device).
+Every operator also exposes a controller, usually located at `pkg/<comp>/<controller>`, which is used by other components to emit events to the operators (e.g. request device).
+
+
+This concept is consistent for cthul components but is also used for external components, for example domains provide a DomainController in `pkg/domain` which emits events to the operator which in this case is `libvirtd`.
+
+
+
+External components are abstracted with a go interface that defines simple and replaceable functions.
+The goal is to only interface what exactly is required, this makes it simpler to replace the external component
+behind it.

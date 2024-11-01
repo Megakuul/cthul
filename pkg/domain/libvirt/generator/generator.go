@@ -19,22 +19,26 @@
 
 package generator
 
+import (
+	wavedevice "cthul.io/cthul/pkg/wave/device"
+	granitdevice "cthul.io/cthul/pkg/granit/device"
+	protondevice "cthul.io/cthul/pkg/proton/device"
+)
+
 // LibvirtGenerator provides operations to generate libvirt xml from cthul domain configurations.
 // The generator uses provided device controllers to lookup information provided by external cthul devices
 // (resolving things like 'GranitBlockDeviceId').
 // It also provides operations to attach and release those required devices.
 type LibvirtGenerator struct {
-	wave *wave.DeviceController
-	granit *granit.DeviceController
-	proton *proton.DeviceController
+	wave *wavedevice.DeviceController
+	granit *granitdevice.DeviceController
+	proton *protondevice.DeviceController
 }
 
-type LibvirtGeneratorOption func(*LibvirtGenerator)
-
 func NewLibvirtGenerator(
-	waveDevice *wave.DeviceController,
-	granitDevice *granit.DeviceController,
-	protonDevice *proton.DeviceController) *LibvirtGenerator {
+	waveDevice *wavedevice.DeviceController,
+	granitDevice *granitdevice.DeviceController,
+	protonDevice *protondevice.DeviceController) *LibvirtGenerator {
 
 	return &LibvirtGenerator{
 		wave: waveDevice,

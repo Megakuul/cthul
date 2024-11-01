@@ -19,27 +19,45 @@
 
 package structure
 
+type DOMAIN_TYPE string
+
+const (
+	KVM DOMAIN_TYPE = "kvm"
+)
+
 // Domain structure holds the relevant libvirt xml structure. It generally follows the rule that everything
 // currently not required by cthul is not defined in this configuration.
 type Domain struct {
-	MetaType string `xml:"type,attr"`
-	UUID string `xml:"uuid,omitempty"`
-	Name string `xml:"name,omitempty"`
-	Title string `xml:"title,omitempty"`
-	Description string `xml:"description,omitempty"`
-	VCPU *VCPU `xml:"vcpu,omitempty"`
-	Memory *Memory `xml:"memory,omitempty"`
-	OS *OS  `xml:"os,omitempty"`
-	Devices []interface{} `xml:"devices,omitempty"`
-	Features []interface{} `xml:"features,omitempty"`
+	MetaType    DOMAIN_TYPE   `xml:"type,attr"`
+	UUID        string        `xml:"uuid,omitempty"`
+	Name        string        `xml:"name,omitempty"`
+	Title       string        `xml:"title,omitempty"`
+	Description string        `xml:"description,omitempty"`
+	VCPU        *VCPU         `xml:"vcpu,omitempty"`
+	Memory      *Memory       `xml:"memory,omitempty"`
+	OS          *OS           `xml:"os,omitempty"`
+	Devices     []interface{} `xml:"devices,omitempty"`
+	Features    []interface{} `xml:"features,omitempty"`
 }
+
+type CPU_PLACEMENT string
+
+const (
+	STATIC CPU_PLACEMENT = "static"
+)
 
 type VCPU struct {
-	MetaPlacement string `xml:"placement,attr"`
-	Data int64 `xml:",charset"`
+	MetaPlacement CPU_PLACEMENT `xml:"placement,attr"`
+	Data          int64  `xml:",charset"`
 }
 
+type MEMORY_UNIT string
+
+const (
+	BYTES MEMORY_UNIT = "bytes"
+)
+
 type Memory struct {
-	MetaUnit string `xml:"unit,attr"`
-	Data int64 `xml:",charset"`
+	MetaUnit MEMORY_UNIT `xml:"unit,attr"`
+	Data     int64  `xml:",charset"`
 }
