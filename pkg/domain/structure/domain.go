@@ -37,6 +37,26 @@ type Domain struct {
 	GraphicDevices []GraphicDevice `json:"graphic_devices" yaml:"graphic_devices" toml:"graphic_devices"`
 }
 
+type ARCH_OPTION string
+
+const (
+	ARCH_AMD64      ARCH_OPTION = "cthul::arch::amd64"
+	ARCH_AARCH64      ARCH_OPTION = "cthul::arch::aarch64"
+)
+
+type CHIPSET_OPTION string
+
+const (
+	CHIPSET_I440FX CHIPSET_OPTION = "cthul::chipset::i440fx"
+	CHIPSET_Q35      CHIPSET_OPTION = "cthul::chipset::q35"
+	CHIPSET_VIRT      CHIPSET_OPTION = "cthul::chipset::virt"
+)
+
+type SystemConfig struct {
+	Architecture ARCH_OPTION `json:"architecture" yaml:"architecture" toml:"architecture"`
+	Chipset CHIPSET_OPTION `json:"chipset" yaml:"chipset" toml:"chipset"`
+}
+
 type ResourceConfig struct {
 	VCPUs  int64 `json:"vcpus" yaml:"vcpus" toml:"vcpus"`
 	Memory int64 `json:"memory" yaml:"memory" toml:"memory"`
@@ -63,6 +83,21 @@ type BlockDevice struct {
 type NetworkDevice struct {
 	ProtonNetworkDeviceId string `json:"device_id" yaml:"device_id" toml:"device_id"`
 	Virtio                bool   `json:"virtio" yaml:"virtio" toml:"virtio"`
+}
+
+type VIDEO_OPTION string
+
+const (
+	VIDEO_VGA    VIDEO_OPTION = "cthul::video::vga"
+	VIDEO_QX1    VIDEO_OPTION = "cthul::video::qx1"
+	VIDEO_HOST VIDEO_OPTION = "cthul::video::host"
+	VIDEO_NONE VIDEO_OPTION = "cthul::video::none"
+)
+
+type VideoDevice struct {
+	VideoOption VIDEO_OPTION `json:"video_option" yaml:"video_option" toml:"video_option"`
+	ProtocolbufferSize int64 `json:"protocolbuffer_size" yaml:"protocolbuffer_size" toml:"protocolbuffer_size"`
+	FramebufferSize int64 `json:"framebuffer_size" yaml:"framebuffer_size" toml:"framebuffer_size"`
 }
 
 type SerialDevice struct {

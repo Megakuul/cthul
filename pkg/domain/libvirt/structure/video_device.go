@@ -26,9 +26,15 @@ type Video struct {
 type VIDEO_MODEL_TYPE string
 
 const (
-	QX1 VIDEO_MODEL_TYPE = "qx1"
+	VIDEO_MODEL_VGA    VIDEO_MODEL_TYPE = "vga"    // just writes raw pixel data to the framebuffer
+	VIDEO_MODEL_VIRTIO VIDEO_MODEL_TYPE = "virtio" // sends unrendered data to the host (framebuffer on host)
+	VIDEO_MODEL_QX1    VIDEO_MODEL_TYPE = "qx1"    // writes spice protocol data to the device buffers
 )
 
 type VideoModel struct {
-	MetaType VIDEO_MODEL_TYPE `xml:"type,attr,omitempty"`
+	MetaType   VIDEO_MODEL_TYPE `xml:"type,attr,omitempty"`
+	MetaRam    int64            `xml:"ram,attr,omitempty"` // qx1: vga fallback buffer and command / release ring.
+	MetaVRam   int64            `xml:"vram,attr,omitempty"` // qx1: cache buffer. vga: framebuffer.
+	MetaVGAMem int64            `xml:"vgamem,attr,omitempty"` // qx1: size of vga fallback buffer inside 'ram'.
+	// virtio drivers use virtqueue ringbuffers that are self allocated by the guest not by the device.
 }

@@ -21,7 +21,7 @@ package structure
 
 type SERIAL_TYPE string
 const (
-	UNIX SERIAL_TYPE = "unix"
+	SERIAL_UNIX SERIAL_TYPE = "unix"
 )
 
 type Serial struct {
@@ -32,7 +32,7 @@ type Serial struct {
 
 type SERIAL_SOURCE_MODE string
 const (
-	BIND SERIAL_SOURCE_MODE = "bind"
+	SERIAL_SOURCE_BIND SERIAL_SOURCE_MODE = "bind"
 )
 
 type SerialSource struct {

@@ -29,16 +29,16 @@ type OS struct {
 type OS_ARCH string
 
 const (
-	X86_64  OS_ARCH = "x86_64"
-	AARCH64 OS_ARCH = "aarch64"
+	OS_ARCH_X86_64  OS_ARCH = "x86_64"
+	OS_ARCH_AARCH64 OS_ARCH = "aarch64"
 )
 
 type OS_CHIPSET string
 
 const (
-	I440FX OS_CHIPSET = "pc"
-	Q35    OS_CHIPSET = "q35"
-	VIRT   OS_CHIPSET = "virt"
+	OS_CHIPSET_I440FX OS_CHIPSET = "pc"
+	OS_CHIPSET_Q35    OS_CHIPSET = "q35"
+	OS_CHIPSET_VIRT   OS_CHIPSET = "virt"
 )
 
 type OSType struct {
@@ -50,8 +50,8 @@ type OSType struct {
 type OS_LOADER_TYPE string
 
 const (
-	SEABIOS OS_LOADER_TYPE = "seabios"
-	OVMF    OS_CHIPSET     = "pflash"
+	OS_LOADER_SEABIOS OS_LOADER_TYPE = "seabios"
+	OS_LOADER_OVMF    OS_CHIPSET     = "pflash"
 )
 
 type OSLoader struct {
@@ -64,7 +64,7 @@ type OSLoader struct {
 type OS_NVRAM_TYPE string
 
 const (
-	FILE OS_NVRAM_TYPE = "file"
+	OS_NVRAM_FILE OS_NVRAM_TYPE = "file"
 )
 
 type OSNvram struct {

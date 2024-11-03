@@ -22,7 +22,7 @@ package structure
 type DOMAIN_TYPE string
 
 const (
-	KVM DOMAIN_TYPE = "kvm"
+	DOMAIN_KVM DOMAIN_TYPE = "kvm"
 )
 
 // Domain structure holds the relevant libvirt xml structure. It generally follows the rule that everything
@@ -43,7 +43,7 @@ type Domain struct {
 type CPU_PLACEMENT string
 
 const (
-	STATIC CPU_PLACEMENT = "static"
+	CPU_PLACEMENT_STATIC CPU_PLACEMENT = "static"
 )
 
 type VCPU struct {
@@ -54,7 +54,7 @@ type VCPU struct {
 type MEMORY_UNIT string
 
 const (
-	BYTES MEMORY_UNIT = "bytes"
+	MEMORY_UNIT_BYTES MEMORY_UNIT = "bytes"
 )
 
 type Memory struct {

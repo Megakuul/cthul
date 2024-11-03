@@ -21,7 +21,7 @@ package structure
 
 type GRAPHICS_TYPE string
 const (
-	SPICE GRAPHICS_TYPE = "spice"
+	GRAPHICS_SPICE GRAPHICS_TYPE = "spice"
 )
 
 type Graphics struct {
@@ -31,7 +31,7 @@ type Graphics struct {
 
 type GRAPHICS_LISTEN_TYPE string
 const (
-	SOCKET GRAPHICS_LISTEN_TYPE = "socket"
+	GRAPHICS_LISTEN_SOCKET GRAPHICS_LISTEN_TYPE = "socket"
 )
 
 type GraphicsListen struct {

@@ -37,9 +37,56 @@ func (l *LibvirtGenerator) Generate(config *cthulstruct.Domain) (*libvirtstruct.
 		Description: config.Description,
 		VCPU: generateVCPU(&config.ResourceConfig),
 		Memory: generateMemory(&config.ResourceConfig),
+		Devices: []interface{}{},
+		Features: []interface{}{},
+	}
+
+	domain.OS, err := generateOS(&config.BootConfig)
+	if err!=nil {
+		return nil, err
 	}
 	
-	return nil, fmt.Errorf("not implemented biatch")
+	for _, blockDevice := range config.BlockDevices {
+		device, err := generateBlockDevice(blockDevice)
+		if err!=nil {
+			return nil, err
+		}
+		domain.Devices = append(domain.Devices, device)
+	}
+
+	for _, networkDevice := range config.NetworkDevices {
+		device, err := generateNetworkDevice(networkDevice)
+		if err!=nil {
+			return nil, err
+		}
+		domain.Devices = append(domain.Devices, device)
+	}
+
+	for _, serialDevice := range config.SerialDevices {
+		device, err := generateSerialDevice(serialDevice)
+		if err!=nil {
+			return nil, err
+		}
+		domain.Devices = append(domain.Devices, device)
+	}
+
+	for _, videoDevice := range config.VideoDevices {
+		device, err := generateVideoDevice(videoDevice)
+		if err!=nil {
+			return nil, err
+		}
+		domain.Devices = append(domain.Devices, device)
+	}
+	
+	for _, graphicDevice := range config.GraphicDevices {
+		device, err := generateGraphicDevice(graphicDevice)
+		if err!=nil {
+			return nil, err
+		}
+		domain.Devices = append(domain.Devices, device)
+	}
+
+	return domain, nil
 }
 
 func generateVCPU(config *cthulstruct.ResourceConfig) *libvirtstruct.VCPU {
