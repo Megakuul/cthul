@@ -28,13 +28,16 @@ type Domain struct {
 	Title       string `json:"title" yaml:"title" toml:"title"`
 	Description string `json:"description" yaml:"description" toml:"description"`
 
+	SystemConfig SystemConfig `json:"system_config" yaml:"system_config" toml:"system_config"`
+	FirmwareConfig FirmwareConfig `json:"firmware_config" yaml:"firmware_config" toml:"firmware_config"`
 	ResourceConfig ResourceConfig `json:"resource_config" yaml:"resource_config" toml:"resource_config"`
-	BootConfig     BootConfig     `json:"boot_config" yaml:"boot_config" toml:"boot_config"`
 
 	BlockDevices   []BlockDevice   `json:"block_devices" yaml:"block_devices" toml:"block_devices"`
 	NetworkDevices []NetworkDevice `json:"network_devices" yaml:"network_devices" toml:"network_devices"`
-	SerialDevices  []SerialDevice  `json:"serial_devices" yaml:"serial_devices" toml:"serial_devices"`
+	
+	VideoDevices []VideoDevice `json:"video_devices" yaml:"video_devices" toml:"video_devices"`
 	GraphicDevices []GraphicDevice `json:"graphic_devices" yaml:"graphic_devices" toml:"graphic_devices"`
+	SerialDevices  []SerialDevice  `json:"serial_devices" yaml:"serial_devices" toml:"serial_devices"`
 }
 
 type ARCH_OPTION string
@@ -57,32 +60,36 @@ type SystemConfig struct {
 	Chipset CHIPSET_OPTION `json:"chipset" yaml:"chipset" toml:"chipset"`
 }
 
+type FIRMWARE_OPTION string
+
+const (
+	FIRMWARE_OVMF FIRMWARE_OPTION = "cthul::firmware::ovmf"
+	FIRMWARE_SEABIOS      FIRMWARE_OPTION = "cthul::firmware::seabios"
+)
+
+type FirmwareConfig struct {
+	Firmware FIRMWARE_OPTION `json:"firmware" yaml:"firmware" toml:"firmware"`
+	LoaderDeviceId string `json:"loader_device_id" yaml:"loader_device_id" toml:"loader_device_id"`
+	TemplateDeviceId string `json:"template_device_id" yaml:"template_device_id" toml:"template_device_id"`
+	NvramDeviceId string `json:"nvram_device_id" yaml:"nvram_device_id" toml:"nvram_device_id"`
+	SecureBoot  bool          `json:"secure_boot" yaml:"secure_boot" toml:"secure_boot"`
+}
+
 type ResourceConfig struct {
 	VCPUs  int64 `json:"vcpus" yaml:"vcpus" toml:"vcpus"`
 	Memory int64 `json:"memory" yaml:"memory" toml:"memory"`
 }
 
-type BOOT_OPTION string
-
-const (
-	BOOT_HD      BOOT_OPTION = "cthul::boot::hd"
-	BOOT_CD      BOOT_OPTION = "cthul::boot::cd"
-	BOOT_NETWORK BOOT_OPTION = "cthul::boot::network"
-)
-
-type BootConfig struct {
-	SecureBoot  bool          `json:"secure_boot" yaml:"secure_boot" toml:"secure_boot"`
-	BootOptions []BOOT_OPTION `json:"boot_options" yaml:"boot_options" toml:"boot_options"`
-}
-
 type BlockDevice struct {
-	GranitBlockDeviceId string `json:"device_id" yaml:"device_id" toml:"device_id"`
+	DeviceId string `json:"device_id" yaml:"device_id" toml:"device_id"`
 	Virtio              bool   `json:"virtio" yaml:"virtio" toml:"virtio"`
+	BootPriority int64 `json:"boot_priority" yaml:"boot_priority" toml:"boot_priority"`
 }
 
 type NetworkDevice struct {
-	ProtonNetworkDeviceId string `json:"device_id" yaml:"device_id" toml:"device_id"`
+	DeviceId string `json:"device_id" yaml:"device_id" toml:"device_id"`
 	Virtio                bool   `json:"virtio" yaml:"virtio" toml:"virtio"`
+	BootPriority int64 `json:"boot_priority" yaml:"boot_priority" toml:"boot_priority"`
 }
 
 type VIDEO_OPTION string

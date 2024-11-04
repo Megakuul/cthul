@@ -51,7 +51,7 @@ type OS_LOADER_TYPE string
 
 const (
 	OS_LOADER_SEABIOS OS_LOADER_TYPE = "seabios"
-	OS_LOADER_OVMF    OS_CHIPSET     = "pflash"
+	OS_LOADER_OVMF    OS_LOADER_TYPE     = "pflash"
 )
 
 type OSLoader struct {

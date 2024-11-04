@@ -89,16 +89,81 @@ func (l *LibvirtGenerator) Generate(config *cthulstruct.Domain) (*libvirtstruct.
 	return domain, nil
 }
 
-func generateVCPU(config *cthulstruct.ResourceConfig) *libvirtstruct.VCPU {
+func (l *LibvirtGenerator) generateVCPU(resource *cthulstruct.ResourceConfig) *libvirtstruct.VCPU {
 	return &libvirtstruct.VCPU{
-		MetaPlacement: libvirtstruct.STATIC,
-		Data: config.VCPUs,
+		MetaPlacement: libvirtstruct.CPU_PLACEMENT_STATIC,
+		Data: resource.VCPUs,
 	}
 }
 
-func generateMemory(config *cthulstruct.ResourceConfig) *libvirtstruct.Memory {
+func (l *LibvirtGenerator) generateMemory(resource *cthulstruct.ResourceConfig) *libvirtstruct.Memory {
 	return &libvirtstruct.Memory{
-		MetaUnit: libvirtstruct.BYTES,
-		Data: config.Memory,
+		MetaUnit: libvirtstruct.MEMORY_UNIT_BYTES,
+		Data: resource.Memory,
 	}
+}
+
+func (l *LibvirtGenerator) generateOS(system *cthulstruct.SystemConfig, firmware *cthulstruct.FirmwareConfig) (*libvirtstruct.OS, error) {
+	os := &libvirtstruct.OS{
+		Type: &libvirtstruct.OSType{
+			Data: "hvm",
+		},
+		Loader: &libvirtstruct.OSLoader{
+			MetaReadonly: true,
+			MetaSecure: firmware.SecureBoot,
+		},
+	}
+
+	switch system.Architecture {
+	case cthulstruct.ARCH_AMD64:
+		os.Type.Arch = libvirtstruct.OS_ARCH_X86_64
+	case cthulstruct.ARCH_AARCH64:
+		os.Type.Arch = libvirtstruct.OS_ARCH_AARCH64
+	default:
+		return nil, fmt.Errorf("unknown system architecture: %s", system.Architecture)
+	}
+
+	switch system.Chipset {
+	case cthulstruct.CHIPSET_I440FX:
+		os.Type.Machine = libvirtstruct.OS_CHIPSET_I440FX
+	case cthulstruct.CHIPSET_Q35:
+		os.Type.Machine = libvirtstruct.OS_CHIPSET_Q35
+	case cthulstruct.CHIPSET_VIRT:
+		os.Type.Machine = libvirtstruct.OS_CHIPSET_VIRT
+	default:
+		return nil, fmt.Errorf("unknown system chipset: %s", system.Chipset)
+	}
+
+	switch firmware.Firmware {
+	case cthulstruct.FIRMWARE_OVMF:
+		os.Loader.MetaType = libvirtstruct.OS_LOADER_OVMF
+	case cthulstruct.FIRMWARE_SEABIOS:
+		os.Loader.MetaType = libvirtstruct.OS_LOADER_SEABIOS
+	default:
+		return nil, fmt.Errorf("unknown firmware type: %s", firmware.Firmware)
+	}
+
+	loaderDevice, err := l.granit.LookupBlock(firmware.LoaderDeviceId)
+	if err!=nil {
+		return nil, fmt.Errorf("firmware loader device lookup: %s", err.Error())
+	}
+	
+	templateDevice, err := l.granit.LookupBlock(firmware.TemplateDeviceId)
+	if err!=nil {
+		return nil, fmt.Errorf("firmware template device lookup: %s", err.Error())
+	}
+
+	nvramDevice, err := l.granit.LookupBlock(firmware.NvramDeviceId)
+	if err!=nil {
+		return nil, fmt.Errorf("firmware nvram device lookup: %s", err.Error())
+	}
+	
+	os.Loader.Data = loaderDevice.Path
+	os.Nvrams = &libvirtstruct.OSNvram{
+		MetaType: libvirtstruct.OS_NVRAM_FILE,
+		MetaTemplate: templateDevice.Path,
+		Source: nvramDevice.Path,
+	}
+	
+	return os, nil
 }
