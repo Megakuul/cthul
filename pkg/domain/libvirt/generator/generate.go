@@ -134,15 +134,6 @@ func (l *LibvirtGenerator) generateOS(system *cthulstruct.SystemConfig, firmware
 		return nil, fmt.Errorf("unknown system chipset: %s", system.Chipset)
 	}
 
-	switch firmware.Firmware {
-	case cthulstruct.FIRMWARE_OVMF:
-		os.Loader.MetaType = libvirtstruct.OS_LOADER_OVMF
-	case cthulstruct.FIRMWARE_SEABIOS:
-		os.Loader.MetaType = libvirtstruct.OS_LOADER_SEABIOS
-	default:
-		return nil, fmt.Errorf("unknown firmware type: %s", firmware.Firmware)
-	}
-
 	loaderDevice, err := l.granit.LookupBlock(firmware.LoaderDeviceId)
 	if err!=nil {
 		return nil, fmt.Errorf("firmware loader device lookup: %s", err.Error())
@@ -157,12 +148,26 @@ func (l *LibvirtGenerator) generateOS(system *cthulstruct.SystemConfig, firmware
 	if err!=nil {
 		return nil, fmt.Errorf("firmware nvram device lookup: %s", err.Error())
 	}
-	
+
 	os.Loader.Data = loaderDevice.Path
-	os.Nvrams = &libvirtstruct.OSNvram{
-		MetaType: libvirtstruct.OS_NVRAM_FILE,
-		MetaTemplate: templateDevice.Path,
-		Source: nvramDevice.Path,
+
+	switch firmware.Firmware {
+	case cthulstruct.FIRMWARE_OVMF:
+		os.Loader.MetaType = libvirtstruct.OS_LOADER_OVMF
+		os.Nvram = &libvirtstruct.OSNvram{
+			MetaType: libvirtstruct.OS_NVRAM_FILE,
+			MetaTemplate: templateDevice.Path,
+			Source: nvramDevice.Path,
+		}
+	case cthulstruct.FIRMWARE_SEABIOS:
+		os.Loader.MetaType = libvirtstruct.OS_LOADER_SEABIOS
+		os.Nvrams = &libvirtstruct.OSNvram{
+			MetaType: libvirtstruct.OS_NVRAM_FILE,
+			MetaTemplate: templateDevice.Path,
+			Source: nvramDevice.Path,
+		}
+	default:
+		return nil, fmt.Errorf("unknown firmware type: %s", firmware.Firmware)
 	}
 	
 	return os, nil
