@@ -69,10 +69,10 @@ const (
 
 type FirmwareConfig struct {
 	Firmware FIRMWARE_OPTION `json:"firmware" yaml:"firmware" toml:"firmware"`
+	SecureBoot  bool          `json:"secure_boot" yaml:"secure_boot" toml:"secure_boot"`
 	LoaderDeviceId string `json:"loader_device_id" yaml:"loader_device_id" toml:"loader_device_id"`
 	TemplateDeviceId string `json:"template_device_id" yaml:"template_device_id" toml:"template_device_id"`
 	NvramDeviceId string `json:"nvram_device_id" yaml:"nvram_device_id" toml:"nvram_device_id"`
-	SecureBoot  bool          `json:"secure_boot" yaml:"secure_boot" toml:"secure_boot"`
 }
 
 type ResourceConfig struct {
