@@ -24,6 +24,6 @@ import (
 	libvirtstruct "cthul.io/cthul/pkg/domain/libvirt/structure"
 )
 
-func (l *LibvirtGenerator) generateBlockDevice(device *cthulstruct.BlockDevice) (*libvirtstruct.Disk, error) {
+func (l *LibvirtGenerator) generateStorageDevice(device *cthulstruct.StorageDevice) (*libvirtstruct.Disk, error) {
 	
 }

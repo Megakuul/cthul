@@ -21,28 +21,31 @@ package structure
 
 import "encoding/xml"
 
-type SERIAL_TYPE string
+type INTERFACE_TYPE string
+
 const (
-	SERIAL_UNIX SERIAL_TYPE = "unix"
+	INTERFACE_BRIDGE   INTERFACE_TYPE = "bridge"
 )
 
-type Serial struct {
-	XMLName xml.Name `xml:"serial"`
-	MetaType SERIAL_TYPE `xml:"type,attr,omitempty"`
-	Source *SerialSource `xml:"source,omitempty"`
-	Target *SerialTarget `xml:"target,omitempty"`
+type Interface struct {
+	XMLName xml.Name `xml:"interface"`
+	MetaType INTERFACE_TYPE `xml:"type,attr,omitempty"`
+	Source *InterfaceSource `xml:"source,omitempty"`
+	Model *InterfaceModel `xml:"model,omitempty"`
+	Boot *Boot `xml:"boot,omitempty"`
 }
 
-type SERIAL_SOURCE_MODE string
+type InterfaceSource struct {
+	MetaBridge string `xml:"bridge,attr,omitempty"`
+}
+
+type INTERFACE_MODEL_TYPE string
+
 const (
-	SERIAL_SOURCE_BIND SERIAL_SOURCE_MODE = "bind"
+	INTERFACE_MODEL_E1000 INTERFACE_MODEL_TYPE = "e1000"
+	INTERFACE_MODEL_VIRTIO INTERFACE_MODEL_TYPE = "virtio"
 )
 
-type SerialSource struct {
-	MetaMode SERIAL_SOURCE_MODE `xml:"mode,attr,omitempty"`
-	MetaPath string `xml:"path,attr,omitempty"`
-}
-
-type SerialTarget struct {
-	MetaPort int64 `xml:"port,attr,omitempty"`
+type InterfaceModel struct {
+	MetaType INTERFACE_MODEL_TYPE `xml:"type,attr,omitempty"`
 }

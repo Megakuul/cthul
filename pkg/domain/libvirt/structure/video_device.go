@@ -19,7 +19,10 @@
 
 package structure
 
+import "encoding/xml"
+
 type Video struct {
+	XMLName xml.Name `xml:"video"`
 	Model *VideoModel `xml:"model,omitempty"`
 }
 

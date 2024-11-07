@@ -21,28 +21,7 @@ package structure
 
 import "encoding/xml"
 
-type SERIAL_TYPE string
-const (
-	SERIAL_UNIX SERIAL_TYPE = "unix"
-)
-
-type Serial struct {
-	XMLName xml.Name `xml:"serial"`
-	MetaType SERIAL_TYPE `xml:"type,attr,omitempty"`
-	Source *SerialSource `xml:"source,omitempty"`
-	Target *SerialTarget `xml:"target,omitempty"`
-}
-
-type SERIAL_SOURCE_MODE string
-const (
-	SERIAL_SOURCE_BIND SERIAL_SOURCE_MODE = "bind"
-)
-
-type SerialSource struct {
-	MetaMode SERIAL_SOURCE_MODE `xml:"mode,attr,omitempty"`
-	MetaPath string `xml:"path,attr,omitempty"`
-}
-
-type SerialTarget struct {
-	MetaPort int64 `xml:"port,attr,omitempty"`
+type Boot struct {
+	XMLName xml.Name `xml:"boot"`
+	MetaOrder int64 `xml:"order,attr,omitempty"`
 }

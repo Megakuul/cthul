@@ -19,12 +19,15 @@
 
 package structure
 
+import "encoding/xml"
+
 type GRAPHICS_TYPE string
 const (
 	GRAPHICS_SPICE GRAPHICS_TYPE = "spice"
 )
 
 type Graphics struct {
+	XMLName xml.Name `xml:"graphics"`
 	MetaType GRAPHICS_TYPE `xml:"type,attr,omitempty"`
 	Listen *GraphicsListen `xml:"listen,omitempty"`
 }
