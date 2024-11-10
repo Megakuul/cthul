@@ -68,11 +68,11 @@ const (
 )
 
 type FirmwareConfig struct {
-	Firmware         FIRMWARE_OPTION `json:"firmware" yaml:"firmware" toml:"firmware"`
-	SecureBoot       bool            `json:"secure_boot" yaml:"secure_boot" toml:"secure_boot"`
-	LoaderDeviceId   string          `json:"loader_device_id" yaml:"loader_device_id" toml:"loader_device_id"`
-	TmplDeviceId string          `json:"tmpl_device_id" yaml:"tmpl_device_id" toml:"tmpl_device_id"`
-	NvramDeviceId    string          `json:"nvram_device_id" yaml:"nvram_device_id" toml:"nvram_device_id"`
+	Firmware       FIRMWARE_OPTION `json:"firmware" yaml:"firmware" toml:"firmware"`
+	SecureBoot     bool            `json:"secure_boot" yaml:"secure_boot" toml:"secure_boot"`
+	LoaderDeviceId string          `json:"loader_device_id" yaml:"loader_device_id" toml:"loader_device_id"`
+	TmplDeviceId   string          `json:"tmpl_device_id" yaml:"tmpl_device_id" toml:"tmpl_device_id"`
+	NvramDeviceId  string          `json:"nvram_device_id" yaml:"nvram_device_id" toml:"nvram_device_id"`
 }
 
 type ResourceConfig struct {
@@ -80,10 +80,26 @@ type ResourceConfig struct {
 	Memory int64 `json:"memory" yaml:"memory" toml:"memory"`
 }
 
+type STORAGE_TYPE string
+
+const (
+	STORAGE_CDROM STORAGE_TYPE = "cthul::storage::cdrom"
+	STORAGE_DISK  STORAGE_TYPE = "cthul::storage::disk"
+)
+
+type STORAGE_BUS string
+
+const (
+	STORAGE_IDE    STORAGE_BUS = "cthul::storage::ide"
+	STORAGE_SATA   STORAGE_BUS = "cthul::storage::sata"
+	STORAGE_VIRTIO STORAGE_BUS = "cthul::storage::virtio"
+)
+
 type StorageDevice struct {
-	DeviceId     string `json:"device_id" yaml:"device_id" toml:"device_id"`
-	Virtio       bool   `json:"virtio" yaml:"virtio" toml:"virtio"`
-	BootPriority int64  `json:"boot_priority" yaml:"boot_priority" toml:"boot_priority"`
+	DeviceId     string       `json:"device_id" yaml:"device_id" toml:"device_id"`
+	StorageType  STORAGE_TYPE `json:"storage_type" yaml:"storage_type" toml:"storage_type"`
+	StorageBus   STORAGE_BUS  `json:"storage_bus" yaml:"storage_bus" toml:"storage_bus"`
+	BootPriority int64        `json:"boot_priority" yaml:"boot_priority" toml:"boot_priority"`
 }
 
 type NetworkDevice struct {
@@ -96,15 +112,16 @@ type VIDEO_OPTION string
 
 const (
 	VIDEO_VGA  VIDEO_OPTION = "cthul::video::vga"
-	VIDEO_QX1  VIDEO_OPTION = "cthul::video::qx1"
+	VIDEO_QXL  VIDEO_OPTION = "cthul::video::qxl"
 	VIDEO_HOST VIDEO_OPTION = "cthul::video::host"
 	VIDEO_NONE VIDEO_OPTION = "cthul::video::none"
 )
 
 type VideoDevice struct {
-	VideoOption        VIDEO_OPTION `json:"video_option" yaml:"video_option" toml:"video_option"`
-	ProtocolbufferSize int64        `json:"protocolbuffer_size" yaml:"protocolbuffer_size" toml:"protocolbuffer_size"`
-	FramebufferSize    int64        `json:"framebuffer_size" yaml:"framebuffer_size" toml:"framebuffer_size"`
+	VideoOption       VIDEO_OPTION `json:"video_option" yaml:"video_option" toml:"video_option"`
+	CommandBufferSize int64        `json:"commandbuffer_size" yaml:"commandbuffer_size" toml:"commandbuffer_size"`
+	VideoBufferSize   int64        `json:"videobuffer_size" yaml:"videobuffer_size" toml:"videobuffer_size"`
+	FramebufferSize   int64        `json:"framebuffer_size" yaml:"framebuffer_size" toml:"framebuffer_size"`
 }
 
 type SerialDevice struct {

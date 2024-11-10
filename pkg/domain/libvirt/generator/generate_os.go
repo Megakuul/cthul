@@ -26,6 +26,20 @@ import (
 	libvirtstruct "cthul.io/cthul/pkg/domain/libvirt/structure"
 )
 
+// Explanation: A libvirt os tag represents configuration options about the emulated cpu, mainboard and firmware
+// components. The cpu architecture is rather irrelevant as we do hardware assisted full virtualisation, this
+// makes it impossible to emulate cpu architectures as the instructions are executed directly on the cpu.
+// The chipset configuration is more important, it defines the chipset interface provided to the guest os.
+// Sending instructions to the chipset is intercepted by the cpu virtualization-extension, which then
+// invokes the host device (e.g. qemu) that handles the request. Depending on the chipset configuration
+// qemu will use different communication methods and protocols.
+// The firmware configuration defines what firmware is launched by the hypervisor upon starting a domain,
+// the hypervisor essentially moves the compiled firmware to memory and points the program counter to it.
+// To start the firmware, loader, template and nvram files are required. All of those are not used directly, but
+// rather moved to the memory by the hypervisor (nvram is also written back on domain shutdown).
+
+// Loader, template and nvram files are provided by granit devices that are loaded as blockdevs on the host.
+
 // generateOS generates the libvirt operating system configuration from system and firmware information.
 func (l *LibvirtGenerator) generateOS(system *cthulstruct.SystemConfig, firmware *cthulstruct.FirmwareConfig) (*libvirtstruct.OS, error) {
 	os := &libvirtstruct.OS{
@@ -38,6 +52,31 @@ func (l *LibvirtGenerator) generateOS(system *cthulstruct.SystemConfig, firmware
 		},
 	}
 
+	loaderDevice, err := l.granit.LookupStorage(firmware.LoaderDeviceId)
+	if err!=nil {
+		return nil, fmt.Errorf("firmware loader device lookup: %s", err.Error())
+	}
+	if loaderDevice.Type != granit.STORAGE_FILE {
+		return nil, fmt.Errorf("only supported firmware loader device type is: %s", granit.STORAGE_FILE)
+	}
+	
+	templateDevice, err := l.granit.LookupStorage(firmware.TmplDeviceId)
+	if err!=nil {
+		return nil, fmt.Errorf("firmware template device lookup: %s", err.Error())
+	}
+	if templateDevice.Type != granit.STORAGE_FILE {
+		return nil, fmt.Errorf("only supported firmware template device type is: %s", granit.STORAGE_FILE)
+	}
+
+	nvramDevice, err := l.granit.LookupStorage(firmware.NvramDeviceId)
+	if err!=nil {
+		return nil, fmt.Errorf("firmware nvram device lookup: %s", err.Error())
+	}
+	if nvramDevice.Type != granit.STORAGE_FILE {
+		return nil, fmt.Errorf("only supported firmware nvram device type is: %s", granit.STORAGE_FILE)
+	}
+
+	// Architecture
 	switch system.Architecture {
 	case cthulstruct.ARCH_AMD64:
 		os.Type.Arch = libvirtstruct.OS_ARCH_X86_64
@@ -47,6 +86,7 @@ func (l *LibvirtGenerator) generateOS(system *cthulstruct.SystemConfig, firmware
 		return nil, fmt.Errorf("unknown system architecture: %s", system.Architecture)
 	}
 
+	// Chipset
 	switch system.Chipset {
 	case cthulstruct.CHIPSET_I440FX:
 		os.Type.Machine = libvirtstruct.OS_CHIPSET_I440FX
@@ -58,23 +98,9 @@ func (l *LibvirtGenerator) generateOS(system *cthulstruct.SystemConfig, firmware
 		return nil, fmt.Errorf("unknown system chipset: %s", system.Chipset)
 	}
 
-	loaderDevice, err := l.granit.LookupBlock(firmware.LoaderDeviceId)
-	if err!=nil {
-		return nil, fmt.Errorf("firmware loader device lookup: %s", err.Error())
-	}
-	
-	templateDevice, err := l.granit.LookupBlock(firmware.TemplateDeviceId)
-	if err!=nil {
-		return nil, fmt.Errorf("firmware template device lookup: %s", err.Error())
-	}
-
-	nvramDevice, err := l.granit.LookupBlock(firmware.NvramDeviceId)
-	if err!=nil {
-		return nil, fmt.Errorf("firmware nvram device lookup: %s", err.Error())
-	}
-
+	// Firmware
 	os.Loader.Data = loaderDevice.Path
-
+	
 	switch firmware.Firmware {
 	case cthulstruct.FIRMWARE_OVMF:
 		os.Loader.MetaType = libvirtstruct.OS_LOADER_OVMF

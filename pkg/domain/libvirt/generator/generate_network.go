@@ -20,32 +20,12 @@
 package generator
 
 import (
-	"fmt"
-
+	libvirtstruct "cthul.io/cthul/pkg/domain/libvirt/structure"
 	cthulstruct "cthul.io/cthul/pkg/domain/structure"
 )
 
-// Attach installs / locks all devices that are required by the domain config.
-func (l *LibvirtGenerator) Attach(config *cthulstruct.Domain) error {
-	for _, device := range config.StorageDevices {
-		// PoC: l.granit.AttachStorage(device.GranitBlockDeviceId)
-		_ = device
-	}
+// generateNetwork generates a libvirt network interface device from the cthul network device.
+func (l *LibvirtGenerator) generateNetwork(device *cthulstruct.NetworkDevice) (*libvirtstruct.Interface, error) {
 
-	for _, device := range config.NetworkDevices {
-		// PoC: l.proton.AttachInterface(device.ProtonNetworkDeviceId)
-		_ = device
-	}
-
-	for _, device := range config.SerialDevices {
-		// PoC: l.wave.AttachSerial(device.WaveSerialDeviceId)
-		_ = device
-	}
-
-	for _, device := range config.GraphicDevices {
-		// PoC: l.wave.AttachGraphic(device.WaveGraphicDeviceId)
-		_ = device
-	}
-	
-	return fmt.Errorf("not implemented biatch")
+	return nil, nil
 }

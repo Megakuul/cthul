@@ -25,6 +25,7 @@ type DISK_TYPE string
 
 const (
 	DISK_BLOCK   DISK_TYPE = "block"
+	DISK_FILE DISK_TYPE = "file"
 )
 
 type DISK_DEVICE_TYPE string
@@ -47,6 +48,7 @@ type Disk struct {
 
 type DiskSource struct {
 	MetaDev string `xml:"dev,attr,omitempty"`
+	MetaFile string `xml:"file,attr,omitempty"`
 }
 
 type DISK_DRIVER_TYPE string
@@ -62,37 +64,21 @@ const (
 	DISK_STORAGE_QCOW2 DISK_STORAGE_TYPE = "qcow2"
 )
 
-type DISK_CACHE_TYPE string
-
-const (
-	DISK_CACHE_NONE DISK_CACHE_TYPE = "none"
-	DISK_CACHE_WRITEBACK DISK_CACHE_TYPE = "writeback"
-	DISK_CACHE_WRITETHROUGH = "writethrough"
-)
-
 type DiskDriver struct {
 	MetaName DISK_DRIVER_TYPE `xml:"name,attr,omitempty"`
 	MetaType DISK_STORAGE_TYPE `xml:"type,attr,omitempty"`
-	MetaCache DISK_CACHE_TYPE `xml:"cache,attr,omitempty"`
 }
 
 type DISK_BUS_TYPE string
 
 const (
 	DISK_BUS_IDE DISK_BUS_TYPE = "ide"
+	DISK_BUS_SATA DISK_BUS_TYPE = "sata"
 	DISK_BUS_VIRTIO DISK_BUS_TYPE = "virtio" 
-)
-
-type DISK_TRAY_STATE string
-
-const (
-	DISK_TRAY_OPEN DISK_TRAY_STATE = "open"
-	DISK_TRAY_CLOSED DISK_TRAY_STATE = "closed"
 )
 
 type DiskTarget struct {
 	MetaBus DISK_BUS_TYPE `xml:"bus,attr,omitempty"`
-	MetaTray DISK_TRAY_STATE `xml:"tray,attr,omitempty"`
 }
 
 type DiskReadonly struct {}

@@ -20,10 +20,12 @@
 package generator
 
 import (
-	cthulstruct "cthul.io/cthul/pkg/domain/structure"
 	libvirtstruct "cthul.io/cthul/pkg/domain/libvirt/structure"
+	cthulstruct "cthul.io/cthul/pkg/domain/structure"
 )
 
-func (l *LibvirtGenerator) generateStorageDevice(device *cthulstruct.StorageDevice) (*libvirtstruct.Disk, error) {
-	
+// generateSerial generates a libvirt serial device from the cthul serial device.
+func (l *LibvirtGenerator) generateSerial(device *cthulstruct.SerialDevice) (*libvirtstruct.Serial, error) {
+
+	return nil, nil
 }
