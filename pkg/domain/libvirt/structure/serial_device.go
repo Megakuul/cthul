@@ -43,6 +43,13 @@ type SerialSource struct {
 	MetaPath string `xml:"path,attr,omitempty"`
 }
 
+type SERIAL_BUS_TYPE string
+const (
+	SERIAL_BUS_ISA SERIAL_BUS_TYPE = "isa-serial"
+	SERIAL_BUS_VIRTIO SERIAL_BUS_TYPE = "virtio"
+)
+
 type SerialTarget struct {
+	MetaType SERIAL_BUS_TYPE `xml:"type,attr,omitempty"`
 	MetaPort int64 `xml:"port,attr,omitempty"`
 }

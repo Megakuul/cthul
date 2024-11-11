@@ -30,13 +30,13 @@ import (
 // video device on the guest. It is capable of reading data from the video device and writing data to the
 // guest keyboard and mouse.
 
-// generateGraphic generates a libvirt graphics device from the cthul graphic device.
-func (l *LibvirtGenerator) generateGraphic(device *cthulstruct.GraphicDevice) (*libvirtstruct.Graphics, error) {
+// generateGraphic generates a libvirt graphics device from the cthul video adapter.
+func (l *LibvirtGenerator) generateGraphic(adapter *cthulstruct.VideoAdapter) (*libvirtstruct.Graphics, error) {
 	graphics := &libvirtstruct.Graphics{
 		Listen: &libvirtstruct.GraphicsListen{},
 	}
 
-	graphicDevice, err := l.wave.LookupGraphic(device.WaveGraphicDeviceId)
+	graphicDevice, err := l.wave.LookupGraphic(adapter.DeviceId)
 	if err!=nil {
 		return nil, err
 	}

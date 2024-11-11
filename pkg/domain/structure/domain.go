@@ -31,13 +31,16 @@ type Domain struct {
 	SystemConfig   SystemConfig   `json:"system_config" yaml:"system_config" toml:"system_config"`
 	FirmwareConfig FirmwareConfig `json:"firmware_config" yaml:"firmware_config" toml:"firmware_config"`
 	ResourceConfig ResourceConfig `json:"resource_config" yaml:"resource_config" toml:"resource_config"`
+	
+	VideoDevice VideoDevice `json:"video_device" yaml:"video_device" toml:"video_device"`
+	VideoAdapter VideoAdapter `json:"video_adapter" yaml:"video_adapter" toml:"video_adapter"`
 
+	SerialDevice SerialDevice `json:"serial_device" yaml:"serial_device" toml:"serial_device"`
+	SerialAdapter SerialAdapter `json:"serial_adapter" yaml:"serial_adapter" toml:"serial_adapter"`
+
+	InputDevices []InputDevice `json:"input_devices" yaml:"input_devices" toml:"input_devices"`
 	StorageDevices []StorageDevice `json:"storage_devices" yaml:"storage_devices" toml:"storage_devices"`
 	NetworkDevices []NetworkDevice `json:"network_devices" yaml:"network_devices" toml:"network_devices"`
-
-	VideoDevices   []VideoDevice   `json:"video_devices" yaml:"video_devices" toml:"video_devices"`
-	GraphicDevices []GraphicDevice `json:"graphic_devices" yaml:"graphic_devices" toml:"graphic_devices"`
-	SerialDevices  []SerialDevice  `json:"serial_devices" yaml:"serial_devices" toml:"serial_devices"`
 }
 
 type ARCH_OPTION string
@@ -80,6 +83,63 @@ type ResourceConfig struct {
 	Memory int64 `json:"memory" yaml:"memory" toml:"memory"`
 }
 
+type INPUT_TYPE string
+
+const (
+	INPUT_MOUSE INPUT_TYPE = "cthul::input::mouse"
+	INPUT_TABLET INPUT_TYPE = "cthul::input::tablet"
+	INPUT_KEYBOARD INPUT_TYPE = "cthul::input::keyboard"
+)
+
+type INPUT_BUS string
+
+const (
+	INPUT_PS2 INPUT_BUS = "cthul::input::ps2"
+	INPUT_USB INPUT_BUS = "cthul::input::usb"
+	INPUT_VIRTIO INPUT_BUS = "cthul::input::virtio"
+)
+
+type InputDevice struct {
+	InputType INPUT_TYPE `json:"input_type" yaml:"input_type" toml:"input_type"`
+	InputBus INPUT_BUS `json:"input_bus" yaml:"input_bus" toml:"input_bus"`
+}
+
+type VIDEO_OPTION string
+
+const (
+	VIDEO_VGA  VIDEO_OPTION = "cthul::video::vga"
+	VIDEO_QXL  VIDEO_OPTION = "cthul::video::qxl"
+	VIDEO_HOST VIDEO_OPTION = "cthul::video::host"
+	VIDEO_NONE VIDEO_OPTION = "cthul::video::none"
+)
+
+type VideoDevice struct {
+	VideoOption       VIDEO_OPTION `json:"video_option" yaml:"video_option" toml:"video_option"`
+	CommandBufferSize int64        `json:"commandbuffer_size" yaml:"commandbuffer_size" toml:"commandbuffer_size"`
+	VideoBufferSize   int64        `json:"videobuffer_size" yaml:"videobuffer_size" toml:"videobuffer_size"`
+	FramebufferSize   int64        `json:"framebuffer_size" yaml:"framebuffer_size" toml:"framebuffer_size"`
+}
+
+type VideoAdapter struct {
+	DeviceId string `json:"device_id" yaml:"device_id" toml:"device_id"`	
+}
+
+type SERIAL_BUS string
+
+const (
+	SERIAL_ISA SERIAL_BUS = "cthul::serial::isa"
+	SERIAL_VIRTIO SERIAL_BUS = "cthul::serial::virtio"
+)
+
+type SerialDevice struct {
+	SerialBus SERIAL_BUS `json:"serial_bus" yaml:"serial_bus" toml:"serial_bus"`
+	Port int64 `json:"port" yaml:"port" toml:"port"`
+}
+
+type SerialAdapter struct {
+	DeviceId string `json:"device_id" yaml:"device_id" toml:"device_id"`
+}
+
 type STORAGE_TYPE string
 
 const (
@@ -102,32 +162,15 @@ type StorageDevice struct {
 	BootPriority int64        `json:"boot_priority" yaml:"boot_priority" toml:"boot_priority"`
 }
 
-type NetworkDevice struct {
-	DeviceId     string `json:"device_id" yaml:"device_id" toml:"device_id"`
-	Virtio       bool   `json:"virtio" yaml:"virtio" toml:"virtio"`
-	BootPriority int64  `json:"boot_priority" yaml:"boot_priority" toml:"boot_priority"`
-}
-
-type VIDEO_OPTION string
+type NETWORK_BUS string
 
 const (
-	VIDEO_VGA  VIDEO_OPTION = "cthul::video::vga"
-	VIDEO_QXL  VIDEO_OPTION = "cthul::video::qxl"
-	VIDEO_HOST VIDEO_OPTION = "cthul::video::host"
-	VIDEO_NONE VIDEO_OPTION = "cthul::video::none"
+	NETWORK_E1000 NETWORK_BUS = "cthul::network::e1000"
+	NETWORK_VIRTIO NETWORK_BUS = "cthul::network::virtio"
 )
 
-type VideoDevice struct {
-	VideoOption       VIDEO_OPTION `json:"video_option" yaml:"video_option" toml:"video_option"`
-	CommandBufferSize int64        `json:"commandbuffer_size" yaml:"commandbuffer_size" toml:"commandbuffer_size"`
-	VideoBufferSize   int64        `json:"videobuffer_size" yaml:"videobuffer_size" toml:"videobuffer_size"`
-	FramebufferSize   int64        `json:"framebuffer_size" yaml:"framebuffer_size" toml:"framebuffer_size"`
-}
-
-type SerialDevice struct {
-	WaveSerialDeviceId string `json:"device_id" yaml:"device_id" toml:"device_id"`
-}
-
-type GraphicDevice struct {
-	WaveGraphicDeviceId string `json:"device_id" yaml:"device_id" toml:"device_id"`
+type NetworkDevice struct {
+	DeviceId     string `json:"device_id" yaml:"device_id" toml:"device_id"`
+	NetworkBus NETWORK_BUS `json:"network_bus" yaml:"network_bus" toml:"network_bus"`
+	BootPriority int64  `json:"boot_priority" yaml:"boot_priority" toml:"boot_priority"`
 }
