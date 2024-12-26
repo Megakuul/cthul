@@ -20,8 +20,8 @@
 package generator
 
 import (
-	cthulstruct "cthul.io/cthul/pkg/domain/structure"
-	libvirtstruct "cthul.io/cthul/pkg/domain/libvirt/structure"
+	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
+	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
 )
 
 // generateVCPU generates libvirt VCPUs from resource configuration.

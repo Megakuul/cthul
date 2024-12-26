@@ -17,35 +17,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package generator
+package hotplug
 
 import (
 	"fmt"
 
-	cthulstruct "cthul.io/cthul/pkg/domain/structure"
+	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
+	"github.com/digitalocean/go-libvirt"
 )
 
-// Attach installs / locks all devices that are required by the domain config.
-func (l *LibvirtGenerator) Attach(config *cthulstruct.Domain) error {
-	for _, device := range config.StorageDevices {
-		// PoC: l.granit.AttachStorage(device.GranitBlockDeviceId)
-		_ = device
-	}
+// LibvirtHotplugger provides methods to hotplug libvirt changes based on the xml configuration.
+// Simply defining the xml does only change the domains persistent config but does not hotplug updates,
+// the hotplugger takes components that are hotpluggable and updates them with the appropriate libvirt rpc calls.
+type LibvirtHotplugger struct {
+	client *libvirt.Libvirt
+}
 
-	for _, device := range config.NetworkDevices {
-		// PoC: l.proton.AttachInterface(device.ProtonNetworkDeviceId)
-		_ = device
+func NewLibvirtHotplugger(client *libvirt.Libvirt) *LibvirtHotplugger {
+	return &LibvirtHotplugger{
+		client: client,
 	}
+}
 
-	for _, device := range config.SerialDevices {
-		// PoC: l.wave.AttachSerial(device.WaveSerialDeviceId)
-		_ = device
-	}
 
-	for _, device := range config.GraphicDevices {
-		// PoC: l.wave.AttachGraphic(device.WaveGraphicDeviceId)
-		_ = device
-	}
-	
-	return fmt.Errorf("not implemented biatch")
+func (l *LibvirtHotplugger) Hotplug(config *libvirtstruct.Domain) error {
+	return fmt.Errorf("not implemented")
 }

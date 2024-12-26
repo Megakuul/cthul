@@ -17,29 +17,36 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package hotplug
+package device
 
-import (
-	"fmt"
-
-	libvirtStruct "cthul.io/cthul/pkg/domain/libvirt/structure"
-	"github.com/digitalocean/go-libvirt"
+type VIDEO_TYPE string
+const (
+	VIDEO_SPICE VIDEO_TYPE = "spice"
 )
 
-// LibvirtHotplugger provides methods to hotplug libvirt changes based on the xml configuration.
-// Simply defining the xml does only change the domains persistent config but does not hotplug updates,
-// the hotplugger takes components that are hotpluggable and updates them with the appropriate libvirt rpc calls.
-type LibvirtHotplugger struct {
-	client *libvirt.Libvirt
+// Video holds all information about a video adapter device.
+type Video struct {
+	Type VIDEO_TYPE
+	Path string // unix socket path
 }
 
-func NewLibvirtHotplugger(client *libvirt.Libvirt) *LibvirtHotplugger {
-	return &LibvirtHotplugger{
-		client: client,
-	}
+// CreateVideo creates a new wave video adapter device.
+func (d *DeviceController) CreateVideo(id string) error {
+	
 }
 
+func (d *DeviceController) DeleteVideo(id string) error {
 
-func (l *LibvirtHotplugger) Hotplug(config *libvirtStruct.Domain) error {
-	return fmt.Errorf("not implemented")
+}
+
+func (d *DeviceController) LookupVideo(id string) error {
+
+}
+
+func (d *DeviceController) AttachVideo(id string) error {
+
+}
+
+func (d *DeviceController) DetachVideo(id string) error {
+
 }

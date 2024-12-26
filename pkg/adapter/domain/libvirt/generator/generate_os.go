@@ -22,8 +22,8 @@ package generator
 import (
 	"fmt"
 
-	cthulstruct "cthul.io/cthul/pkg/domain/structure"
-	libvirtstruct "cthul.io/cthul/pkg/domain/libvirt/structure"
+	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
+	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
 )
 
 // Explanation: A libvirt os tag represents configuration options about the emulated cpu, mainboard and firmware

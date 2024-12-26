@@ -22,8 +22,8 @@ package generator
 import (
 	"fmt"
 
-	libvirtstruct "cthul.io/cthul/pkg/domain/libvirt/structure"
-	cthulstruct "cthul.io/cthul/pkg/domain/structure"
+	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
+	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
 )
 
 // Explanation: A libvirt video device provides frame- and commandbuffers to the guest os.

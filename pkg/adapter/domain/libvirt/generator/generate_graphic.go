@@ -22,8 +22,8 @@ package generator
 import (
 	"fmt"
 
-	libvirtstruct "cthul.io/cthul/pkg/domain/libvirt/structure"
-	cthulstruct "cthul.io/cthul/pkg/domain/structure"
+	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
+	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
 )
 
 // Explanation: A libvirt graphics device represents a host component that provides an interface for the

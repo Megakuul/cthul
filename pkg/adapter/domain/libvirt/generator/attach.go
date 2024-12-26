@@ -17,25 +17,37 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package libvirt
+package generator
 
 import (
-	"context"
 	"fmt"
+
+	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
 )
 
-func (l *LibvirtController)GetTextConsole(ctx context.Context, id string) (chan<-[]byte, <-chan []byte, error) {
-	err := l.initClient()
-	if err!=nil {
-		return nil, nil, err
+// Attach installs / locks all devices that are required by the domain config.
+func (l *LibvirtGenerator) Attach(config *cthulstruct.Domain) error {
+	for _, device := range config.VideoAdapters {
+		err := l.wave.AttachVideo(device.DeviceId)
+		if err!=nil {
+			return err
+		}
 	}
-	return nil, nil, fmt.Errorf("not implemented")
-}
 
-func (l *LibvirtController)GetSpiceConsole(ctx context.Context, id string) (chan<-[]byte, <-chan []byte, error) {
-	err := l.initClient()
-	if err!=nil {
-		return nil, nil, err
+	for _, device := range config.SerialDevices {
+		// PoC: l.wave.AttachSerial(device.DeviceId)
+		_ = device
 	}
-	return nil, nil, fmt.Errorf("not implemented")
+	
+	for _, device := range config.StorageDevices {
+		// PoC: l.granit.AttachStorage(device.DeviceId)
+		_ = device
+	}
+
+	for _, device := range config.NetworkDevices {
+		// PoC: l.proton.AttachInterface(device.DeviceId)
+		_ = device
+	}
+	
+	return fmt.Errorf("not implemented biatch")
 }

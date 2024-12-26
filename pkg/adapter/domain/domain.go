@@ -22,19 +22,19 @@ package domain
 import (
 	"context"
 
-	"cthul.io/cthul/pkg/domain/structure"
+	"cthul.io/cthul/pkg/adapter/domain/structure"
 )
 
-// DomainController provides a domain abstraction layer.
+// Domain provides the direct domain abstraction layer.
 // It ensures that the underlying domain (vm) system can be replaced without much effort (even if not planned).
-type DomainController interface {
+type DomainAdapter interface {
 	// List returns a list with uuids from all domains on the host.
 	ListDomains(context.Context) ([]string, error)
 	// Apply updates the domain to the specified state. Updates that can be hotplugged are hotplugged, other
 	// updates are applied at next reboot. Operation is idempotent.
-	ApplyDomain(context.Context, structure.Domain) error
+	ApplyDomain(context.Context, string, structure.Domain) error
 	// Destroy removes a domain from the local machine. Operation is idempotent.
-	DestroyDomain(context.Context, structure.Domain) error
+	DestroyDomain(context.Context, string, structure.Domain) error
 	// Start starts the domain.
 	StartDomain(context.Context, string) error
 	// Reboot reboots the domain if in running state.
@@ -47,21 +47,6 @@ type DomainController interface {
 	ShutdownDomain(context.Context, string) error
 	// Kill stops the domain forcefully.
 	KillDomain(context.Context, string) error
-
-	// CreateSnapshot creates a domain snapshot based on the specified config.
-	CreateSnapshot(context.Context, structure.Snapshot) error
-	// RevertSnapshot reverts the domain to a previous snapshot. The snapshot is identified by uuid.
-	RevertSnapshot(context.Context, string) error
-	// ConsolidateSnapshot consolidates the specified snapshots into the base image.
-	// The snapshot is identified by uuid. Operation is idempotent.
-	ConsolidateSnapshot(context.Context, string) error
-
-	// GetTextConsole starts a tty console session to the domain. Returns a send and recv channel, closing both
-	// channels deallocates the session. Data is transfered in raw tty chunks and must be handled manually.
-	GetTextConsole(context.Context, string) (chan<-[]byte, <-chan []byte, error)
-	// GetSpiceConsole starts a spice session to the domain. Returns a send and recv channel, closing both
-	// channels deallocates the session. Data is transfered in raw spice chunks and must be handled manually.
-	GetSpiceConsole(context.Context, string) (chan<-[]byte, <-chan []byte, error)
 
 	// GetDomainStats fetches overall domain stats. The domain is identified by uuid.
 	GetDomainStats(context.Context, string) (*structure.DomainStats, error)

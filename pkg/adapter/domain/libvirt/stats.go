@@ -26,26 +26,42 @@ import (
 	"cthul.io/cthul/pkg/domain/structure"
 )
 
-func (l *LibvirtController) CreateSnapshot(ctx context.Context, snapshot structure.Snapshot) error {
+func (l *LibvirtAdapter)GetDomainStats(ctx context.Context, id string) (*structure.DomainStats, error) {
 	err := l.initClient()
 	if err!=nil {
-		return err
+		return nil, err
 	}
-	return fmt.Errorf("not implemented")
+	return nil, fmt.Errorf("not implemented")
 }
 
-func (l *LibvirtController) RevertSnapshot(ctx context.Context, id string) error {
+func (l *LibvirtAdapter)GetCpuStats(ctx context.Context, id string) (*structure.CpuStats, error) {
 	err := l.initClient()
 	if err!=nil {
-		return err
+		return nil, err
 	}
-	return fmt.Errorf("not implemented")
+	return nil, fmt.Errorf("not implemented")
 }
 
-func (l *LibvirtController) ConsolidateSnapshot(ctx context.Context, id string) error {
+func (l *LibvirtAdapter)GetMemoryStats(ctx context.Context, id string) (*structure.MemoryStats, error) {
 	err := l.initClient()
 	if err!=nil {
-		return err
+		return nil, err
 	}
-	return fmt.Errorf("not implemented")
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (l *LibvirtAdapter)GetInterfaceStats(ctx context.Context, id string) (*structure.InterfaceStats, error) {
+	err := l.initClient()
+	if err!=nil {
+		return nil, err
+	}
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (l *LibvirtAdapter)GetBlockStats(ctx context.Context, id string) (*structure.BlockStats, error) {
+	err := l.initClient()
+	if err!=nil {
+		return nil, err
+	}
+	return nil, fmt.Errorf("not implemented")
 }

@@ -25,24 +25,27 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"sync"
 
-	"cthul.io/cthul/pkg/domain/libvirt/generator"
+	"cthul.io/cthul/pkg/adapter/domain/libvirt/generator"
 	"cthul.io/cthul/pkg/log"
 	"cthul.io/cthul/pkg/log/discard"
 	"github.com/digitalocean/go-libvirt"
 )
 
-type LibvirtController struct {
+type LibvirtAdapter struct {
+	initLock sync.Mutex
 	client *libvirt.Libvirt
 	logger log.Logger
 
 	generator *generator.LibvirtGenerator
 }
 
-type LibvirtControllerOption func(*LibvirtController)
+type LibvirtAdapterOption func(*LibvirtAdapter)
 
-func NewLibvirtController(generator *generator.LibvirtGenerator, opts ...LibvirtControllerOption) *LibvirtController {
-	controller := &LibvirtController{
+func NewLibvirtAdapter(generator *generator.LibvirtGenerator, opts ...LibvirtAdapterOption) *LibvirtAdapter {
+	controller := &LibvirtAdapter{
+		initLock: sync.Mutex{},
 		client: nil,
 		logger: discard.NewDiscardLogger(),
 		generator: generator,
@@ -56,28 +59,31 @@ func NewLibvirtController(generator *generator.LibvirtGenerator, opts ...Libvirt
 }
 
 // WithLogger adds a logger to the libvirt controller.
-func WithLogger(logger log.Logger) LibvirtControllerOption {
-	return func (l *LibvirtController) {
+func WithLogger(logger log.Logger) LibvirtAdapterOption {
+	return func (l *LibvirtAdapter) {
 		l.logger = logger
 	}
 }
 
 // initClient creates the underlying libvirt connection client if not already initialized.
-func (l *LibvirtController) initClient() error {
-	if l.client != nil {
+func (l *LibvirtAdapter) initClient() error {
+	l.initLock.Lock()
+	defer l.initLock.Unlock()
+	if l.client!=nil {
 		return nil
 	}
+	
 	uri, _ := url.Parse(string(libvirt.QEMUSystem))
 	client, err := libvirt.ConnectToURI(uri)
 	if err!=nil {
 		return err
 	}
-	l.client = client
+	l.client  = client
 	return nil
 }
 
 // parseUUID tries to convert a uuid string (either with or without hyphens) into a libvirt.UUID.
-func (l *LibvirtController) parseUUID(id string) (libvirt.UUID, error) {
+func (l *LibvirtAdapter) parseUUID(id string) (libvirt.UUID, error) {
 	rawStr := strings.ReplaceAll(id, "-", "")
 	if len(rawStr) != 2 * libvirt.UUIDBuflen {
 		return [libvirt.UUIDBuflen]byte{}, fmt.Errorf(
@@ -95,7 +101,7 @@ func (l *LibvirtController) parseUUID(id string) (libvirt.UUID, error) {
 }
 
 // serializeUUID converts a libvirt uuid into a uuid string with hyphens.
-func (l *LibvirtController) serializeUUID(uuid libvirt.UUID) (string, error) {
+func (l *LibvirtAdapter) serializeUUID(uuid libvirt.UUID) (string, error) {
 	uuidStr := hex.EncodeToString(uuid[:])
 	if len(uuidStr) != 32 {
 		return "", fmt.Errorf("failed to serialize uuid: expected encoded hex string with %d characters", 32)
@@ -108,7 +114,7 @@ func (l *LibvirtController) serializeUUID(uuid libvirt.UUID) (string, error) {
 
 // Terminate stops and closes the libvirt controller.
 // The context is currently not utilized due to the lack of context handling in the underlying libvirt library.
-func (l* LibvirtController) Terminate(ctx context.Context) error {
+func (l* LibvirtAdapter) Terminate(ctx context.Context) error {
 	if l.client != nil {
 		return l.client.Disconnect()
 	}

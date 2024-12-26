@@ -25,12 +25,12 @@ import (
 	"fmt"
 
 	"github.com/digitalocean/go-libvirt"
-	"cthul.io/cthul/pkg/domain/libvirt/hotplug"
-	"cthul.io/cthul/pkg/domain/structure"
+	"cthul.io/cthul/pkg/adapter/domain/libvirt/hotplug"
+	"cthul.io/cthul/pkg/adapter/domain/structure"
 )
 
 // ListDomains fetches the uuid of all domains located on this node.
-func (l *LibvirtController) ListDomains(ctx context.Context) ([]string, error) {
+func (l *LibvirtAdapter) ListDomains(ctx context.Context) ([]string, error) {
 	err := l.initClient()
 	if err!=nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (l *LibvirtController) ListDomains(ctx context.Context) ([]string, error) {
 }
 
 // ApplyDomain applies the provided domain configuration to the host.
-func (l *LibvirtController) ApplyDomain(ctx context.Context, domainCfg structure.Domain) error {
+func (l *LibvirtAdapter) ApplyDomain(ctx context.Context, id string, domainCfg structure.Domain) error {
 	err := l.initClient()
 	if err!=nil {
 		return err
@@ -64,7 +64,7 @@ func (l *LibvirtController) ApplyDomain(ctx context.Context, domainCfg structure
 		return err
 	}
 
-	domain, err := l.generator.Generate(&domainCfg)
+	domain, err := l.generator.Generate(id, &domainCfg)
 	if err!=nil {
 		return err
 	}
@@ -89,18 +89,13 @@ func (l *LibvirtController) ApplyDomain(ctx context.Context, domainCfg structure
 }
 
 // DestroyDomain removes (undefines) the domain from the host. Domain must be in shutdown state for this action.
-func (l *LibvirtController) DestroyDomain(ctx context.Context, domainCfg structure.Domain) error {
+func (l *LibvirtAdapter) DestroyDomain(ctx context.Context, id string, domainCfg structure.Domain) error {
 	err := l.initClient()
 	if err!=nil {
 		return err
 	}
 
-	err = l.generator.Detach(&domainCfg)
-	if err!=nil {
-		return err
-	}
-
-	uuid, err := l.parseUUID(domainCfg.UUID)
+	uuid, err := l.parseUUID(id)
 	if err!=nil {
 		return err
 	}
@@ -115,11 +110,16 @@ func (l *LibvirtController) DestroyDomain(ctx context.Context, domainCfg structu
 		return err
 	}
 
+	err = l.generator.Detach(&domainCfg)
+	if err!=nil {
+		return err
+	}
+
 	return nil
 }
 
 // Start starts the specified domain (must be defined).
-func (l *LibvirtController) StartDomain(ctx context.Context, id string) error {
+func (l *LibvirtAdapter) StartDomain(ctx context.Context, id string) error {
 	err := l.initClient()
 	if err!=nil {
 		return err
@@ -144,7 +144,7 @@ func (l *LibvirtController) StartDomain(ctx context.Context, id string) error {
 }
 
 // Reboot reboots the specified domain with the default reboot method (must be running).
-func (l *LibvirtController) RebootDomain(ctx context.Context, id string) error {
+func (l *LibvirtAdapter) RebootDomain(ctx context.Context, id string) error {
 	err := l.initClient()
 	if err!=nil {
 		return err
@@ -169,7 +169,7 @@ func (l *LibvirtController) RebootDomain(ctx context.Context, id string) error {
 }
 
 // Pause freezes the specified domain (must be running).
-func (l *LibvirtController) PauseDomain(ctx context.Context, id string) error {
+func (l *LibvirtAdapter) PauseDomain(ctx context.Context, id string) error {
 	err := l.initClient()
 	if err!=nil {
 		return err
@@ -194,7 +194,7 @@ func (l *LibvirtController) PauseDomain(ctx context.Context, id string) error {
 }
 
 // Resume unpauses the specified domain (must be paused).
-func (l *LibvirtController) ResumeDomain(ctx context.Context, id string) error {
+func (l *LibvirtAdapter) ResumeDomain(ctx context.Context, id string) error {
 	err := l.initClient()
 	if err!=nil {
 		return err
@@ -219,7 +219,7 @@ func (l *LibvirtController) ResumeDomain(ctx context.Context, id string) error {
 }
 
 // Shutdown gracefully stops the domain with the default shutdown method (must be running).
-func (l *LibvirtController) ShutdownDomain(ctx context.Context, id string) error {
+func (l *LibvirtAdapter) ShutdownDomain(ctx context.Context, id string) error {
 	err := l.initClient()
 	if err!=nil {
 		return err
@@ -244,7 +244,7 @@ func (l *LibvirtController) ShutdownDomain(ctx context.Context, id string) error
 }
 
 // Kill forcefully stops the domain (must be running).
-func (l *LibvirtController) KillDomain(ctx context.Context, id string) error {
+func (l *LibvirtAdapter) KillDomain(ctx context.Context, id string) error {
 	err := l.initClient()
 	if err!=nil {
 		return err

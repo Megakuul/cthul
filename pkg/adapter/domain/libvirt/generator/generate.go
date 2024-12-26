@@ -20,17 +20,17 @@
 package generator
 
 import (
-	cthulstruct "cthul.io/cthul/pkg/domain/structure"
-	libvirtstruct "cthul.io/cthul/pkg/domain/libvirt/structure"
+	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
+	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
 )
 
 // Generate transpiles the domain config to a libvirt xml file. Cthul devices are dynamically resolved with
 // the generator attached device controllers. Devices must be attached to the node otherwise lookups will fail.
-func (l *LibvirtGenerator) Generate(config *cthulstruct.Domain) (*libvirtstruct.Domain, error) {
+func (l *LibvirtGenerator) Generate(id string, config *cthulstruct.Domain) (*libvirtstruct.Domain, error) {
 	var err error
 	domain := &libvirtstruct.Domain{
 		MetaType: libvirtstruct.DOMAIN_KVM,
-		UUID: config.UUID,
+		UUID: id,
 		Name: config.Name,
 		Title: config.Title,
 		Description: config.Description,
@@ -44,9 +44,35 @@ func (l *LibvirtGenerator) Generate(config *cthulstruct.Domain) (*libvirtstruct.
 	if err!=nil {
 		return nil, err
 	}
+
+	videoDevice, err := l.generateVideo(&config.VideoDevice)
+	if err!=nil {
+		return nil, err
+	}
+	graphicDevice, err := l.generateGraphic(&config.VideoAdapter)
+	if err!=nil {
+		return nil, err
+	}
+	domain.Devices = append(domain.Devices, videoDevice, graphicDevice)
+
+	for _, serialDevice := range config.SerialDevices {
+		device, err := l.generateSerial(&serialDevice)
+		if err!=nil {
+			return nil, err
+		}
+		domain.Devices = append(domain.Devices, device)
+	}
 	
-	for _, blockDevice := range config.BlockDevices {
-		device, err := l.generateBlockDevice(blockDevice)
+	for _, inputDevice := range config.InputDevices {
+		device, err := l.generateInput(&inputDevice)
+		if err!=nil {
+			return nil, err
+		}
+		domain.Devices = append(domain.Devices, device)
+	}
+	
+	for _, storageDevice := range config.StorageDevices {
+		device, err := l.generateDisk(&storageDevice)
 		if err!=nil {
 			return nil, err
 		}
@@ -54,31 +80,7 @@ func (l *LibvirtGenerator) Generate(config *cthulstruct.Domain) (*libvirtstruct.
 	}
 
 	for _, networkDevice := range config.NetworkDevices {
-		device, err := l.generateNetworkDevice(networkDevice)
-		if err!=nil {
-			return nil, err
-		}
-		domain.Devices = append(domain.Devices, device)
-	}
-
-	for _, serialDevice := range config.SerialDevices {
-		device, err := l.generateSerialDevice(serialDevice)
-		if err!=nil {
-			return nil, err
-		}
-		domain.Devices = append(domain.Devices, device)
-	}
-
-	for _, videoDevice := range config.VideoDevices {
-		device, err := l.generateVideoDevice(videoDevice)
-		if err!=nil {
-			return nil, err
-		}
-		domain.Devices = append(domain.Devices, device)
-	}
-	
-	for _, graphicDevice := range config.GraphicDevices {
-		device, err := l.generateGraphicDevice(graphicDevice)
+		device, err := l.generateInterface(&networkDevice)
 		if err!=nil {
 			return nil, err
 		}

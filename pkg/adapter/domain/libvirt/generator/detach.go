@@ -22,30 +22,31 @@ package generator
 import (
 	"fmt"
 
-	cthulstruct "cthul.io/cthul/pkg/domain/structure"
+	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
 )
 
 // Detach releases all devices that were used by the domain config.
 func (l *LibvirtGenerator) Detach(config *cthulstruct.Domain) error {
-	for _, device := range config.BlockDevices {
-		// PoC: l.granit.ReleaseBlock(device.GranitBlockDeviceId)
-		_ = device
-	}
-
 	for _, device := range config.NetworkDevices {
-		// PoC: l.proton.ReleaseInterface(device.ProtonNetworkDeviceId)
+		// PoC: l.proton.DetachInterface(device.DeviceId)
 		_ = device
 	}
 
+	for _, device := range config.StorageDevices {
+		// PoC: l.granit.DetachStorage(device.DeviceId)
+		_ = device
+	}
+	
 	for _, device := range config.SerialDevices {
-		// PoC: l.wave.ReleaseSerial(device.WaveSerialDeviceId)
+		// PoC: l.wave.DetachSerial(device.DeviceId)
 		_ = device
 	}
 
-	for _, device := range config.GraphicDevices {
-		// PoC: l.wave.ReleaseGraphic(device.WaveGraphicDeviceId)
-		_ = device
+	for _, device := range config.VideoAdapters {
+		// PoC: l.wave.DetachVideo(config.adapter.DeviceId)
+		_ =  device
 	}
+
 	
 	return fmt.Errorf("not implemented mr")
 }

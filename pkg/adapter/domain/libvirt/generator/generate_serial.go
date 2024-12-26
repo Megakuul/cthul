@@ -22,8 +22,8 @@ package generator
 import (
 	"fmt"
 
-	libvirtstruct "cthul.io/cthul/pkg/domain/libvirt/structure"
-	cthulstruct "cthul.io/cthul/pkg/domain/structure"
+	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
+	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
 )
 
 // Explanation: A libvirt serial device is used to emulate a real serial device. The serial device does just
@@ -32,17 +32,17 @@ import (
 // Using virtio driver enables more efficient communication by transfering data over virtqueues instead of
 // sending every chunk via separate PIO instruction.
 
-// generateSerial generates a libvirt serial device from the cthul serial device and adapter.
-func (l *LibvirtGenerator) generateSerial(device *cthulstruct.SerialDevice, adapter *cthulstruct.SerialAdapter) (*libvirtstruct.Serial, error) {
+// generateSerial generates a libvirt serial device from the cthul serial device.
+func (l *LibvirtGenerator) generateSerial(device *cthulstruct.SerialDevice) (*libvirtstruct.Serial, error) {
 	serial := &libvirtstruct.Serial{
 		MetaType: libvirtstruct.SERIAL_UNIX,
-		Source: &libvirtstruct.SerialSource{MetaMode: libvirtstruct.SERIAL_SOURCE_BIND},
+		Source: &libvirtstruct.SerialSource{},
 		Target: &libvirtstruct.SerialTarget{
 			MetaPort: device.Port,
 		},
 	}
 
-	serialDevice, err := l.wave.LookupSerial(adapter.DeviceId)
+	serialDevice, err := l.wave.LookupSerial(device.DeviceId)
 	if err!=nil {
 		return nil, err
 	}

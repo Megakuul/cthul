@@ -19,6 +19,24 @@
 
 package structure
 
-type Snapshot struct {
+import "encoding/xml"
 
+type INPUT_TYPE string
+const (
+	INPUT_MOUSE INPUT_TYPE = "mouse"
+	INPUT_KEYBOARD INPUT_TYPE = "keyboard"
+	INPUT_TABLET INPUT_TYPE = "tablet"
+)
+
+type INPUT_BUS string
+const (
+	INPUT_PS2 INPUT_BUS  = "ps2"
+	INPUT_USB INPUT_BUS = "usb"
+	INPUT_VIRTIO INPUT_BUS = "virtio"
+)
+
+type Input struct {
+	XMLName xml.Name `xml:"input"`
+	MetaType INPUT_TYPE `xml:"type,attr,omitempty"`
+	MetaBus INPUT_BUS `xml:"bus,attr,omitempty"`
 }

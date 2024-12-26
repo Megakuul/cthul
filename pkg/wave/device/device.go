@@ -40,5 +40,3 @@ func NewDeviceController(client db.Client, opts ...DeviceControllerOption) *Devi
 
 	return controller
 }
-
-

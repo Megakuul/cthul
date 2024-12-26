@@ -21,9 +21,9 @@ package generator
 
 import (
 	"fmt"
-	
-	libvirtstruct "cthul.io/cthul/pkg/domain/libvirt/structure"
-	cthulstruct "cthul.io/cthul/pkg/domain/structure"
+
+	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
+	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
 )
 
 // Explanation: A libvirt input device can represent multiple human interface devices, like a mouse, tablet or
@@ -33,7 +33,29 @@ import (
 
 // generateInterface generates a libvirt network interface device from the cthul network device.
 func (l *LibvirtGenerator) generateInput(device *cthulstruct.InputDevice) (*libvirtstruct.Input, error) {
-	// TODO
+	input := &libvirtstruct.Input{}
+
+	switch device.InputType {
+	case cthulstruct.INPUT_MOUSE:
+		input.MetaType = libvirtstruct.INPUT_MOUSE
+	case cthulstruct.INPUT_TABLET:
+		input.MetaType = libvirtstruct.INPUT_TABLET
+	case cthulstruct.INPUT_KEYBOARD:
+		input.MetaType = libvirtstruct.INPUT_KEYBOARD
+	default:
+		return nil, fmt.Errorf("unknown input type: %s", device.InputType)
+	}
 	
-	return inter, nil
+	switch device.InputBus {
+	case cthulstruct.INPUT_PS2:
+		input.MetaBus = libvirtstruct.INPUT_PS2
+	case cthulstruct.INPUT_USB:
+		input.MetaBus = libvirtstruct.INPUT_USB
+	case cthulstruct.INPUT_VIRTIO:
+		input.MetaBus = libvirtstruct.INPUT_VIRTIO
+	default:
+		return nil, fmt.Errorf("unknown input bus: %s", device.InputBus)
+	}
+	
+	return input, nil
 }
