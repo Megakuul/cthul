@@ -23,10 +23,12 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
-	"cthul.io/cthul/internal/wave/scheduler/resource"
+	"cthul.io/cthul/pkg/wave/domain"
+	domstruct "cthul.io/cthul/pkg/wave/domain/structure"
+	"cthul.io/cthul/pkg/wave/node"
+	nodestruct "cthul.io/cthul/pkg/wave/node/structure"
 )
 
 // startSchedulerCycle starts a scheduler cycle. This cycle executes periodically based next schedule stored
@@ -38,9 +40,12 @@ import (
 // based on their current capacity.
 // The schedulerCtx can be cancelled to stop the scheduler, this will stop the scheduler AFTER the current cycle.
 func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
+	domainController := domain.NewDomainController(s.client)
+	nodeController := node.NewNodeController(s.client)
+	
+	// unmanagedDomain holds unmanaged domains and the number of cycles they were already unmanaged.
+	// it is used to avoid immediate rescheduling of unmanagedDomains.
 	unmanagedDomains := map[string]int{}
-
-	resourceOperator := resource.NewResourceOperator(s.client, resource.WithLogger(s.logger))
 	
 	next, err := s.client.Get(schedulerCtx, "/WAVE/SCHEDULER/NEXT")
 	if err!=nil {
@@ -70,76 +75,73 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 			s.logger.Debug("scheduler", "scheduler possibly double contested; waiting for next cycle...")
 			continue
 		}
+		
 
-		clusterNodeResources, err := resourceOperator.IndexNodeResources(s.workCtx, "/WAVE/SCHEDULER/NODE/")
-		if err!= nil {
-			s.logger.Err("scheduler", "failed to index scheduler nodes: " + err.Error())
-			continue
-		}
-		
-		// clusterDomainResources holds the full cluster domain resource information
-		// for performance reasons, this is lazy loaded only if a node must be rescheduled.
-		var clusterDomainResources map[string]map[string]resource.DomainResources = nil
-		
-		domainNodes, err := s.client.GetRange(s.workCtx, "/WAVE/DOMAIN/NODE/")
+		domains, err := domainController.List(s.workCtx)
 		if err!=nil {
-			s.logger.Err("scheduler", "failed to load domain nodes: " + err.Error())
+			s.logger.Err("scheduler", "failed to load domains: " + err.Error())
+			continue
+		}
+
+		nodes, err := nodeController.List(s.workCtx)
+		if err!=nil {
+			s.logger.Err("scheduler", "failed to load nodes: " + err.Error())
 			continue
 		}
 		
-		for key, node := range domainNodes {
-			domain := strings.TrimPrefix("/WAVE/DOMAIN/NODE/", key)
-			_, ok := clusterNodeResources[node]
+		for domainId, domain  := range domains {
+			_, ok := nodes[domain.Node]
 			if !ok {
-				retries := unmanagedDomains[domain]
-				unmanagedDomains[domain] = retries + 1
+				retries := unmanagedDomains[domainId]
+				unmanagedDomains[domainId] = retries + 1
 			} else {
-				unmanagedDomains[domain] = 0
+				unmanagedDomains[domainId] = 0
 			}
 
-			if unmanagedDomains[domain] >= int(s.rescheduleCycles) {
-				if clusterDomainResources == nil {
-					clusterDomainResources, err = resourceOperator.IndexDomainResources(s.workCtx, "/WAVE/DOMAIN")
-					if err!=nil {
-						s.logger.Err("scheduler", "failed to index cluster domain resources: " + err.Error())
-						continue
-					}
-				}
-				domainResources, err := resourceOperator.GetDomainResources(s.workCtx, "/WAVE/DOMAIN", domain)
-				if err!=nil {
-					s.logger.Err("scheduler", "failed to read domain resources: " + err.Error())
-					continue
-				}
-				newNode, newNodeResources, err := s.findNode(s.workCtx,
-					*domainResources,
-					clusterNodeResources,
-					clusterDomainResources,
-				)
-				if err!=nil {
-					s.logger.Warn("scheduler", "skipping reschedule: " + err.Error())
-					continue
-				}
-				_, err = s.client.Set(s.workCtx, fmt.Sprintf("/WAVE/DOMAIN/NODE/%s", domain), newNode, 0)
-				if err!=nil {
-					s.logger.Err("scheduler", "failed to reschedule node: " + err.Error())
-					continue
-				}
-				clusterNodeResources[newNode] = *newNodeResources
-				if clusterDomainResources[newNode] != nil {
-					clusterDomainResources[newNode][domain] = *domainResources
-				}
+			if unmanagedDomains[domainId] < int(s.rescheduleCycles) {
+				continue
 			}
+			
+			targetNodeId, targetNode, err := s.findNode(domain, domains, nodes)
+			if err!=nil {
+				s.logger.Warn("scheduler", fmt.Sprintf(
+					"skipping reschedule for '%s': %s", domainId, err.Error(),
+				))
+				continue
+			}
+
+			domainController.SetNode(s.workCtx, domainId, targetNodeId)
+			if err!=nil {
+				s.logger.Err("scheduler", fmt.Sprintf(
+					"failed to reschedule '%s': %s", domainId, err.Error(),
+				))
+				continue
+			}
+			
+			domain.Node = targetNodeId			
+			domains[domainId] = domain
+			nodes[targetNodeId] = *targetNode
 		}
 	}
 }
 
-// findNode evaluates the optimal node to move the domain to.
-// Returns the node id and its assumed new capacity (guessed based on heuristics).
-func (s *Scheduler) findNode(ctx context.Context,
-	domain resource.DomainResources,
-	clusterNodes map[string]resource.NodeResources,
-	clusterDomains map[string]map[string]resource.DomainResources,
-) (string, *resource.NodeResources, error) {
+// findNode evaluates the optimal node to move the domain to. Returns the new target node id and its associated
+// node information. The assumed resource impact of the new domain is already factored in.
+func (s *Scheduler) findNode(
+	domain domstruct.Domain,
+	domains map[string]domstruct.Domain,
+	nodes map[string]nodestruct.Node,
+) (string, *nodestruct.Node, error) {
+
+	eligibleNodes := map[string]nodestruct.Node{}
+	for nodeId, node := range nodes {
+		if checkAffinity(domain.Affinity, node.Affinity) {
+			eligibleNodes[nodeId] = node
+		}
+	}
+	if len(eligibleNodes) < 1 {
+		return "", nil, fmt.Errorf("no cluster node matches one or more domain affinity tags")
+	}
 	
 	// constants define the usage factor that a domain is assumed to consume.
 	// this is a heuristic to "guess" how much cpu/mem the domain will actually consume on the cluster node.
@@ -147,17 +149,17 @@ func (s *Scheduler) findNode(ctx context.Context,
 	const DOMAIN_CPU_USAGE_FACTOR_HEURISTIC = 0.3
 	const DOMAIN_MEM_USAGE_FACTOR_HEURISTIC = 0.6
 	
-	assumedCpuUsage := domain.TotalCpuCores * DOMAIN_CPU_USAGE_FACTOR_HEURISTIC
-	assumedMemUsage := int64(float64(domain.TotalMemBytes) * DOMAIN_MEM_USAGE_FACTOR_HEURISTIC)
+	assumedCpuUsage := domain.AllocatedCPU * DOMAIN_CPU_USAGE_FACTOR_HEURISTIC
+	assumedMemUsage := int64(float64(domain.AllocatedMemory) * DOMAIN_MEM_USAGE_FACTOR_HEURISTIC)
 
 	// filter out nodes that currently do not provide enough available resources.
 	// This is done to prevent moving a domain to a node that has currently not sufficient capacity.
 	// For example if a high load cluster node failsover, instead of moving all domains at once to another
 	// available node, every cycle just moves the amount of nodes the currently fit within the current capacity.
-	availableNodes := map[string]resource.NodeResources{}
-	for node, resources := range clusterNodes {
-		if resources.AvailableCpuCores > assumedCpuUsage && resources.AvailableMemBytes > assumedMemUsage {
-			availableNodes[node] = resources
+	availableNodes := map[string]nodestruct.Node{}
+	for nodeId, node := range nodes {
+		if node.AvailableCpu > assumedCpuUsage && node.AvailableMemory > assumedMemUsage {
+			availableNodes[nodeId] = node
 		}
 	}
 	if len(availableNodes) < 1 {
@@ -175,41 +177,53 @@ func (s *Scheduler) findNode(ctx context.Context,
 	// This influences the algorithm to weight either cpu or mem stronger, therefore it is set to the resource
 	// requirements of the domain (e.g. if domain has 8 cores and 2GB memory, the cpu weight is 8 and the mem 2)
 	var (
-		CPU_POINT_WEIGHT = float64(domain.TotalCpuCores) * CPU_POINT_FACTOR
-		MEM_POINT_WEIGHT = float64(domain.TotalMemBytes) * MEM_POINT_FACTOR
+		CPU_POINT_WEIGHT = domain.AllocatedCPU * CPU_POINT_FACTOR
+		MEM_POINT_WEIGHT = float64(domain.AllocatedMemory) * MEM_POINT_FACTOR
 	)
 
 	// search the node with the highest rating, rating points are calculated based on a simple formula:
 	// ((nodeTotalCpu - nodeAllocatedCpu) * CPU_WEIGHT) + ((nodeTotalMem - nodeAllocatedMem) * MEM_WEIGHT)
 	// This finds the node that best fits the capacity of the domain in question.
-	chosenNode, chosenRating := "", 0.0
-	for node, nodeResources := range availableNodes {
-		unallocatedCpu := nodeResources.TotalCpuCores
-		unallocatedMem := nodeResources.TotalMemBytes
-		if nodeDomains, ok := clusterDomains[node]; ok {
-			for _, domainResources := range nodeDomains {
-				unallocatedCpu -= domainResources.TotalCpuCores
-				unallocatedMem -= domainResources.TotalMemBytes
+	chosenNodeId, chosenRating := "", 0.0
+	for nodeId, node := range availableNodes {
+		availableCpu := node.AllocatedCpu
+		availableMem := node.AllocatedMemory
+		for _, dom := range domains {
+			if dom.Node == nodeId {
+				availableCpu -= dom.AllocatedCPU
+				availableMem -= dom.AllocatedMemory
 			}
 		}
 
-		cpuRating := unallocatedCpu * CPU_POINT_FACTOR * CPU_POINT_WEIGHT
-		memRating := float64(unallocatedMem) * MEM_POINT_FACTOR * MEM_POINT_WEIGHT
+		cpuRating := availableCpu * CPU_POINT_FACTOR * CPU_POINT_WEIGHT
+		memRating := float64(availableMem) * MEM_POINT_FACTOR * MEM_POINT_WEIGHT
 		nodeRating := cpuRating + memRating
 		
-		if chosenNode == "" {
-			chosenNode, chosenRating = node, nodeRating
+		if chosenNodeId == "" {
+			chosenNodeId, chosenRating = nodeId, nodeRating
 		} else if chosenRating < nodeRating {
-			chosenNode, chosenRating = node, nodeRating
+			chosenNodeId, chosenRating = nodeId, nodeRating
 		}
 	}
 
-	chosenResources := availableNodes[chosenNode]
-	chosenResources.AvailableCpuCores -= assumedCpuUsage
-	chosenResources.AvailableMemBytes -= assumedMemUsage
-	return chosenNode, &chosenResources, nil
+	chosenNode := availableNodes[chosenNodeId]
+	chosenNode.AvailableCpu -= assumedCpuUsage
+	chosenNode.AvailableMemory -= assumedMemUsage
+	return chosenNodeId, &chosenNode, nil
 }
 
+
+// checkAffinity checks if any affinity searchTag is contained in the targetTags.
+func checkAffinity(searchTags, targetTags []string) bool {
+	for _, searchTag := range searchTags {
+		for _, targetTag  := range targetTags {
+			if searchTag == targetTag {
+				return true
+			}
+		}
+	}
+	return false
+}
 
 // parseTime converts a unix timestamp (sec) as string to time.Time. Returns 01.01.1970 if it fails to parse.
 func parseTime(unixString string) time.Time {

@@ -26,6 +26,8 @@ import (
 	"cthul.io/cthul/pkg/db"
 	"cthul.io/cthul/pkg/log"
 	"cthul.io/cthul/pkg/log/discard"
+	"cthul.io/cthul/pkg/wave/domain"
+	"cthul.io/cthul/pkg/wave/node"
 )
 
 // Scheduler provides a component responsible for advertising the local node and its resources to the cluster.

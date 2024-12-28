@@ -37,42 +37,28 @@ type NodeResources struct {
 	TotalMemBytes     int64   `json:"total_mem_bytes"`
 }
 
-// GetNodeResources fetches the node resources of one single node.
-func (r *ResourceOperator) GetNodeResources(ctx context.Context, key string) (*NodeResources, error) {
-	nodeResourceStr, err := r.client.Get(ctx, key)
-	if err!=nil {
-		return nil, err
-	}
-	
-	resources := NodeResources{}
-	err = json.Unmarshal([]byte(nodeResourceStr), &resources)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse node resources")
-	}
-
-	return &resources, nil
-}
-
-// IndexNodeResources fetches all node resources in one batch. Specify the key that can be used to find
-// the node resources. Returns a map holding nodes->nodeResources.
-func (r *ResourceOperator) IndexNodeResources(ctx context.Context, key string) (map[string]NodeResources, error){
-	nodeResources, err := r.client.GetRange(ctx, key)
+// ListNodes fetches all cluster nodes and associated resource information.
+// Specify the key that can be used to find the node resources. Returns a map holding nodes->nodeResources.
+func (r *ResourceOperator) ListNodes(ctx context.Context, prefix string) (map[string]NodeResources, error){
+	nodeResources, err := r.client.GetRange(ctx, prefix)
 	if err!=nil {
 		return nil, err
 	}
 
-	indexMap := map[string]NodeResources{}
-	for nodeKey, resourceStr := range nodeResources {
-		node := strings.TrimPrefix(nodeKey, key)
+	nodeMap := map[string]NodeResources{}
+	for key, value := range nodeResources {
+		identifier := strings.TrimPrefix(key, prefix)
 		resources := NodeResources{}
-		err := json.Unmarshal([]byte(resourceStr), &resources)
+		err := json.Unmarshal([]byte(value), &resources)
 		if err!=nil {
-			r.logger.Warn("scheduler", "failed to parse node resources; skipping node...")
+			r.logger.Warn("scheduler", fmt.Sprintf(
+				"failed to parse node resources; skipping node '%s'...", identifier,
+			))
 			continue
 		}
-		indexMap[node] = resources
+		nodeMap[identifier] = resources
 	}
-	return indexMap, nil
+	return nodeMap, nil
 }
 
 // GenerateNodeResources generates a node resources from the specs of the local machine.

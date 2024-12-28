@@ -19,24 +19,22 @@
 
 package structure
 
-// Domain "should've" state used by cthul.
-// It's not representing the actual state but rather the state the domain should be pushed by the operator.
-type DOMAIN_STATE string
+type NODE_STATE string
 
 const (
-	DOMAIN_UP          DOMAIN_STATE = "up"
-	DOMAIN_PAUSE       DOMAIN_STATE = "pause"
-	DOMAIN_DOWN        DOMAIN_STATE = "down"
-	DOMAIN_FORCED_DOWN DOMAIN_STATE = "forced_down"
+	NODE_HEALTHY          NODE_STATE = "healthy"
+	NODE_DEGRADED       NODE_STATE = "degraded"
+	NODE_MAINTENANCE       NODE_STATE = "maintenance"
 )
 
-// Domain provides the structure of the domain information present on the database.
-// Unlike the Domain adapter config, this is not a deterministic blueprint but rather a snapshot
-// of the current state of the domain.
-type Domain struct {
-	Node   string       `json:"node"`
+// Node provides the structure of the node information present on the database.
+type Node struct {
 	Affinity []string `json:"affinity"`
-	State  DOMAIN_STATE `json:"state"`
-	AllocatedCPU    float64        `json:"allocated_cpu"`
-	AllocatedMemory int64        `json:"allocated_memory"`
+	State NODE_STATE `json:"state"`
+	AllocatedCpu float64 `json:"allocated_cpu"`
+	AvailableCpu    float64        `json:"available_cpu"`
+	AllocatedMemory int64 `json:"allocated_memory"`
+	AvailableMemory int64 `json:"available_memory"`
 }
+
+
