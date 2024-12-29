@@ -22,7 +22,7 @@ package domain
 import (
 	"context"
 
-	"cthul.io/cthul/pkg/domain/structure"
+	"cthul.io/cthul/pkg/wave/domain/structure"
 )
 
 // DomainController provides a domain abstraction layer.

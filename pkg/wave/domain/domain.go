@@ -24,7 +24,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	adapterstruct "cthul.io/cthul/pkg/adapter/domain/structure"
@@ -33,6 +32,9 @@ import (
 	"github.com/google/uuid"
 )
 
+// DomainController provides an interface for wave domain related operations.
+// The single source of truth for configuration is always the database.
+// The single source of truth for dynamic data is always libvirt.
 type DomainController struct {
 	client db.Client
 }
@@ -51,6 +53,15 @@ func NewDomainController(client db.Client, opts ...DomainControllerOption) *Doma
 	return controller
 }
 
+// affinity provides the domain affinity tags structure stored in the database.
+type affinity []string
+
+// resources provides the domain resource structure stored in the database.
+type resources struct {
+	AllocatedCpu float64 `json:"allocated_cpu"`
+	AllocatedMemory int64 `json:"allocated_memory"`
+}
+
 // List returns a map containing domain uuids and associated metadata from the database.
 func (d *DomainController) List(ctx context.Context) (map[string]structure.Domain, error) {
 	domains := map[string]structure.Domain{}
@@ -67,35 +78,35 @@ func (d *DomainController) List(ctx context.Context) (map[string]structure.Domai
 	if err!=nil {
 		return nil, fmt.Errorf("fetching domain affinity: %w", err)
 	}
-	domainCPUs, err := d.client.GetRange(ctx, "/WAVE/DOMAIN/ALCPU/")
+	domainResources, err := d.client.GetRange(ctx, "/WAVE/DOMAIN/RESOURCES/")
 	if err!=nil {
-		return nil, fmt.Errorf("fetching domain cpu: %w", err)
-	}
-	domainMems, err := d.client.GetRange(ctx, "/WAVE/DOMAIN/ALMEM/")
-	if err!=nil {
-		return nil, fmt.Errorf("fetching domain memory: %w", err)
+		return nil, fmt.Errorf("fetching domain resources: %w", err)
 	}
 	
 	for key, node := range domainNodes {
+		var domainErr error
 		uuid := strings.TrimPrefix(key, "/WAVE/DOMAIN/NODE/")
-		state := domainStates[fmt.Sprint("/WAVE/DOMAIN/STATE/", key)]
-		affinity := strings.Split(domainAffinities[fmt.Sprint("/WAVE/DOMAIN/AFFINITY/", key)],  "|")
-		
-		cpu, err := strconv.ParseFloat(domainCPUs[fmt.Sprint("/WAVE/DOMAIN/ALCPU/", key)], 64)
+		state := domainStates[fmt.Sprint("/WAVE/DOMAIN/STATE/", uuid)]
+
+		affinity := &affinity{}
+		err := json.Unmarshal([]byte(domainAffinities[fmt.Sprint("/WAVE/DOMAIN/AFFINITY/", uuid)]), affinity)
 		if err!=nil {
-			return nil, fmt.Errorf("parsing allocated domain cpu '%.2f': %w", cpu, err)
+			domainErr = errors.Join(domainErr, fmt.Errorf("parsing node affinity tags: %w", err))
 		}
-		memory, err := strconv.ParseInt(domainMems[fmt.Sprint("/WAVE/DOMAIN/ALMEM/", key)], 10, 64)
+		
+		resources := &resources{}
+		err = json.Unmarshal([]byte(domainResources[fmt.Sprint("/WAVE/DOMAIN/RESOURCES/", uuid)]), resources)
 		if err!=nil {
-			return nil, fmt.Errorf("parsing allocated domain memory '%d': %w", memory, err)
+			domainErr = errors.Join(domainErr, fmt.Errorf("parsing domain resources: %w", err))
 		}
 		
 		domains[uuid] = structure.Domain{
 			Node: node,
-			Affinity: affinity,
+			Affinity: *affinity,
 			State: structure.DOMAIN_STATE(state),
-			AllocatedCPU: cpu,
-			AllocatedMemory: memory,
+			AllocatedCPU: resources.AllocatedCpu,
+			AllocatedMemory: resources.AllocatedMemory,
+			Error: domainErr,
 		}
 	}
 	return domains, nil
@@ -115,14 +126,14 @@ func (d *DomainController) GetConfig(ctx context.Context, id string) (*adapterst
 	return config, nil
 }
 
-func (d *DomainController) GetDomainStats(ctx context.Context, id string) (string, error) {
-	// call domain adapter 
-}
+// func (d *DomainController) GetDomainStats(ctx context.Context, id string) (string, error) {
+// 	// call domain adapter 
+// }
 
 // Create creates a domain with the specified configuration and default metadata values.
 // If the creation fails, the function tries to remove already created resources from the database.
 func (d *DomainController) Create(ctx context.Context, config *adapterstruct.Domain) (string, error) {
-	uuid := uuid.New()
+	uuid := uuid.New().String()
 	err := d.SetConfig(ctx, uuid, config)
 	if err!=nil {
 		return "", errors.Join(err, d.Delete(ctx, uuid))
@@ -154,8 +165,12 @@ func (d *DomainController) SetNode(ctx context.Context, id string, node string) 
 // SetAffinity updates the affinity of the domain. The affinity specifies a list of affinity tags; any node
 // tagged with at least one of those tags is considered eligible for hosting. An empty list means all nodes are
 // eligible.
-func (d *DomainController) SetAffinity(ctx context.Context, id string, affinity []string) error {
-	_, err := d.client.Set(ctx, fmt.Sprintf("/WAVE/DOMAIN/AFFINITY/%s", id), strings.Join(affinity, "|"), 0)
+func (d *DomainController) SetAffinity(ctx context.Context, id string, tags []string) error {
+	rawTags, err := json.Marshal(affinity(tags))
+	if err!=nil {
+		return fmt.Errorf("cannot serialize affinity tags: %w", err)
+	}
+	_, err = d.client.Set(ctx, fmt.Sprintf("/WAVE/DOMAIN/AFFINITY/%s", id), string(rawTags), 0)
 	if err!=nil {
 		return err
 	}
@@ -175,18 +190,17 @@ func (d *DomainController) SetState(ctx context.Context, id string, state struct
 func (d *DomainController) SetConfig(ctx context.Context, id string, config *adapterstruct.Domain) error {
 	rawConfig, err := json.Marshal(config)
 	if err!=nil {
-		return fmt.Errorf("cannot parse config: %w", err)
+		return fmt.Errorf("cannot serialize config: %w", err)
 	}
-	
-	_, err = d.client.Set(ctx, fmt.Sprintf("/WAVE/DOMAIN/ALCPU/%s", id),
-		strconv.Itoa(int(config.ResourceConfig.VCPUs)), 0,
-	)
+
+	rawResources, err := json.Marshal(resources{
+		AllocatedCpu: float64(config.ResourceConfig.VCPUs),
+		AllocatedMemory: config.ResourceConfig.Memory,
+	})
 	if err!=nil {
-		return err
+		return fmt.Errorf("cannot serialize resource config: %w", err)
 	}
-	_, err = d.client.Set(ctx, fmt.Sprintf("/WAVE/DOMAIN/ALMEM/%s", id),
-		strconv.Itoa(int(config.ResourceConfig.Memory)), 0,
-	)
+	_, err = d.client.Set(ctx, fmt.Sprintf("/WAVE/DOMAIN/RESOURCES/%s", id), string(rawResources), 0)
 	if err!=nil {
 		return err
 	}

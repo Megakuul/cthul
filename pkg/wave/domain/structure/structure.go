@@ -32,11 +32,13 @@ const (
 
 // Domain provides the structure of the domain information present on the database.
 // Unlike the Domain adapter config, this is not a deterministic blueprint but rather a snapshot
-// of the current state of the domain.
+// of the current state of the domain. The error field contains parsing failures of single fields; if the error
+// is not nil, the values may be used for informational purposes but should not be relied on.
 type Domain struct {
 	Node   string       `json:"node"`
 	Affinity []string `json:"affinity"`
 	State  DOMAIN_STATE `json:"state"`
 	AllocatedCPU    float64        `json:"allocated_cpu"`
 	AllocatedMemory int64        `json:"allocated_memory"`
+	Error error `json:"-"`
 }

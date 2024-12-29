@@ -28,6 +28,8 @@ const (
 )
 
 // Node provides the structure of the node information present on the database.
+// The error field contains parsing failures of single fields; if the error is not nil, the values may be used
+// for informational purposes but should not be relied on.
 type Node struct {
 	Affinity []string `json:"affinity"`
 	State NODE_STATE `json:"state"`
@@ -35,6 +37,7 @@ type Node struct {
 	AvailableCpu    float64        `json:"available_cpu"`
 	AllocatedMemory int64 `json:"allocated_memory"`
 	AvailableMemory int64 `json:"available_memory"`
+	Error error `json:"-"`
 }
 
 

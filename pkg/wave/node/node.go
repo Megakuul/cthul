@@ -22,14 +22,17 @@ package node
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"cthul.io/cthul/pkg/db"
 	"cthul.io/cthul/pkg/wave/node/structure"
 )
 
+// NodeController provides an interface for wave node related operations.
+// The single source of truth for configuration is always the register.toml file on the node.
+// The single source of truth for dynamic data is always the database.
 type NodeController struct {
 	client db.Client
 }
@@ -48,48 +51,114 @@ func NewNodeController(client db.Client, opts ...NodeControllerOption) *NodeCont
 	return controller
 }
 
+// affinity provides the node affinity tags structure stored in the database.
+type affinity []string
+
+// resources provides the node resource structure stored in the database.
+type resources struct {
+	AllocatedCpu float64 `json:"allocated_cpu"`
+	AvailableCpu float64 `json:"available_cpu"`
+	AllocatedMemory int64 `json:"allocated_memory"`
+	AvailableMemory int64 `json:"available_memory"`
+}
+
 // List returns a map containing node uuids and associated metadata from the database.
-func (d *NodeController) List(ctx context.Context) (map[string]structure.Node, error) {
+func (n *NodeController) List(ctx context.Context) (map[string]structure.Node, error) {
 	nodes := map[string]structure.Node{}
 	
-	nodeNodes, err := d.client.GetRange(ctx, "/WAVE/NODE/NODE/")
-	if err!=nil {
-		return nil, fmt.Errorf("fetching node node: %w", err)
-	}
-	nodeAffinity, err := d.client.GetRange(ctx, "/WAVE/NODE/AFFINITY/")
-	if err!=nil {
-		return nil, fmt.Errorf("fetching node affinity tags: %w", err)
-	}
-	nodeStates, err := d.client.GetRange(ctx, "/WAVE/NODE/STATE/")
+	nodeStates, err := n.client.GetRange(ctx, "/WAVE/NODE/STATE/")
 	if err!=nil {
 		return nil, fmt.Errorf("fetching node state: %w", err)
 	}
-	nodeCPUs, err := d.client.GetRange(ctx, "/WAVE/NODE/CPU/")
+	nodeAffinities, err := n.client.GetRange(ctx, "/WAVE/NODE/AFFINITY/")
 	if err!=nil {
-		return nil, fmt.Errorf("fetching node cpu: %w", err)
+		return nil, fmt.Errorf("fetching node affinity tags: %w", err)
 	}
-	nodeMems, err := d.client.GetRange(ctx, "/WAVE/NODE/MEM/")
+	nodeResources, err := n.client.GetRange(ctx, "/WAVE/NODE/RESOURCES/")
 	if err!=nil {
-		return nil, fmt.Errorf("fetching node memory: %w", err)
+		return nil, fmt.Errorf("fetching node resources: %w", err)
 	}
 	
-	for key, node := range nodeNodes {
-		uuid := strings.TrimPrefix(key, "/WAVE/NODE/NODE/")
-		state := nodeStates[key]
-		cpu, err := strconv.ParseFloat(nodeCPUs[key], 64)
+	for key, state := range nodeStates {
+		var nodeErr error
+		uuid := strings.TrimPrefix(key, "/WAVE/NODE/STATE/")
+		
+		affinity := &affinity{}
+		err := json.Unmarshal([]byte(nodeAffinities[fmt.Sprint("/WAVE/NODE/AFFINITY/", uuid)]), affinity)
 		if err!=nil {
-			return nil, fmt.Errorf("parsing node cpu '%s': %w", cpu, err)
+			nodeErr = errors.Join(nodeErr, fmt.Errorf("parsing node affinity tags: %w", err))
 		}
-		memory, err := strconv.ParseFloat(nodeMems[key], 64)
+		
+		resources := &resources{}
+		err = json.Unmarshal([]byte(nodeResources[fmt.Sprint("/WAVE/NODE/RESOURCES/", uuid)]), resources)
 		if err!=nil {
-			return nil, fmt.Errorf("parsing node memory '%s': %w", memory, err)
+			nodeErr = errors.Join(nodeErr, fmt.Errorf("parsing node resources: %w", err))
 		}
+		
 		nodes[uuid] = structure.Node{
-			Node: node,
+			Affinity: *affinity,
 			State: structure.NODE_STATE(state),
-			CPU: cpu,
-			Memory: memory,
+			AllocatedCpu: resources.AllocatedCpu,
+			AvailableCpu: resources.AvailableCpu,
+			AllocatedMemory: resources.AllocatedMemory,
+			AvailableMemory: resources.AvailableMemory,
+			Error: nodeErr,
 		}
 	}
 	return nodes, nil
+}
+
+// Register registers / announces node information to the cluster by adding it to the database.
+// The registration expires after ttl and must be renewed in order to ensure the node is part of the cluster.
+func (n *NodeController) Register(ctx context.Context, id string, node structure.Node, ttl int64) error {
+	_, err := n.client.Set(ctx, fmt.Sprintf("/WAVE/NODE/STATE/%s", id), string(node.State), ttl)
+	if err!=nil {
+		return err
+	}
+
+	rawTags, err := json.Marshal(affinity(node.Affinity))
+	if err!=nil {
+		return fmt.Errorf("cannot serialize affinity tags: %w", err)
+	}
+	_, err = n.client.Set(ctx, fmt.Sprintf("/WAVE/NODE/AFFINITY/%s", id), string(rawTags), ttl)
+	if err!=nil {
+		return err
+	}
+
+	rawResources, err := json.Marshal(&resources{
+		AllocatedCpu: node.AllocatedCpu,
+		AvailableCpu: node.AvailableCpu,
+		AllocatedMemory: node.AllocatedMemory,
+		AvailableMemory: node.AvailableMemory,
+	})
+	if err!=nil {
+		return fmt.Errorf("cannot serialize resources: %w", err)
+	}
+	_, err = n.client.Set(ctx, fmt.Sprintf("/WAVE/NODE/RESOURCES/%s", id), string(rawResources), ttl)
+	if err!=nil {
+		return err
+	}
+
+	return nil
+}
+
+
+// Unregister removes an existing node registration entry.
+func (n *NodeController) Unregister(ctx context.Context, id string, node string) error {
+	err := n.client.Delete(ctx, fmt.Sprintf("/WAVE/NODE/STATE/%s", id))
+	if err!=nil {
+		return err
+	}
+
+	err = n.client.Delete(ctx, fmt.Sprintf("/WAVE/NODE/AFFINITY/%s", id))
+	if err!=nil {
+		return err
+	}
+
+	err = n.client.Delete(ctx, fmt.Sprintf("/WAVE/NODE/RESOURCES/%s", id))
+	if err!=nil {
+		return err
+	}
+	
+	return nil
 }

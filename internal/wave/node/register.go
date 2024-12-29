@@ -17,20 +17,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package scheduler
+package node
 
-import (
-	"context"
-	"fmt"
-	"time"
-
-	"cthul.io/cthul/internal/wave/scheduler/resource"
-)
-
-// registerNode registers the local node periodically in the scheduler space on the database.
-// As long as the node is registered, the scheduler assumes that it can move domains to the node.
-// On every cycle the node resource capacity is measured and reported to the scheduler.
-func (s *Scheduler) registerNode() {
+// register registers the local node periodically in the cluster. This process announces the nodes
+// associated state and allows other wave components like the scheduler to discover it.
+// On every cycle the node state is reevaluated and reported.
+func (n *NodeOperator) register() {
 	if s.registerId=="" {
 		s.logger.Info("scheduler", "local node will not be registered")
 		return

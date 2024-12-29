@@ -44,7 +44,7 @@ type Scheduler struct {
 	workCtxCancel context.CancelFunc
 
 	// finChan is used to send the absolute exist signal
-	// if the channel emits, this indicates that the controller is fully cleaned up.
+	// if the channel emits, this indicates that the operator is fully cleaned up.
 	finChan chan struct{}
 
 	client db.Client

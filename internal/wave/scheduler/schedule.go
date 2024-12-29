@@ -90,6 +90,13 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 		}
 		
 		for domainId, domain  := range domains {
+			if domain.Error != nil {
+				s.logger.Warn("scheduler", fmt.Sprintf(
+					"skipping scheduler analysis for '%s': domain information is malformed: %s", domainId, domain.Error,
+				))
+				continue
+			}
+			
 			_, ok := nodes[domain.Node]
 			if !ok {
 				retries := unmanagedDomains[domainId]
@@ -135,12 +142,19 @@ func (s *Scheduler) findNode(
 
 	eligibleNodes := map[string]nodestruct.Node{}
 	for nodeId, node := range nodes {
-		if checkAffinity(domain.Affinity, node.Affinity) {
-			eligibleNodes[nodeId] = node
+		if node.Error != nil {
+			continue
 		}
+		if node.State != nodestruct.NODE_HEALTHY {
+			continue
+		}
+		if !checkAffinity(domain.Affinity, node.Affinity) {
+			continue
+		}
+		eligibleNodes[nodeId] = node
 	}
 	if len(eligibleNodes) < 1 {
-		return "", nil, fmt.Errorf("no cluster node matches one or more domain affinity tags")
+		return "", nil, fmt.Errorf("no healthy cluster node with matching affinity tags available")
 	}
 	
 	// constants define the usage factor that a domain is assumed to consume.
