@@ -144,7 +144,7 @@ func (n *NodeController) Register(ctx context.Context, id string, node structure
 
 
 // Unregister removes an existing node registration entry.
-func (n *NodeController) Unregister(ctx context.Context, id string, node string) error {
+func (n *NodeController) Unregister(ctx context.Context, id string) error {
 	err := n.client.Delete(ctx, fmt.Sprintf("/WAVE/NODE/STATE/%s", id))
 	if err!=nil {
 		return err

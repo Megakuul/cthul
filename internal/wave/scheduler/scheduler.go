@@ -58,13 +58,6 @@ type Scheduler struct {
 	// rescheduleCycles specifies the number of cycles that a domain must be unmanaged
 	// in a row until it is rescheduled.
 	rescheduleCycles int64
-
-	// register paramters specify how the local node registers itself on the scheduler
-	// this happens independent of the leader state.
-	registerId string
-	registerTTL int64
-	registerCpuFactor float64
-	registerMemFactor float64
 }
 
 type SchedulerOption func(*Scheduler)
@@ -84,10 +77,6 @@ func NewScheduler(client db.Client, opts ...SchedulerOption) *Scheduler {
 		leaderStateChan: make(chan bool),
 		cycleTTL: 5,
 		rescheduleCycles: 2,
-		registerId: "",
-		registerTTL: 5,
-		registerCpuFactor: 1,
-		registerMemFactor: 1,
 	}
 
 	for _, opt := range opts {
@@ -95,35 +84,6 @@ func NewScheduler(client db.Client, opts ...SchedulerOption) *Scheduler {
 	}
 
 	return scheduler
-}
-
-// WithLocalNode registers this local node in the scheduler, allowing it to allocate domains to this node.
-func WithLocalNode(register bool, nodeId string) SchedulerOption {
-	return func(s *Scheduler) {
-		if register {
-			s.registerId = nodeId
-		} else {
-			s.registerId = ""
-		}
-	}
-}
-
-// WithRegisterTTL sets a custom ttl for the register cycle (essentially the keepalive interval).
-func WithRegisterTTL(registerTTL int64) SchedulerOption {
-	return func(s *Scheduler) {
-		s.registerTTL = registerTTL
-	}
-}
-
-// WithLocalResourceThreshold defines a custom resource threshold for this node.
-// The resource threshold must be provided as percentage and essentially serves as filter applied to the raw
-// host resources which are reported to the scheduler for deciding how to schedule domains.
-// E.g. mem/cpuThreshold of 80 with 10 cores and 10GB memory converts to reported 8 cores and 8GB memory.
-func WithLocalResourceThreshold(cpuThreshold, memThreshold int64) SchedulerOption {
-	return func(s *Scheduler) {
-		s.registerCpuFactor = float64(cpuThreshold) / 100
-		s.registerMemFactor = float64(memThreshold) / 100
-	}
 }
 
 // WithLogger sets a custom logger for the scheduler.
@@ -147,11 +107,6 @@ func (s *Scheduler) SetLeaderState(_ string, local bool) {
 // ServeAndDetach starts the scheduler registration and the leader scheduler in a detached goroutine.
 func (s *Scheduler) ServeAndDetach() {
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		s.registerNode()
-	}()
 
 	wg.Add(1)
 	go func() {
