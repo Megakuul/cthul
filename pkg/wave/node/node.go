@@ -31,8 +31,6 @@ import (
 )
 
 // NodeController provides an interface for wave node related operations.
-// The single source of truth for configuration is always the register.toml file on the node.
-// The single source of truth for dynamic data is always the database.
 type NodeController struct {
 	client db.Client
 }

@@ -24,7 +24,10 @@ type DomainStats struct {
 }
 
 type CpuStats struct {
-	
+	Timestamp int64
+	CpuTime int64
+	UserTime int64
+	KernelTime int64
 }
 
 type MemoryStats struct {

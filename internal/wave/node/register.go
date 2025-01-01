@@ -31,10 +31,10 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 )
 
-// report registers the local node periodically in the cluster. This process announces the nodes
+// register registers the local node periodically in the cluster. This process reports the nodes
 // associated state and allows other wave components like the scheduler to discover it.
 // On every cycle the node state & resources are measured and reevaluated.
-func (n *NodeOperator) report() {
+func (n *NodeOperator) register() {
 	nodeController := node.NewNodeController(n.client)
 	
 	for {

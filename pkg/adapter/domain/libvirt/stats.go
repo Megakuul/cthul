@@ -22,8 +22,10 @@ package libvirt
 import (
 	"context"
 	"fmt"
+	"time"
 
-	"cthul.io/cthul/pkg/domain/structure"
+	"cthul.io/cthul/pkg/adapter/domain/structure"
+	"github.com/digitalocean/go-libvirt"
 )
 
 func (l *LibvirtAdapter)GetDomainStats(ctx context.Context, id string) (*structure.DomainStats, error) {
@@ -31,6 +33,31 @@ func (l *LibvirtAdapter)GetDomainStats(ctx context.Context, id string) (*structu
 	if err!=nil {
 		return nil, err
 	}
+
+	uuid, err := l.parseUUID(id)
+	if err!=nil {
+		return nil, err
+	}
+	
+	domain, err := l.client.DomainLookupByUUID(uuid)
+	if err!=nil {
+		return nil, err
+	}
+
+	params, _, err := l.client.DomainGetCPUStats(domain, 0, 0, 0, 0)
+	if err!=nil {
+
+	}
+
+	switch params[0].Field {
+	case "cpu_time":
+
+	case "system_time":
+
+	case "user_time":
+		
+	}
+
 	return nil, fmt.Errorf("not implemented")
 }
 
@@ -39,7 +66,38 @@ func (l *LibvirtAdapter)GetCpuStats(ctx context.Context, id string) (*structure.
 	if err!=nil {
 		return nil, err
 	}
-	return nil, fmt.Errorf("not implemented")
+	
+	uuid, err := l.parseUUID(id)
+	if err!=nil {
+		return nil, err
+	}
+	
+	domain, err := l.client.DomainLookupByUUID(uuid)
+	if err!=nil {
+		return nil, err
+	}
+
+	params, _, err := l.client.DomainGetCPUStats(domain, 0, -1, 1, 0)
+	if err!=nil {
+		return nil, err
+	}
+
+	cpuStats := &structure.CpuStats{
+		Timestamp: time.Now().Unix(),
+	}
+
+	for _, param := range params {
+		switch param.Field {
+		case libvirt.DomainCPUStatsCputime:
+			cpuStats.CpuTime = int64(param.Value.D)
+		case libvirt.DomainCPUStatsSystemtime:
+			cpuStats.KernelTime = int64(param.Value.D)
+		case libvirt.DomainCPUStatsUsertime:
+			cpuStats.UserTime = int64(param.Value.D)
+		}		
+	}
+	
+	return cpuStats, nil
 }
 
 func (l *LibvirtAdapter)GetMemoryStats(ctx context.Context, id string) (*structure.MemoryStats, error) {
@@ -47,6 +105,40 @@ func (l *LibvirtAdapter)GetMemoryStats(ctx context.Context, id string) (*structu
 	if err!=nil {
 		return nil, err
 	}
+		uuid, err := l.parseUUID(id)
+	if err!=nil {
+		return nil, err
+	}
+	
+	domain, err := l.client.DomainLookupByUUID(uuid)
+	if err!=nil {
+		return nil, err
+	}
+
+	stats, err := l.client.DomainMemoryStats(domain, uint32(libvirt.DomainMemoryStatNr), 0)
+	if err!=nil {
+		return nil, err
+	}
+
+	for _, stat := range stats {
+		switch libvirt.DomainMemoryStatTags(stat.Tag) {
+		case libvirt.DomainMemoryStatActualBalloon:
+		case libvirt.DomainMemoryStatAvailable:
+		case libvirt.DomainMemoryStatDiskCaches:
+		case libvirt.DomainMemoryStatHugetlbPgalloc:
+		case libvirt.DomainMemoryStatHugetlbPgfail:
+		case libvirt.DomainMemoryStatLastUpdate:
+		case libvirt.DomainMemoryStatMajorFault:
+		case libvirt.DomainMemoryStatMinorFault:
+		case libvirt.DomainMemoryStatNr:
+		case libvirt.DomainMemoryStatRss:
+		case libvirt.DomainMemoryStatSwapIn:
+		case libvirt.DomainMemoryStatSwapOut:
+		case libvirt.DomainMemoryStatUnused:
+		case libvirt.DomainMemoryStatUsable:
+		}
+	}
+	
 	return nil, fmt.Errorf("not implemented")
 }
 

@@ -146,7 +146,7 @@ func (n *NodeOperator) ServeAndDetach() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		n.register()
+		n.report()
 	}()
 
 	go func() {

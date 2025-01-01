@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"strings"
 
+	adapter "cthul.io/cthul/pkg/adapter/domain"
 	adapterstruct "cthul.io/cthul/pkg/adapter/domain/structure"
 	"cthul.io/cthul/pkg/db"
 	"cthul.io/cthul/pkg/wave/domain/structure"
@@ -33,17 +34,17 @@ import (
 )
 
 // DomainController provides an interface for wave domain related operations.
-// The single source of truth for configuration is always the database.
-// The single source of truth for dynamic data is always libvirt.
 type DomainController struct {
 	client db.Client
+	adapter adapter.DomainAdapter
 }
 
 type DomainControllerOption func(*DomainController)
 
-func NewDomainController(client db.Client, opts ...DomainControllerOption) *DomainController {
+func NewDomainController(client db.Client, adapter adapter.DomainAdapter, opts ...DomainControllerOption) *DomainController {
 	controller := &DomainController{
 		client: client,
+		adapter: adapter,
 	}
 
 	for _, opt := range opts {
@@ -126,9 +127,12 @@ func (d *DomainController) GetConfig(ctx context.Context, id string) (*adapterst
 	return config, nil
 }
 
-// func (d *DomainController) GetDomainStats(ctx context.Context, id string) (string, error) {
-// 	// call domain adapter 
-// }
+func (d *DomainController) GetDomainStats(ctx context.Context, id string) (string, error) {
+	stats, err := d.adapter.GetDomainStats(ctx, id)
+	if err!=nil {
+		
+	}
+}
 
 // Create creates a domain with the specified configuration and default metadata values.
 // If the creation fails, the function tries to remove already created resources from the database.
