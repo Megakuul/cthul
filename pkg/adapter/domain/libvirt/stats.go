@@ -44,18 +44,24 @@ func (l *LibvirtAdapter)GetDomainStats(ctx context.Context, id string) (*structu
 		return nil, err
 	}
 
-	params, _, err := l.client.DomainGetCPUStats(domain, 0, 0, 0, 0)
+	params, err := l.client.ConnectGetAllDomainStats([]libvirt.Domain{domain}, 0, 0)
 	if err!=nil {
-
+		return nil, err
 	}
 
-	switch params[0].Field {
-	case "cpu_time":
+	if len(params) < 1 {
+		return nil, fmt.Errorf("domain with id '%s' not found", id)
+	}
 
-	case "system_time":
-
-	case "user_time":
-		
+	for _, param := range params {
+		switch param {
+		case libvirt.DomainCPUStatsCputime:
+			cpuStats.CpuTime = int64(param.Value.D)
+		case libvirt.DomainCPUStatsSystemtime:
+			cpuStats.KernelTime = int64(param.Value.D)
+		case libvirt.DomainCPUStatsUsertime:
+			cpuStats.UserTime = int64(param.Value.D)
+		}		
 	}
 
 	return nil, fmt.Errorf("not implemented")
@@ -115,45 +121,41 @@ func (l *LibvirtAdapter)GetMemoryStats(ctx context.Context, id string) (*structu
 		return nil, err
 	}
 
-	stats, err := l.client.DomainMemoryStats(domain, uint32(libvirt.DomainMemoryStatNr), 0)
+	params, err := l.client.DomainMemoryStats(domain, uint32(libvirt.DomainMemoryStatNr), 0)
 	if err!=nil {
 		return nil, err
 	}
 
-	for _, stat := range stats {
-		switch libvirt.DomainMemoryStatTags(stat.Tag) {
-		case libvirt.DomainMemoryStatActualBalloon:
-		case libvirt.DomainMemoryStatAvailable:
-		case libvirt.DomainMemoryStatDiskCaches:
-		case libvirt.DomainMemoryStatHugetlbPgalloc:
-		case libvirt.DomainMemoryStatHugetlbPgfail:
-		case libvirt.DomainMemoryStatLastUpdate:
-		case libvirt.DomainMemoryStatMajorFault:
-		case libvirt.DomainMemoryStatMinorFault:
-		case libvirt.DomainMemoryStatNr:
-		case libvirt.DomainMemoryStatRss:
+	memoryStats := &structure.MemoryStats{
+		Timestamp: time.Now().Unix(),
+	}
+
+	for _, param := range params {
+		switch libvirt.DomainMemoryStatTags(param.Tag) {
 		case libvirt.DomainMemoryStatSwapIn:
+			memoryStats.SwapIn = int64(param.Val * 1000) // convert from kB
 		case libvirt.DomainMemoryStatSwapOut:
-		case libvirt.DomainMemoryStatUnused:
+			memoryStats.SwapOut = int64(param.Val * 1000) // convert from kB
+		case libvirt.DomainMemoryStatMinorFault:
+			memoryStats.MinorFaults = int64(param.Val)
+		case libvirt.DomainMemoryStatMajorFault:
+			memoryStats.MajorFaults = int64(param.Val)
+		case libvirt.DomainMemoryStatHugetlbPgalloc:
+			memoryStats.HugepageAllocations = int64(param.Val)
+		case libvirt.DomainMemoryStatHugetlbPgfail:
+			memoryStats.HugepageFailures = int64(param.Val)
+		case libvirt.DomainMemoryStatActualBalloon:
+			memoryStats.Balloned = int64(param.Val * 1000) // convert from kB
+		case libvirt.DomainMemoryStatAvailable:
+			memoryStats.Available = int64(param.Val * 1000) // convert from kB
 		case libvirt.DomainMemoryStatUsable:
+			memoryStats.Usable = int64(param.Val * 1000) // convert from kB
+		case libvirt.DomainMemoryStatUnused:
+			memoryStats.Unused = int64(param.Val * 1000) // convert from kB
+		case libvirt.DomainMemoryStatRss:
+			memoryStats.HostRSS = int64(param.Val * 1000) // convert from kB
 		}
 	}
 	
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (l *LibvirtAdapter)GetInterfaceStats(ctx context.Context, id string) (*structure.InterfaceStats, error) {
-	err := l.initClient()
-	if err!=nil {
-		return nil, err
-	}
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (l *LibvirtAdapter)GetBlockStats(ctx context.Context, id string) (*structure.BlockStats, error) {
-	err := l.initClient()
-	if err!=nil {
-		return nil, err
-	}
-	return nil, fmt.Errorf("not implemented")
+	return memoryStats, nil
 }

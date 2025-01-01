@@ -25,19 +25,22 @@ type DomainStats struct {
 
 type CpuStats struct {
 	Timestamp int64
-	CpuTime int64
-	UserTime int64
-	KernelTime int64
+	CpuTime int64 // The total domain cpu time since machine startup in nanoseconds.
+	UserTime int64 // The total domain cpu time spent in user space context in nanoseconds.
+ 	KernelTime int64 // The total domain cpu time spent in kernel space context in nanoseconds.
 }
 
 type MemoryStats struct {
-	
-}
-
-type InterfaceStats struct {
-	
-}
-
-type BlockStats struct {
-	
+	Timestamp int64
+	SwapIn int64 // total amount of bytes moved from main memory to swap since machine startup.
+	SwapOut int64 // total amount of bytes moved from swap to main memory since machine startup.
+	MinorFaults int64 // total amount of handled page fault that loaded pages from memory (e.g. shared libs).
+	MajorFaults int64 // total amount of handled page fault that loaded pages from diskio
+	HugepageAllocations int64 // total amount of successful hugetable allocations since machine startup.
+	HugepageFailures int64 // total amount of failed hugetable allocations since machine startup.
+	Balloned int64 // total amount of bytes currently allocated for the domain by the ballon driver.
+	Available int64 // total amount of bytes from guestos perspective (may be less then the assigned memory).
+	Usable int64 // total amount of bytes the guest os can use if all caches are reclaimed (deflatable memory).
+	Unused int64 // total amount of bytes that are completely unused by the guest os (part of deflatable memory).
+	HostRSS int64 // resident set size (used main memory) of the domains process on the host os (typically qemu).
 }
