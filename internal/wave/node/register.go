@@ -4,17 +4,17 @@
  * Copyright (C) 2024 Linus Ilian Moser <linus.moser@megakuul.ch>
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package node
@@ -34,21 +34,21 @@ import (
 // register registers the local node periodically in the cluster. This process reports the nodes
 // associated state and allows other wave components like the scheduler to discover it.
 // On every cycle the node state & resources are measured and reevaluated.
-func (n *NodeOperator) register() {
+func (n *Operator) register() {
 	nodeController := node.NewNodeController(n.client)
 	
 	for {
 		ctx, cancel := context.WithTimeout(n.workCtx, time.Second*time.Duration(n.cycleTTL))
 		defer cancel()
 		
-		n.logger.Debug("scheduler", "measuring local node resource capacity...")
+		n.logger.Debug("node-operator", "measuring local node resource capacity...")
 		report, err := n.generateReport(ctx)
 		if err!=nil {
-			n.logger.Err("scheduler", fmt.Sprintf("cannot report node state: %s", err.Error()))
+			n.logger.Err("node-operator", fmt.Sprintf("cannot report node state: %s", err.Error()))
 		} else {
 			err = nodeController.Register(ctx, n.nodeId, *report, n.cycleTTL*2)
 			if err != nil {
-				n.logger.Err("scheduler", fmt.Sprintf("failed to register node: %s", err.Error()))
+				n.logger.Err("node-operator", fmt.Sprintf("failed to register node: %s", err.Error()))
 			}
 		}
 
@@ -58,7 +58,7 @@ func (n *NodeOperator) register() {
 		case <-n.workCtx.Done():
 			err = nodeController.Unregister(n.rootCtx, n.nodeId)
 			if err != nil {
-				n.logger.Err("scheduler", "failed to unregister node before termination")
+				n.logger.Err("node-operator", "failed to unregister node before termination")
 			}
 			return
 		}
@@ -67,7 +67,7 @@ func (n *NodeOperator) register() {
 
 // GenerateNodeResources generates a node resources from the specs of the local machine.
 // The cpu and mem factor is applied to all total resources before calculating further.
-func (n *NodeOperator) generateReport(ctx context.Context) (*structure.Node, error) {
+func (n *Operator) generateReport(ctx context.Context) (*structure.Node, error) {
 	report := structure.Node{
 		Affinity: n.affinity,
 		State: structure.NODE_HEALTHY,

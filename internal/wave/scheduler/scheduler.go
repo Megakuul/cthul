@@ -49,6 +49,8 @@ type Scheduler struct {
 
 	client db.Client
 	logger log.Logger
+	domainController *domain.Controller
+	nodeController *node.Controller
 
 	// leaderStateChan is used to emit the state of the leader.
 	leaderStateChan chan bool
@@ -63,7 +65,7 @@ type Scheduler struct {
 type SchedulerOption func(*Scheduler)
 
 // NewScheduler creates a new scheduler instance.
-func NewScheduler(client db.Client, opts ...SchedulerOption) *Scheduler {
+func NewScheduler(client db.Client, domain *domain.Controller, node *node.Controller, opts ...SchedulerOption) *Scheduler {
 	rootCtx, rootCtxCancel := context.WithCancel(context.Background())
 	workCtx, workCtxCancel := context.WithCancel(rootCtx)
 	scheduler := &Scheduler{

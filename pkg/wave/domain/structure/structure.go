@@ -35,10 +35,12 @@ const (
 // of the current state of the domain. The error field contains parsing failures of single fields; if the error
 // is not nil, the values may be used for informational purposes but should not be relied on.
 type Domain struct {
-	Node   string       `json:"node"`
-	Affinity []string `json:"affinity"`
-	State  DOMAIN_STATE `json:"state"`
-	AllocatedCPU    float64        `json:"allocated_cpu"`
-	AllocatedMemory int64        `json:"allocated_memory"`
-	Error error `json:"-"`
+	Node               string       `json:"node"`
+	Affinity           []string     `json:"affinity"`
+	State              DOMAIN_STATE `json:"state"`
+	StatePushInterval  int64        `json:"state_push_interval"`
+	ConfigPushInterval int64        `json:"config_push_interval"`
+	AllocatedCPU       float64      `json:"allocated_cpu"`
+	AllocatedMemory    int64        `json:"allocated_memory"`
+	Error              error        `json:"-"`
 }

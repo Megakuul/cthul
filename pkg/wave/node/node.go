@@ -4,17 +4,17 @@
  * Copyright (C) 2024 Linus Ilian Moser <linus.moser@megakuul.ch>
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package node
@@ -30,15 +30,15 @@ import (
 	"cthul.io/cthul/pkg/wave/node/structure"
 )
 
-// NodeController provides an interface for wave node related operations.
-type NodeController struct {
+// Controller provides an interface for wave node related operations.
+type Controller struct {
 	client db.Client
 }
 
-type NodeControllerOption func(*NodeController)
+type ControllerOption func(*Controller)
 
-func NewNodeController(client db.Client, opts ...NodeControllerOption) *NodeController {
-	controller := &NodeController{
+func NewController(client db.Client, opts ...ControllerOption) *Controller {
+	controller := &Controller{
 		client: client,
 	}
 
@@ -61,7 +61,7 @@ type resources struct {
 }
 
 // List returns a map containing node uuids and associated metadata from the database.
-func (n *NodeController) List(ctx context.Context) (map[string]structure.Node, error) {
+func (n *Controller) List(ctx context.Context) (map[string]structure.Node, error) {
 	nodes := map[string]structure.Node{}
 	
 	nodeStates, err := n.client.GetRange(ctx, "/WAVE/NODE/STATE/")
@@ -108,7 +108,7 @@ func (n *NodeController) List(ctx context.Context) (map[string]structure.Node, e
 
 // Register registers / announces node information to the cluster by adding it to the database.
 // The registration expires after ttl and must be renewed in order to ensure the node is part of the cluster.
-func (n *NodeController) Register(ctx context.Context, id string, node structure.Node, ttl int64) error {
+func (n *Controller) Register(ctx context.Context, id string, node structure.Node, ttl int64) error {
 	_, err := n.client.Set(ctx, fmt.Sprintf("/WAVE/NODE/STATE/%s", id), string(node.State), ttl)
 	if err!=nil {
 		return err
@@ -142,7 +142,7 @@ func (n *NodeController) Register(ctx context.Context, id string, node structure
 
 
 // Unregister removes an existing node registration entry.
-func (n *NodeController) Unregister(ctx context.Context, id string) error {
+func (n *Controller) Unregister(ctx context.Context, id string) error {
 	err := n.client.Delete(ctx, fmt.Sprintf("/WAVE/NODE/STATE/%s", id))
 	if err!=nil {
 		return err

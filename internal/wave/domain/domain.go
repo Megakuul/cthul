@@ -1,77 +1,132 @@
 /**
  * Cthul System
  *
- * Copyright (C) 2024 Linus Ilian Moser <linus.moser@megakuul.ch>
+ * Copyright (C) 2025 Linus Ilian Moser <linus.moser@megakuul.ch>
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package domain
 
 import (
 	"context"
+	"sync"
 
-	"cthul.io/cthul/pkg/wave/domain/structure"
+	domadapter "cthul.io/cthul/pkg/adapter/domain"
+	domctrl "cthul.io/cthul/pkg/wave/domain"
+	"cthul.io/cthul/pkg/db"
+	"cthul.io/cthul/pkg/log"
+	"cthul.io/cthul/pkg/log/discard"
 )
 
-// DomainController provides a domain abstraction layer.
-// It ensures that the underlying domain (vm) system can be replaced without much effort (even if not planned).
-type DomainController interface {
-	// List returns a list with uuids from all domains on the host.
-	ListDomains(context.Context) ([]structure.Domain, error)
-	// Apply updates the domain to the specified state. Updates that can be hotplugged are hotplugged, other
-	// updates are applied at next reboot. Operation is idempotent.
-	ApplyDomain(context.Context, structure.Domain) error
-	// Destroy removes a domain from the local machine. Operation is idempotent.
-	DestroyDomain(context.Context, structure.Domain) error
-	// Start starts the domain.
-	StartDomain(context.Context, string) error
-	// Reboot reboots the domain if in running state.
-	RebootDomain(context.Context, string) error
-	// Pause freezes the domain state if in running state.
-	PauseDomain(context.Context, string) error
-	// Resume unfreezes the domain state if in paused state.
-	ResumeDomain(context.Context, string) error
-	// Shutdown stops the domain gracefully.
-	ShutdownDomain(context.Context, string) error
-	// Kill stops the domain forcefully.
-	KillDomain(context.Context, string) error
+// Operator is responsible for applying the domains database state to the local virtual machine monitor.
+type Operator struct {
+	rootCtx       context.Context
+	rootCtxCancel context.CancelFunc
 
-	// CreateSnapshot creates a domain snapshot based on the specified config.
-	CreateSnapshot(context.Context, structure.Snapshot) error
-	// RevertSnapshot reverts the domain to a previous snapshot. The snapshot is identified by uuid.
-	RevertSnapshot(context.Context, string) error
-	// ConsolidateSnapshot consolidates the specified snapshots into the base image.
-	// The snapshot is identified by uuid. Operation is idempotent.
-	ConsolidateSnapshot(context.Context, string) error
+	workCtx       context.Context
+	workCtxCancel context.CancelFunc
 
-	// GetTextConsole starts a tty console session to the domain. Returns a send and recv channel, closing both
-	// channels deallocates the session. Data is transfered in raw tty chunks and must be handled manually.
-	GetTextConsole(context.Context, string) (chan<-[]byte, <-chan []byte, error)
-	// GetSpiceConsole starts a spice session to the domain. Returns a send and recv channel, closing both
-	// channels deallocates the session. Data is transfered in raw spice chunks and must be handled manually.
-	GetSpiceConsole(context.Context, string) (chan<-[]byte, <-chan []byte, error)
+	// finChan is used to send the absolute exist signal
+	// if the channel emits, this indicates that the operator is fully cleaned up.
+	finChan chan struct{}
 
-	// GetDomainStats fetches overall domain stats. The domain is identified by uuid.
-	GetDomainStats(context.Context, string) (*structure.DomainStats, error)
-	// GetCpuStats fetches cpu stats of the domain. The domain is identified by uuid.
-	GetCpuStats(context.Context, string) (*structure.CpuStats, error)
-	// GetMemoryStats fetches memory stats of the domain. The domain is identified by uuid.
-	GetMemoryStats(context.Context, string) (*structure.MemoryStats, error)
-	// GetInterfaceStats fetches interface stats of the domain. The domain is identified by uuid.
-	GetInterfaceStats(context.Context, string) (*structure.InterfaceStats, error)
-	// GetBlockStats fetches block device stats of the domain. The domain is identified by uuid.
-	GetBlockStats(context.Context, string) (*structure.BlockStats, error)
+	controller domctrl.Controller
+	adapter domadapter.Adapter
+	client db.Client
+	logger log.Logger
+
+	// nodeId specifies the id of the node, this is used to determine which domains must be applied.
+	nodeId string
+
+	// localDomains is a buffer holding all domains installed on the local machine.
+	// Map is used to avoid many libvirt list requests.
+	localDomains map[string]string
+	localDomainsLock sync.RWMutex
+	localDomainsCycleTTL int64 // ttl of the cycle that renews the buffer.
+
+	// stateSyncers is a simple register for tracking running state synchronizers.
+	stateSyncers map[string]context.CancelFunc
+	stateSyncersLock sync.RWMutex
+	
+	// configSyncers is a simple register for tracking running config synchronizers.
+	configSyncers map[string]context.CancelFunc
+	configSyncersLock sync.RWMutex
+
+	// operationWg is a waitgroup used to track all detached operations (like syncers, pruners, etc).
+	// It is used to correctly wait for all running operation before exiting the operator.
+	operationWg sync.WaitGroup
 }
 
+type OperatorOption func(*Operator)
+
+func NewOperator(client db.Client, controller domctrl.Controller, adapter domadapter.Adapter, opts ...OperatorOption) *Operator {
+	rootCtx, rootCtxCancel := context.WithCancel(context.Background())
+	workCtx, workCtxCancel := context.WithCancel(rootCtx)
+	operator := &Operator{
+		rootCtx:         rootCtx,
+		rootCtxCancel:   rootCtxCancel,
+		workCtx:         workCtx,
+		workCtxCancel:   workCtxCancel,
+		finChan:         make(chan struct{}),
+		controller: controller,
+		adapter: adapter,
+		client: client,
+		logger:          discard.NewDiscardLogger(),
+	}
+
+	for _, opt := range opts {
+		opt(operator)
+	}
+
+	return operator
+}
+
+// WithLogger sets a custom logger for the domain operator.
+func WithLogger(logger log.Logger) OperatorOption {
+	return func(d *Operator) {
+		d.logger = logger
+	}
+}
+
+// ServeAndDetach starts the Operator reporting process in a detached goroutine.
+func (d *Operator) ServeAndDetach() {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		d.apply()
+	}()
+
+	go func() {
+		wg.Wait()
+		d.finChan <- struct{}{}
+	}()
+}
+
+// Terminate shuts down the domain operator gracefully, if shutdown did not complete in the provided context
+// window the operator is terminated forcefully.
+// Never returns an error (just there to match termination pattern).
+func (d *Operator) Terminate(ctx context.Context) error {
+	d.workCtxCancel()
+	defer d.rootCtxCancel()
+	select {
+	case <-d.finChan:
+		return nil
+	case <-ctx.Done():
+		d.rootCtxCancel()
+		<-d.finChan
+		return nil
+	}
+}

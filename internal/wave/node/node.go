@@ -29,9 +29,9 @@ import (
 	"cthul.io/cthul/pkg/log/discard"
 )
 
-// NodeOperator is responsible to monitor and measure the state and resources of the host node.
+// Operator is responsible to monitor and measure the state and resources of the host node.
 // Evaluated data is reported to the cluster via database. This allows other components to discover the node.
-type NodeOperator struct {
+type Operator struct {
 	rootCtx       context.Context
 	rootCtxCancel context.CancelFunc
 
@@ -59,12 +59,12 @@ type NodeOperator struct {
 	memoryFactor float64
 }
 
-type NodeOperatorOption func(*NodeOperator)
+type OperatorOption func(*Operator)
 
-func NewNodeOperator(client db.Client, opts ...NodeOperatorOption) *NodeOperator {
+func NewOperator(client db.Client, opts ...OperatorOption) *Operator {
 	rootCtx, rootCtxCancel := context.WithCancel(context.Background())
 	workCtx, workCtxCancel := context.WithCancel(rootCtx)
-	operator := &NodeOperator{
+	operator := &Operator{
 		rootCtx:         rootCtx,
 		rootCtxCancel:   rootCtxCancel,
 		workCtx:         workCtx,
@@ -88,16 +88,16 @@ func NewNodeOperator(client db.Client, opts ...NodeOperatorOption) *NodeOperator
 }
 
 // WithLogger sets a custom logger for the node operator.
-func WithLogger(logger log.Logger) NodeOperatorOption {
-	return func(n *NodeOperator) {
+func WithLogger(logger log.Logger) OperatorOption {
+	return func(n *Operator) {
 		n.logger = logger
 	}
 }
 
 // WithNodeId specifies the id of the node that is reported to the cluster. If useHostname is enabled, the
 // node id is set to the hostname (with fallback to the specified id).
-func WithNodeId(id string, useHostname bool) NodeOperatorOption {
-	return func(n *NodeOperator) {
+func WithNodeId(id string, useHostname bool) OperatorOption {
+	return func(n *Operator) {
 		n.nodeId = id
 		if useHostname {
 			if hostname, err := os.Hostname(); err!=nil {
@@ -109,23 +109,23 @@ func WithNodeId(id string, useHostname bool) NodeOperatorOption {
 
 // WithCycleTTL defines a custom cycle interval. Every cycle measures resources and reports the state to the
 // cluster.
-func WithCycleTTL(ttl int64) NodeOperatorOption {
-	return func(n *NodeOperator) {
+func WithCycleTTL(ttl int64) OperatorOption {
+	return func(n *Operator) {
 		n.cycleTTL = ttl
 	}
 }
 
 // WithMaintenance enables the maintenance mode. If enabled the node is reported with maintenance mode to
 // the cluster.
-func WithMaintenance(maintenance bool) NodeOperatorOption {
-	return func(n *NodeOperator) {
+func WithMaintenance(maintenance bool) OperatorOption {
+	return func(n *Operator) {
 		n.maintenance = maintenance
 	}
 }
 
 // WithAffinity defines custom affinity tags. The defined affinity tags are reported to the cluster.
-func WithAffinity(tags []string) NodeOperatorOption {
-	return func(n *NodeOperator) {
+func WithAffinity(tags []string) OperatorOption {
+	return func(n *Operator) {
 		n.affinity = tags
 	}
 }
@@ -133,20 +133,20 @@ func WithAffinity(tags []string) NodeOperatorOption {
 // WithResourceFactor defines custom resource factors. The resource factors specify how much host resources
 // are incorporated to the reported resource values.
 // (e.g. 10 cores with 8 available and a factor of 0.8 = 8 cores with 6 available).
-func WithResourceFactor(cpuFactor, memoryFactor float64) NodeOperatorOption {
-	return func(n *NodeOperator) {
+func WithResourceFactor(cpuFactor, memoryFactor float64) OperatorOption {
+	return func(n *Operator) {
 		n.cpuFactor = cpuFactor
 		n.memoryFactor = memoryFactor
 	}
 }
 
-// ServeAndDetach starts the NodeOperator reporting process in a detached goroutine.
-func (n *NodeOperator) ServeAndDetach() {
+// ServeAndDetach starts the Operator reporting process in a detached goroutine.
+func (n *Operator) ServeAndDetach() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		n.report()
+		n.register()
 	}()
 
 	go func() {
@@ -157,7 +157,7 @@ func (n *NodeOperator) ServeAndDetach() {
 
 // Terminate shuts down the node operator gracefully, if shutdown did not complete in the provided context window
 // the operator is terminated forcefully. Never returns an error (just there to match termination pattern).
-func (n *NodeOperator) Terminate(ctx context.Context) error {
+func (n *Operator) Terminate(ctx context.Context) error {
 	n.workCtxCancel()
 	defer n.rootCtxCancel()
 	select {

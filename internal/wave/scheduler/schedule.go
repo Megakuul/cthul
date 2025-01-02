@@ -25,9 +25,7 @@ import (
 	"strconv"
 	"time"
 
-	"cthul.io/cthul/pkg/wave/domain"
 	domstruct "cthul.io/cthul/pkg/wave/domain/structure"
-	"cthul.io/cthul/pkg/wave/node"
 	nodestruct "cthul.io/cthul/pkg/wave/node/structure"
 )
 
@@ -40,9 +38,6 @@ import (
 // based on their current capacity.
 // The schedulerCtx can be cancelled to stop the scheduler, this will stop the scheduler AFTER the current cycle.
 func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
-	domainController := domain.NewDomainController(s.client)
-	nodeController := node.NewNodeController(s.client)
-	
 	// unmanagedDomain holds unmanaged domains and the number of cycles they were already unmanaged.
 	// it is used to avoid immediate rescheduling of unmanagedDomains.
 	unmanagedDomains := map[string]int{}
@@ -77,13 +72,13 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 		}
 		
 
-		domains, err := domainController.List(s.workCtx)
+		domains, err := s.domainController.List(s.workCtx)
 		if err!=nil {
 			s.logger.Err("scheduler", "failed to load domains: " + err.Error())
 			continue
 		}
 
-		nodes, err := nodeController.List(s.workCtx)
+		nodes, err := s.nodeController.List(s.workCtx)
 		if err!=nil {
 			s.logger.Err("scheduler", "failed to load nodes: " + err.Error())
 			continue
@@ -117,7 +112,7 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 				continue
 			}
 
-			domainController.SetNode(s.workCtx, domainId, targetNodeId)
+			s.domainController.SetNode(s.workCtx, domainId, targetNodeId)
 			if err!=nil {
 				s.logger.Err("scheduler", fmt.Sprintf(
 					"failed to reschedule '%s': %s", domainId, err.Error(),
