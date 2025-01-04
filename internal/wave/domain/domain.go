@@ -24,10 +24,10 @@ import (
 	"sync"
 
 	domadapter "cthul.io/cthul/pkg/adapter/domain"
-	domctrl "cthul.io/cthul/pkg/wave/domain"
 	"cthul.io/cthul/pkg/db"
 	"cthul.io/cthul/pkg/log"
 	"cthul.io/cthul/pkg/log/discard"
+	domctrl "cthul.io/cthul/pkg/wave/domain"
 )
 
 // Operator is responsible for applying the domains database state to the local virtual machine monitor.
@@ -49,6 +49,14 @@ type Operator struct {
 
 	// nodeId specifies the id of the node, this is used to determine which domains must be applied.
 	nodeId string
+
+	// updateCycleTTL specifies the ttl of the cycle that updates the domain syncers
+	// (cycle essentially finds out what domains must be synced by this node).
+	updateCycleTTL int64
+	
+	// pruneCycleTTL specifies the ttl of the cycle that prunes unused domains from the local node.
+	// Value is also used as context timeout of prune watcher calls (prune calls made by update watcher).
+	pruneCycleTTL int64
 
 	// localDomains is a buffer holding all domains installed on the local machine.
 	// Map is used to avoid many libvirt list requests.
@@ -84,6 +92,17 @@ func NewOperator(client db.Client, controller domctrl.Controller, adapter domada
 		adapter: adapter,
 		client: client,
 		logger:          discard.NewDiscardLogger(),
+		nodeId: "undefined",
+		updateCycleTTL: 10,
+		pruneCycleTTL: 30,
+		localDomains: map[string]string{},
+		localDomainsLock: sync.RWMutex{},
+		localDomainsCycleTTL: 30,
+		stateSyncers: map[string]context.CancelFunc{},
+		stateSyncersLock: sync.RWMutex{},
+		configSyncers: map[string]context.CancelFunc{},
+		configSyncersLock: sync.RWMutex{},
+		operationWg: sync.WaitGroup{},
 	}
 
 	for _, opt := range opts {
@@ -100,13 +119,47 @@ func WithLogger(logger log.Logger) OperatorOption {
 	}
 }
 
+// WithNodeId specifies the id of the local node. This id is used to identify which domains
+// must be synced to this node.
+func WithNodeId(id string) OperatorOption {
+	return func(n *Operator) {
+		n.nodeId = id
+	}
+}
+
+// WithUpdateCylceTTL defines a custom update cycle interval.
+// Every cycle checks which domains are managed by the local node and fully refreshes all running syncers.
+// Syncers are also incrementally updated in realtime when updated on database, this cycle just fully resyncs.
+func WithUpdateCylceTTL(ttl int64) OperatorOption {
+	return func(d *Operator) {
+		d.updateCycleTTL = ttl
+	}
+}
+
+// WithPruneCylceTTL defines a custom prune cycle interval.
+// Every cycle checks which local domains can be removed and destroys them.
+// Domains are also incrementally pruned in realtime when deleted, this cycle just rechecks all domains.
+func WithPruneCylceTTL(ttl int64) OperatorOption {
+	return func(d *Operator) {
+		d.pruneCycleTTL = ttl
+	}
+}
+
+// WithLocalDomainsCylceTTL defines a custom local domains cycle interval.
+// Every cycle reads the local domains into an internal buffer (avoids listing all domains on every operation).
+func WithLocalDomainsCylceTTL(ttl int64) OperatorOption {
+	return func(d *Operator) {
+		d.localDomainsCycleTTL = ttl
+	}
+}
+
 // ServeAndDetach starts the Operator reporting process in a detached goroutine.
 func (d *Operator) ServeAndDetach() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		d.apply()
+		d.synchronize()
 	}()
 
 	go func() {

@@ -94,16 +94,10 @@ func WithLogger(logger log.Logger) OperatorOption {
 	}
 }
 
-// WithNodeId specifies the id of the node that is reported to the cluster. If useHostname is enabled, the
-// node id is set to the hostname (with fallback to the specified id).
-func WithNodeId(id string, useHostname bool) OperatorOption {
+// WithNodeId specifies the id of the node that is reported to the cluster.
+func WithNodeId(id string) OperatorOption {
 	return func(n *Operator) {
 		n.nodeId = id
-		if useHostname {
-			if hostname, err := os.Hostname(); err!=nil {
-				n.nodeId = hostname
-			}
-		}
 	}
 }
 

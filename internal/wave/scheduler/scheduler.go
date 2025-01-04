@@ -95,6 +95,21 @@ func WithLogger(logger log.Logger) SchedulerOption {
 	}
 }
 
+// WithCycleTTL defines a custom scheduler cycle interval.
+func WithCycleTTL(ttl int64) SchedulerOption {
+	return func(s *Scheduler) {
+		s.cycleTTL = ttl
+	}
+}
+
+// WithRescheduleCycles sets a custom number of scheduler cycles a domain must be unmanaged
+// before being rescheduled.
+func WithRescheduleCycles(cycles int64) SchedulerOption {
+	return func(s *Scheduler) {
+		s.rescheduleCycles = cycles
+	}
+}
+
 
 // SetLeaderState changes the state of the schedule leader. Local set to true enables the scheduler leader mode.
 // Setting it to false disables the scheduler leader mode gracefully. This operation is idempotent.
