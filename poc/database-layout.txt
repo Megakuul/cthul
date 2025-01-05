@@ -19,3 +19,10 @@ Tuples&Lists: Strings with '|' splitchar
 /WAVE/DOMAIN/RESOURCES/<DOM_ID>: <RESOURCECONFIG>
 /WAVE/DOMAIN/CONFIG/<DOM_ID>: <CTHULCONFIG>
 /WAVE/DOMAIN/CONFIGPUSHINT/<DOM_ID>: 15 // config domain push interval
+
+
+/WAVE/VIDEO/COOKING/<DEV_ID>: 
+/WAVE/VIDEO/REQNODE/<DEV_ID>: node001.wave.cthul.io
+/WAVE/VIDEO/NODE/<DEV_ID>: node001.wave.cthul.io
+/WAVE/VIDEO/TYPE/<DEV_ID>: spice
+/WAVE/VIDEO/PATH/<DEV_ID>: video

@@ -56,6 +56,12 @@ func NewAdapter(generator *generator.Generator, hotplugger *hotplug.Hotplugger, 
 	return controller
 }
 
+func WithRunRoot(path string) AdapterOption {
+	return func (a *Adapter) {
+		a.runRoot = path
+	}
+}
+
 // initClient creates the underlying libvirt connection client if not already initialized.
 func (l *Adapter) initClient() error {
 	l.initLock.Lock()

@@ -1,4 +1,4 @@
-nodeid = "node001.wave.cthul.io"
+nodeid = "node001.wave.cthul.io" # omit to use the hostname as id.
 
 [lifecycle]
 termination_ttl = 4 # ttl of the graceful termination process (seconds)
@@ -6,7 +6,7 @@ termination_ttl = 4 # ttl of the graceful termination process (seconds)
 [logging]
 level = "debug" # 'debug', 'info', 'warning', 'error', 'critical'
 trace = false # enable log traces (outputs file & line number)
-buffer = 256 # runtime log buffer size (items NOT bytes)
+buffer = 256 # runtime log buffer size (measured in items NOT bytes)
 
 [db]
 addr = "unixs:///var/run/cthul/etcd/etcd.sock" # address of the local etcd node (unix|tcp)
@@ -22,15 +22,20 @@ cash = 10 # cash balance of this node
 contest_ttl = 2 # ttl for every interval cycle (essentially keepalive interval) (seconds)
 
 [scheduler]
-register = true # add this node to the scheduler, allowing it to move domains to this node
-register_ttl = 2 # ttl for every registration cycle (essentially keepalive interval) (seconds)
-cpu_threshold = 95 # host cpu resources that are taken into consideration for the schedule decisions (percentage)
-mem_threshold = 95 # host memory resources that are taken into consideration for schedule decisions (percentage)
-# thresholds can also be set higher then 100, however this should be done with caution, as the scheduler
-# will then move domains even if the host memory and cpu resources are exhausted.
+cycle_ttl = 2 # interval of the scheduler cycle (every cycle checks for domains that must be rescheduled).
+domain_reschedule_threshold = 2 # cycles that must evaluate a domain reschedule in a row before rescheduling.
 
-cycle_ttl = 2 # ttl for every scheduler cycle (essentially keepalive interval) (seconds)
-domain_reschedule_threshold = 2 # cycles that must evaluate a domain reschedule in a row before rescheduling
+[node]
+cycle_ttl = 5 # interval of the node cycle (every cycle reports the node to the cluster).
+affinity = ["default", "pool01"] # affinity tags used to determine what domains can be scheduled to this node.
+maintenance = false # enable maintenance mode (reports the node with "maintenance" state to the cluster).
+cpu_factor = 0.95 # factor added to the host cpu resources before reporting to the cluster. 
+mem_factor = 0.95 # factor added to the host memory resources before reporting to the cluster.
+
+[domain]
+update_cycle_ttl = 30 # interval of the domain update cycle (every cycle resyncs the domain syncers configuration)
+prune_cycle_ttl = 100 # interval of the domain prune cycle (every cycle rechecks and removes old domains)
+local_domains_cycle_ttl = 10 # interval the local domain buffer is reloaded from the underlying vmm.
 
 [api]
 addr = "0.0.0.0:1870" # address the api listener is bound to (tcp)

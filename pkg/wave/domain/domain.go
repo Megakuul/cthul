@@ -279,19 +279,19 @@ func (c *Controller) Delete(ctx context.Context, id string) error {
 	if err!=nil {
 		return err
 	}
+	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/DOMAIN/CONFIGPUSHINT/%s", id))
+	if err!=nil {
+		return err
+	}
+	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/DOMAIN/STATEPUSHINT/%s", id))
+	if err!=nil {
+		return err
+	}
 	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/DOMAIN/STATE/%s", id))
 	if err!=nil {
 		return err
 	}
-	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/DOMAIN/ALCPU/%s", id))
-	if err!=nil {
-		return err
-	}
-	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/DOMAIN/ALMEM/%s", id))
-	if err!=nil {
-		return err
-	}
-	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/DOMAIN/CONFIG/%s", id))
+	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/DOMAIN/RESOURCES/%s", id))
 	if err!=nil {
 		return err
 	}

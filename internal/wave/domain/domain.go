@@ -27,7 +27,6 @@ import (
 	"cthul.io/cthul/pkg/db"
 	"cthul.io/cthul/pkg/log"
 	"cthul.io/cthul/pkg/log/discard"
-	domctrl "cthul.io/cthul/pkg/wave/domain"
 )
 
 // Operator is responsible for applying the domains database state to the local virtual machine monitor.
@@ -42,7 +41,6 @@ type Operator struct {
 	// if the channel emits, this indicates that the operator is fully cleaned up.
 	finChan chan struct{}
 
-	controller domctrl.Controller
 	adapter domadapter.Adapter
 	client db.Client
 	logger log.Logger
@@ -79,7 +77,7 @@ type Operator struct {
 
 type OperatorOption func(*Operator)
 
-func NewOperator(client db.Client, controller domctrl.Controller, adapter domadapter.Adapter, opts ...OperatorOption) *Operator {
+func NewOperator(client db.Client, adapter domadapter.Adapter, opts ...OperatorOption) *Operator {
 	rootCtx, rootCtxCancel := context.WithCancel(context.Background())
 	workCtx, workCtxCancel := context.WithCancel(rootCtx)
 	operator := &Operator{
@@ -88,7 +86,6 @@ func NewOperator(client db.Client, controller domctrl.Controller, adapter domada
 		workCtx:         workCtx,
 		workCtxCancel:   workCtxCancel,
 		finChan:         make(chan struct{}),
-		controller: controller,
 		adapter: adapter,
 		client: client,
 		logger:          discard.NewDiscardLogger(),

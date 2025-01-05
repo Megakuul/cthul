@@ -30,6 +30,10 @@ type Video struct {
 	Path string // unix socket path
 }
 
+func (d *DeviceController) ListVideo(id string) error {
+
+}
+
 // CreateVideo creates a new wave video adapter device.
 func (d *DeviceController) CreateVideo(id string) error {
 	
@@ -40,6 +44,10 @@ func (d *DeviceController) DeleteVideo(id string) error {
 }
 
 func (d *DeviceController) LookupVideo(id string) error {
+
+}
+
+func (d *DeviceController) GetPort(id string) (<-chan []byte, chan<-[]byte, error) {
 
 }
 
