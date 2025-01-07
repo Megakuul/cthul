@@ -21,18 +21,15 @@ package video
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"path/filepath"
-	"strconv"
 	"strings"
+	"time"
 
-	"cthul.io/cthul/pkg/adapter/video"
-	adapterstruct "cthul.io/cthul/pkg/adapter/video/structure"
 	"cthul.io/cthul/pkg/db"
 	"cthul.io/cthul/pkg/wave/video/structure"
 	"github.com/google/uuid"
+	"golang.org/x/sync/errgroup"
 )
 
 // Controller provides an interface for wave video device operations.
@@ -109,36 +106,67 @@ func (c *Controller) SetType(ctx context.Context, id string, typ structure.VIDEO
 	return nil
 }
 
+// PoC
 func (c *Controller) Attach(ctx context.Context, id string, node string) error {
-	cooking, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/VIDEO/COOKING/%s", id))
-	
-	cooking, err := c.client.Set(ctx, fmt.Sprintf("/WAVE/VIDEO/COOKING/%s", id), "yes", 5)
-	if err!=nil {
-		return err
-	}
-	if cooking!="" {
-		return fmt.Errorf("someone is cooking")
-	}
-	
 	deviceNode, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/VIDEO/NODE/%s", id))
 	if err!=nil {
 		return err
 	}
 	if deviceNode == node {
 		return nil
+	}  else if deviceNode != "" {
+		return fmt.Errorf("cannot attach video device because it is already attached to '%s'", deviceNode)
 	}
 
-	go func() {
-		err = c.client.Watch(ctx, fmt.Sprintf("/WAVE/VIDEO/NODE/%s", id), func(_, _ string, err error) {
-			
-		})
-	}()
-	_, err := c.client.Set(ctx, fmt.Sprintf("/WAVE/VIDEO/REQNODE/%s", id), node, 0)
+	pollCtx, pollCtxCancel := context.WithCancel(ctx)
+	pollG, _ := errgroup.WithContext(ctx)
+
+	pollG.Go(func () error {
+		defer pollCtxCancel()
+		for {
+			deviceNode, err := c.client.Get(pollCtx, fmt.Sprintf("/WAVE/VIDEO/NODE/%s", id))
+			if err!=nil {
+				return err
+			}
+
+			if deviceNode == node {
+				return nil
+			}
+
+			select {
+			case <-pollCtx.Done():
+				return fmt.Errorf("polling context exceeded")
+			case <-time.After(time.Second):
+			}
+		}
+	})
+
+	pollG.Go(func () error {
+		defer pollCtxCancel()
+		for {
+			requestNode, err := c.client.Get(pollCtx, fmt.Sprintf("/WAVE/VIDEO/REQNODE/%s", id))
+			if err!=nil {
+				return err
+			}
+
+			if requestNode != node {
+				return fmt.Errorf("node '%s' overwrote the request", requestNode)
+			}
+
+			select {
+			case <-pollCtx.Done():
+				return fmt.Errorf("polling context exceeded")
+			case <-time.After(time.Second):
+			}
+		}
+	})
+	
+	_, err = c.client.Set(ctx, fmt.Sprintf("/WAVE/VIDEO/REQNODE/%s", id), node, 0)
 	if err!=nil {
 		return err
 	}
 
-
+	return pollG.Wait()
 }
 
 

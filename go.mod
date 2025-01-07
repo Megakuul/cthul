@@ -7,10 +7,12 @@ require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/digitalocean/go-libvirt v0.0.0-20241007203800-ad92148935b6
 	github.com/go-playground/validator/v10 v10.22.1
+	github.com/google/uuid v1.6.0
 	github.com/shirou/gopsutil/v3 v3.24.5
 	github.com/spf13/cobra v1.8.1
 	go.etcd.io/etcd/client/v3 v3.5.16
 	go.uber.org/zap v1.17.0
+	golang.org/x/sync v0.8.0
 	google.golang.org/grpc v1.59.0
 	google.golang.org/protobuf v1.34.2
 )
@@ -24,7 +26,6 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
