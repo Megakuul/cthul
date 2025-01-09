@@ -91,7 +91,7 @@ func (o *Operator) synchronize() {
 			ctx, cancel := context.WithTimeout(o.workCtx, time.Duration(o.updateCycleTTL) * time.Second)
 			defer cancel()
 
-			domains, err := o.client.GetRange(o.workCtx, "/WAVE/DOMAIN/NODE/")
+			domains, err := o.client.GetRange(ctx, "/WAVE/DOMAIN/NODE/")
 			if err!=nil {
 				o.logger.Err("domain-operator", fmt.Sprintf(
 					"failed to load domains: %s; skipping update cycle...", err.Error(),
