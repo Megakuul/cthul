@@ -30,18 +30,17 @@ import (
 // operationWg.
 // 1. Starts a simple routine to load the localDomains buffer periodically.
 // 2. Starts an operation for periodically pruning old unused domains.
-// 3. Starts a routine that periodically reads all existing cluster domains and starts/stops "syncers" based on
-// their managing node (if the local node is managing, the syncers
-// are started otherwise they are stopped). Once started syncers will synchronize their respective attribute
-// from database to local node.
-// 4. Starts a watcher that also starts/stops syncers but does so immediately after a change has been committed.
+// 3. Starts a routine that periodically reads all existing cluster domains and starts/stops "syncers" based
+// on their managing node (if the local node is managing, the syncers are started otherwise they are stopped).
+// Once started syncers will synchronize their respective attribute from the database to the local node.
+// 4. Starts a watcher that also updates "syncers" but does so immediately after a change has been committed.
 // Additionally this watcher also prunes domains that are manually removed from the database immediately.
 //
 // The reason for this approach with two separate routines (periodic/watcher) is their responsibility:
 // Periodic routines are responsible for deterministically synchronizing the database state to the local node.
 // Watcher routines operate incrementally and can theoretically miss events (e.g. on database interruption or
-// when the state updates on the node without being reported to the database), their purpose is to avoid waiting
-// for the next interval on manual updates; a user starting a domain wants this to happen immediately.
+// when the state updates on the node without being reported to the database), their purpose is to avoid
+// waiting for the next interval on manual updates; a user starting a domain wants this to happen immediately.
 func (o *Operator) synchronize() {
 	o.operationWg.Add(1)
 	go func() {

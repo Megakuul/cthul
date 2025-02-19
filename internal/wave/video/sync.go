@@ -27,7 +27,6 @@ import (
 )
 
 func (o *Operator) synchronize() {
-
 	o.operationWg.Add(1)
 	go func() {
 		defer o.operationWg.Done()

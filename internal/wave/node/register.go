@@ -35,18 +35,18 @@ import (
 // associated state and allows other wave components like the scheduler to discover it.
 // On every cycle the node state & resources are measured and reevaluated.
 func (n *Operator) register() {
-	nodeController := node.NewNodeController(n.client)
+	nodeController := node.NewController(n.client)
 	
 	for {
 		ctx, cancel := context.WithTimeout(n.workCtx, time.Second*time.Duration(n.cycleTTL))
 		defer cancel()
 		
 		n.logger.Debug("node-operator", "measuring local node resource capacity...")
-		report, err := n.generateReport(ctx)
+		node, err := n.acquireNodeInfo(ctx)
 		if err!=nil {
 			n.logger.Err("node-operator", fmt.Sprintf("cannot report node state: %s", err.Error()))
 		} else {
-			err = nodeController.Register(ctx, n.nodeId, *report, n.cycleTTL*2)
+			err = nodeController.Register(ctx, n.nodeId, *node, n.cycleTTL*2)
 			if err != nil {
 				n.logger.Err("node-operator", fmt.Sprintf("failed to register node: %s", err.Error()))
 			}
@@ -65,16 +65,16 @@ func (n *Operator) register() {
 	}
 }
 
-// GenerateNodeResources generates a node resources from the specs of the local machine.
-// The cpu and mem factor is applied to all total resources before calculating further.
-func (n *Operator) generateReport(ctx context.Context) (*structure.Node, error) {
-	report := structure.Node{
+// acquireNodeInfo acquires an informational node structure by reading local machine specs (cpu, mem, etc)
+// and further attributes statically defined on the operator.
+func (n *Operator) acquireNodeInfo(ctx context.Context) (*structure.Node, error) {
+	node := structure.Node{
 		Affinity: n.affinity,
 		State: structure.NODE_HEALTHY,
 	}
 
 	if n.maintenance {
-		report.State = structure.NODE_MAINTENANCE
+		node.State = structure.NODE_MAINTENANCE
 	}
 
 	cpuCores, err := cpu.InfoWithContext(ctx)
@@ -86,23 +86,23 @@ func (n *Operator) generateReport(ctx context.Context) (*structure.Node, error) 
 		totalCpuCores += core.Cores
 	}
 	// total cpu cores * factor (e.g. 10 * 0.8 = 8 cores)
-	report.AllocatedCpu = float64(totalCpuCores) * n.cpuFactor
+	node.AllocatedCpu = float64(totalCpuCores) * n.cpuFactor
 
 	cpuLoad, err := cpu.PercentWithContext(ctx, 0, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to measure cpu load")
 	}
 	// cpu factor - cpu load * total cpu cores (e.g. (0.8 - 0.4) * 10 = 4 cores)
-	report.AvailableCpu = (n.cpuFactor * 100 - cpuLoad[0]) / 100 * float64(totalCpuCores)
+	node.AvailableCpu = (n.cpuFactor * 100 - cpuLoad[0]) / 100 * float64(totalCpuCores)
 
 	memoryUsage, err := mem.VirtualMemoryWithContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to acquire virtual memory information")
 	}
 	// total mem bytes * memfactor (e.g. 4096 * 0.8 = 3276 bytes)
-	report.AllocatedMemory = int64(float64(memoryUsage.Total) * n.memoryFactor)
+	node.AllocatedMemory = int64(float64(memoryUsage.Total) * n.memoryFactor)
 	// factored mem bytes * used mem bytes (e.g. 3276 - 2000 = 1276 bytes)
-	report.AvailableMemory = report.AllocatedMemory - int64(memoryUsage.Used)
+	node.AvailableMemory = node.AllocatedMemory - int64(memoryUsage.Used)
 
-	return &report, nil
+	return &node, nil
 }

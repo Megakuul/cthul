@@ -34,20 +34,34 @@ import (
 // not == the local one, the state syncer is stopped.
 // The state syncer consists of two routines, one routine operates in periodical ticks pushing the state in a
 // configured interval. The other routine watches the database and pushes state changes immediately upon update.
-func (o *Operator) updatePathSyncer(ctx context.Context, uuid, node, nodeRequest string) {
-	if nodeRequest == o.nodeId && node != o.nodeId {
-		o.setupPath(ctx, uuid)
-	} else if nodeRequest != o.nodeId && node == o.nodeId {
-		o.cleanupPath(ctx, uuid)
+func (o *Operator) updatePathSyncer(uuid, node, nodeRequest string) {
+	o.pathSyncersLock.Lock()
+	defer o.pathSyncersLock.Unlock()
+	
+	if node==o.nodeId && nodeRequest!=o.nodeId {
+		if cancel, ok := o.pathSyncers[uuid]; ok {
+			o.logger.Debug("video-operator", fmt.Sprintf(
+				"removing config synchronizer for domain '%s' on node '%s'...", uuid, node,
+			))
+			cancel()
+			delete(o.pathSyncers, uuid)
+		}
+		return
 	}
-}
 
-// applyState tries to apply the desired power state to the local video.
-func (o *Operator) setupPath(uuid, state string) error {
-	return nil
-}
+	if node!=o.nodeId && nodeRequest==o.nodeId {
+		o.logger.Debug("video-operator", fmt.Sprintf(
+			"setting up path synchronizer for video device '%s' on node '%s'...", uuid, node,
+		))
+		
+		if _, ok := o.pathSyncers[uuid]; ok {
+			o.logger.Debug("video-operator", fmt.Sprintf(
+				"path synchronization for video device '%s' is already running on '%s'; skipping setup...",
+				uuid, node,
+			))
+			return
+		}
 
-// applyState tries to apply the desired power state to the local video.
-func (o *Operator) cleanupPath(uuid, state string) error {
-	return nil
+		// TODO: add loop like in config_syncer.go
+	}
 }

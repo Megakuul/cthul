@@ -21,7 +21,6 @@ package node
 
 import (
 	"context"
-	"os"
 	"sync"
 
 	"cthul.io/cthul/pkg/db"
@@ -30,7 +29,7 @@ import (
 )
 
 // Operator is responsible to monitor and measure the state and resources of the host node.
-// Evaluated data is reported to the cluster via database. This allows other components to discover the node.
+// Evaluated data is reported to the cluster via NodeController. This allows components to discover this node.
 type Operator struct {
 	rootCtx       context.Context
 	rootCtxCancel context.CancelFunc
