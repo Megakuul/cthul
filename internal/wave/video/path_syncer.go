@@ -25,9 +25,13 @@ import (
 	"strconv"
 	"sync"
 	"time"
-	
+
+	"cthul.io/cthul/pkg/db"
+	"cthul.io/cthul/pkg/log"
 	"cthul.io/cthul/pkg/wave/video/structure"
 )
+
+
 
 // updateStateSyncer updates the state syncer map based on the new node. If the video is located on the local
 // node, a state syncer is started. If a state syncer associated with the video is running, but the new node is
@@ -37,8 +41,8 @@ import (
 func (o *Operator) updatePathSyncer(uuid, node, nodeRequest string) {
 	o.pathSyncersLock.Lock()
 	defer o.pathSyncersLock.Unlock()
-	
-	if node==o.nodeId && nodeRequest!=o.nodeId {
+
+	if node!=o.nodeId {
 		if cancel, ok := o.pathSyncers[uuid]; ok {
 			o.logger.Debug("video-operator", fmt.Sprintf(
 				"removing config synchronizer for domain '%s' on node '%s'...", uuid, node,
@@ -46,22 +50,22 @@ func (o *Operator) updatePathSyncer(uuid, node, nodeRequest string) {
 			cancel()
 			delete(o.pathSyncers, uuid)
 		}
-		return
+		return		
 	}
 
-	if node!=o.nodeId && nodeRequest==o.nodeId {
-		o.logger.Debug("video-operator", fmt.Sprintf(
-			"setting up path synchronizer for video device '%s' on node '%s'...", uuid, node,
-		))
+	if nodeRequest!="" {
 		
-		if _, ok := o.pathSyncers[uuid]; ok {
-			o.logger.Debug("video-operator", fmt.Sprintf(
-				"path synchronization for video device '%s' is already running on '%s'; skipping setup...",
-				uuid, node,
-			))
-			return
-		}
-
-		// TODO: add loop like in config_syncer.go
+	}
+	
+	o.logger.Debug("video-operator", fmt.Sprintf(
+		"setting up path synchronizer for video device '%s' on node '%s'...", uuid, node,
+	))
+	
+	if _, ok := o.pathSyncers[uuid]; ok {
+		o.logger.Debug("video-operator", fmt.Sprintf(
+			"path synchronization for video device '%s' is already running on '%s'; skipping setup...",
+			uuid, node,
+		))
+		return
 	}
 }
