@@ -28,6 +28,7 @@ import (
 
 	"cthul.io/cthul/pkg/db"
 	"cthul.io/cthul/pkg/log"
+	"cthul.io/cthul/pkg/log/discard"
 )
 
 // Syncer is a utility component that helps operators to apply a state from the database to the system.
@@ -52,6 +53,34 @@ type Syncer struct {
 	// wait flag, to ensure goroutines are not leaking, they are tracked by the trackMap AND the operationWg.
 	trackMapLock sync.Mutex
 	trackMap map[string]func(bool)
+}
+
+type SyncerOption func(*Syncer)
+
+func NewSyncer(client db.Client, opts ...SyncerOption) *Syncer {
+	rootCtx, rootCtxCancel := context.WithCancel(context.Background())
+	syncer := &Syncer{
+		rootCtx: rootCtx,
+		rootCtxCancel: rootCtxCancel,
+		client: client,
+		logger: discard.NewDiscardLogger(),
+		operationWg: sync.WaitGroup{},
+		trackMapLock: sync.Mutex{},
+		trackMap: map[string]func(bool){},
+	}
+
+	for _, opt := range opts {
+		opt(syncer)
+	}
+
+	return syncer
+}
+
+// WithLogger sets a custom logger used to report syncer events.
+func WithLogger(logger log.Logger) SyncerOption {
+	return func(s *Syncer) {
+		s.logger = logger
+	}
 }
 
 // Add adds a routine to the syncer. This means that the syncer starts two goroutines one that incrementally

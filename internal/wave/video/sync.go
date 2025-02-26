@@ -24,9 +24,13 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"cthul.io/cthul/pkg/syncer"
 )
 
 func (o *Operator) synchronize() {
+	syncer := syncer.NewSyncer(o.client)
+	
 	o.operationWg.Add(1)
 	go func() {
 		defer o.operationWg.Done()
@@ -34,24 +38,31 @@ func (o *Operator) synchronize() {
 			ctx, cancel := context.WithTimeout(o.workCtx, time.Duration(o.updateCycleTTL) * time.Second)
 			defer cancel()
 			
-			deviceNodes, err := o.client.GetRange(ctx, "/WAVE/VIDEO/NODE")
+			nodes, err := o.client.GetRange(ctx, "/WAVE/VIDEO/NODE")
 			if err!=nil {
 				o.logger.Err("video-operator", fmt.Sprintf(
 					"failed to load requested video device nodes: %s; skipping update cycle...", err.Error(),
 				))
 			}
-			deviceNodeRequests, err := o.client.GetRange(ctx, "/WAVE/VIDEO/REQNODE/")
+			requestNodes, err := o.client.GetRange(ctx, "/WAVE/VIDEO/REQNODE/")
 			if err!=nil {
 				o.logger.Err("video-operator", fmt.Sprintf(
 					"failed to load requested video device nodes: %s; skipping update cycle...", err.Error(),
 				))
 			}
 
-			for key, nodeRequest := range deviceNodeRequests {
-				uuid := strings.TrimPrefix(key, "/WAVE/VIDEO/REQNODE/")
-				node := deviceNodes[fmt.Sprint("/WAVE/VIDEO/NODE/", uuid)]
+			for key, requestNodeId  := range requestNodes {
+				deviceId := strings.TrimPrefix(key, "/WAVE/VIDEO/REQNODE/")
+				nodeId := nodes[fmt.Sprint("/WAVE/VIDEO/NODE/", deviceId)]
 
-				o.updatePathSyncer(ctx, uuid, node, nodeRequest)
+				// TODO ensure removal triggers the nodeId to be set to ""
+				if requestNodeId != "" && nodeId == o.nodeId {
+					syncer.Remove(deviceId, false)
+				} else if requestNodeId == o.nodeId && nodeId == "" {				
+					syncer.Add(deviceId, "/WAVE/VIDEO/PATH", 30, func(ctx context.Context, result string) error {
+						// TODO implement the pathsyncer
+					})
+				}
 			}
 
 			select {
