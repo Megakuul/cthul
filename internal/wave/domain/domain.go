@@ -32,15 +32,8 @@ import (
 
 // Operator is responsible for applying the domains database state to the local virtual machine monitor.
 type Operator struct {
-	rootCtx       context.Context
-	rootCtxCancel context.CancelFunc
-
-	workCtx       context.Context
-	workCtxCancel context.CancelFunc
-
-	// finChan is used to send the absolute exist signal
-	// if the channel emits, this indicates that the operator is fully cleaned up.
-	finChan chan struct{}
+  rootCtx context.Context
+  rootCtxCancel context.CancelFunc
 
 	adapter domadapter.Adapter
 	client db.Client
@@ -68,19 +61,18 @@ type Operator struct {
 	// Map is used to avoid many libvirt list requests.
 	localDomains map[string]string
 	localDomainsLock sync.RWMutex
+
+  // operationWg is a waitgroup that captures workers that are not managed by the syncer.
+  operationWg sync.WaitGroup
 }
 
 type Option func(*Operator)
 
 func New(client db.Client, adapter domadapter.Adapter, opts ...Option) *Operator {
-	rootCtx, rootCtxCancel := context.WithCancel(context.Background())
-	workCtx, workCtxCancel := context.WithCancel(rootCtx)
+  rootCtx, rootCtxCancel := context.WithCancel(context.Background())
 	operator := &Operator{
-		rootCtx:         rootCtx,
-		rootCtxCancel:   rootCtxCancel,
-		workCtx:         workCtx,
-		workCtxCancel:   workCtxCancel,
-		finChan:         make(chan struct{}),
+    rootCtx: rootCtx,
+    rootCtxCancel: rootCtxCancel,
 		adapter: adapter,
 		client: client,
 		logger:          discard.NewDiscardLogger(),
@@ -92,6 +84,7 @@ func New(client db.Client, adapter domadapter.Adapter, opts ...Option) *Operator
     configCycleTTL: 30,
 		localDomains: map[string]string{},
 		localDomainsLock: sync.RWMutex{},
+    operationWg: sync.WaitGroup{},
 	}
 
 	for _, opt := range opts {
@@ -147,33 +140,13 @@ func WithConfigCycleTTL(ttl int64) Option {
 	}
 }
 
-// ServeAndDetach starts the Operator reporting process in a detached goroutine.
 func (o *Operator) ServeAndDetach() {
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		o.synchronize()
-	}()
-
-	go func() {
-		wg.Wait()
-		o.finChan <- struct{}{}
-	}()
+  o.synchronize()
 }
 
-// Terminate shuts down the domain operator gracefully, if shutdown did not complete in the provided context
-// window the operator is terminated forcefully.
-// Never returns an error (just there to match termination pattern).
 func (o *Operator) Terminate(ctx context.Context) error {
-	o.workCtxCancel()
-	defer o.rootCtxCancel()
-	select {
-	case <-o.finChan:
-		return nil
-	case <-ctx.Done():
-		o.rootCtxCancel()
-		<-o.finChan
-		return nil
-	}
+  o.syncer.Shutdown()
+  o.rootCtxCancel()
+  o.operationWg.Wait()
+  return nil
 }

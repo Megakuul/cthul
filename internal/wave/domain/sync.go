@@ -23,7 +23,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	adapterstruct "cthul.io/cthul/pkg/adapter/domain/structure"
@@ -34,12 +33,11 @@ import (
 
 // synchronize starts the core synchronization which is responsible for applying the database state to the local node.
 func (o *Operator) synchronize() {
-	wg := sync.WaitGroup{}
-	wg.Add(1)
+  o.operationWg.Add(1)
 	go func() {
-		defer wg.Done()
+		defer o.operationWg.Done()
 		for {
-			ctx, cancel := context.WithTimeout(o.workCtx, time.Duration(o.localCycleTTL)*time.Second)
+			ctx, cancel := context.WithTimeout(o.rootCtx, time.Duration(o.localCycleTTL)*time.Second)
 			defer cancel()
 
 			domains, err := o.adapter.List(ctx)
@@ -54,7 +52,7 @@ func (o *Operator) synchronize() {
 			o.pruneAllDomains(ctx)
 
 			select {
-			case <-o.workCtx.Done():
+			case <-o.rootCtx.Done():
 				return
 			case <-ctx.Done():
 			}
@@ -79,8 +77,6 @@ func (o *Operator) synchronize() {
 		}
 		return nil
 	})
-
-	wg.Wait()
 }
 
 // applyConfig tries to apply the domain configuration to the local domain.
@@ -129,7 +125,7 @@ func (o *Operator) applyState(ctx context.Context, uuid, state string) error {
 // pruneAllDomains compares the local domains with the desired domains on the database. All domains that are
 // present on the node but not on the database (managed by this node) are removed with pruneDomain().
 func (o *Operator) pruneAllDomains(ctx context.Context) {
-	domains, err := o.client.GetRange(o.workCtx, "/WAVE/DOMAIN/NODE/")
+	domains, err := o.client.GetRange(o.rootCtx, "/WAVE/DOMAIN/NODE/")
 	if err != nil {
 		o.logger.Err("domain-operator", fmt.Sprintf(
 			"failed to load domains: %s; skipping prune process...", err.Error(),
@@ -202,6 +198,12 @@ func (o *Operator) pruneDomain(ctx context.Context, uuid, node string) {
 		o.logger.Err("domain-operator", fmt.Sprintf("failed to destroy domain '%s': %s", uuid, err.Error()))
 		return
 	}
+
+  // technically removing the domain from the cache is not strictly required (it's not avoiding race conditions!)
+  // however, it avoids unnecessary calls to pruneDomain() until the cache is renewed.
+  o.localDomainsLock.Lock()
+  delete(o.localDomains, uuid)
+  o.localDomainsLock.Unlock()
 
 	o.logger.Info("domain-operator", fmt.Sprintf(
 		"removed local domain '%s'; domain is now managed by '%s'...", uuid, node,

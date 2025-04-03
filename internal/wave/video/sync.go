@@ -22,88 +22,42 @@ package video
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
-	"time"
-
-	"cthul.io/cthul/pkg/syncer"
 )
 
 func (o *Operator) synchronize() {
-	syncer := syncer.NewSyncer(o.client)
-	
-	o.operationWg.Add(1)
-	go func() {
-		defer o.operationWg.Done()
-		for {
-			ctx, cancel := context.WithTimeout(o.workCtx, time.Duration(o.updateCycleTTL) * time.Second)
-			defer cancel()
-			
-			nodes, err := o.client.GetRange(ctx, "/WAVE/VIDEO/NODE")
-			if err!=nil {
-				o.logger.Err("video-operator", fmt.Sprintf(
-					"failed to load requested video device nodes: %s; skipping update cycle...", err.Error(),
-				))
-			}
-			requestNodes, err := o.client.GetRange(ctx, "/WAVE/VIDEO/REQNODE/")
-			if err!=nil {
-				o.logger.Err("video-operator", fmt.Sprintf(
-					"failed to load requested video device nodes: %s; skipping update cycle...", err.Error(),
-				))
-			}
+  o.syncer.Add("/WAVE/VIDEO/REQNODE", o.updateCycleTTL, func(ctx context.Context, k, node string) error {
+    uuid := strings.TrimPrefix(k, "/WAVE/VIDEO/REQNODE/")
+    pathKey := fmt.Sprintf("/WAVE/VIDEO/PATH/%s", uuid)
+    if uuid == o.nodeId {
+      o.syncer.Add(pathKey, o.pathCycleTTL, func(ctx context.Context, k, path string) error {
+        err := o.ensurePath(o.waveRunRoot, path)
+        if err!=nil {
+          return err
+        }
+        _, err = o.client.Set(ctx, fmt.Sprintf("/WAVE/VIDEO/NODE/%s", uuid), node, 0)
+        if err!=nil {
+          return err
+        }
+        return nil
+      })
+    } else {
+      o.syncer.Remove(pathKey, false)
+    }
+    return nil
+  })
+}
 
-			for key, requestNodeId  := range requestNodes {
-				deviceId := strings.TrimPrefix(key, "/WAVE/VIDEO/REQNODE/")
-				nodeId := nodes[fmt.Sprint("/WAVE/VIDEO/NODE/", deviceId)]
-
-				// TODO ensure removal triggers the nodeId to be set to ""
-				if requestNodeId != "" && nodeId == o.nodeId {
-					syncer.Remove(deviceId, false)
-				} else if requestNodeId == o.nodeId && nodeId == "" {				
-					syncer.Add(deviceId, "/WAVE/VIDEO/PATH", 30, func(ctx context.Context, result string) error {
-						// TODO implement the pathsyncer
-					})
-				}
-			}
-
-			select {
-			case <-o.workCtx.Done():
-				return
-			case <-ctx.Done():
-			}
-		}
-	}()
-
-	o.operationWg.Add(1)
-	go func() {
-		defer o.operationWg.Done()
-		err := o.client.WatchRange(o.workCtx, "/WAVE/VIDEO/REQNODE/", func(key, nodeRequest string, err error) {
-			if err!=nil {
-				o.logger.Err("video-operator", fmt.Sprintf(
-					"failed to retrieve video requested device from database: %s", err.Error(),
-				))
-				return
-			}
-
-			ctx, cancel := context.WithTimeout(o.workCtx, time.Duration(o.updateCycleTTL) * time.Second)
-			defer cancel()
-			
-			uuid := strings.TrimPrefix(key, "/WAVE/VIDEO/REQNODE/")
-			node, err := o.client.Get(ctx, fmt.Sprint("/WAVE/VIDEO/NODE/", uuid))
-			if err!=nil {
-				o.logger.Err("video-operator", fmt.Sprintf(
-					"failed to retrieve video device '%s' node from database: %s", uuid, err.Error(),
-				))
-				return
-			}
-
-			o.updatePathSyncer(ctx, uuid, node, nodeRequest)
-		})
-		if err!=nil {
-			o.logger.Crit("video-operator", fmt.Sprintf(
-				"failed to watch video devices: %s; exiting update watcher...", err.Error(),
-			))
-		}
-	}()
-
-	o.operationWg.Wait()
+func (o *Operator) ensurePath(base, path string) error {
+  cleanPath := filepath.Join(base, path)  
+  if !strings.HasPrefix(cleanPath, base) {
+    return fmt.Errorf("device socket path is not allowed to escape the run root ('%s' => '%s')", base, cleanPath)
+  }
+  err := os.MkdirAll(filepath.Dir(cleanPath), 0600)
+  if err!=nil {
+    return err
+  }
+  return os.Chmod(filepath.Dir(cleanPath), 0600)
 }
