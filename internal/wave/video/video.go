@@ -58,7 +58,7 @@ type Operator struct {
 
 type OperatorOption func(*Operator)
 
-func NewOperator(client db.Client, opts ...OperatorOption) *Operator {
+func New(client db.Client, opts ...OperatorOption) *Operator {
 	rootCtx, rootCtxCancel := context.WithCancel(context.Background())
 	workCtx, workCtxCancel := context.WithCancel(rootCtx)
 	operator := &Operator{

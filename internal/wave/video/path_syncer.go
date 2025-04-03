@@ -20,18 +20,8 @@
 package video
 
 import (
-	"context"
 	"fmt"
-	"strconv"
-	"sync"
-	"time"
-
-	"cthul.io/cthul/pkg/db"
-	"cthul.io/cthul/pkg/log"
-	"cthul.io/cthul/pkg/wave/video/structure"
 )
-
-
 
 // updateStateSyncer updates the state syncer map based on the new node. If the video is located on the local
 // node, a state syncer is started. If a state syncer associated with the video is running, but the new node is

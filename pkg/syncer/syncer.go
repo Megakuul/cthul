@@ -22,7 +22,6 @@ package syncer
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -38,12 +37,12 @@ import (
 type Syncer struct {
 	// rootCtx is used as root for every context that is created on the syncer. This ensures that
 	// canceling it will stop every started goroutine tracked by operationWg.
-	rootCtx context.Context
+	rootCtx       context.Context
 	rootCtxCancel context.CancelFunc
 
 	client db.Client
 	logger log.Logger
-	
+
 	// operationWg tracks every single operation started on the syncer, this ensures that even goroutines
 	// that were removed from the trackMap without waiting for them, are not leaking.
 	operationWg sync.WaitGroup
@@ -52,21 +51,21 @@ type Syncer struct {
 	// Routines may be removed from the trackMap without waiting for them to finish by passing false to the
 	// wait flag, to ensure goroutines are not leaking, they are tracked by the trackMap AND the operationWg.
 	trackMapLock sync.Mutex
-	trackMap map[string]func(bool)
+	trackMap     map[string]func(bool)
 }
 
 type SyncerOption func(*Syncer)
 
-func NewSyncer(client db.Client, opts ...SyncerOption) *Syncer {
+func New(client db.Client, opts ...SyncerOption) *Syncer {
 	rootCtx, rootCtxCancel := context.WithCancel(context.Background())
 	syncer := &Syncer{
-		rootCtx: rootCtx,
+		rootCtx:       rootCtx,
 		rootCtxCancel: rootCtxCancel,
-		client: client,
-		logger: discard.NewDiscardLogger(),
-		operationWg: sync.WaitGroup{},
-		trackMapLock: sync.Mutex{},
-		trackMap: map[string]func(bool){},
+		client:        client,
+		logger:        discard.NewDiscardLogger(),
+		operationWg:   sync.WaitGroup{},
+		trackMapLock:  sync.Mutex{},
+		trackMap:      map[string]func(bool){},
 	}
 
 	for _, opt := range opts {
@@ -84,18 +83,16 @@ func WithLogger(logger log.Logger) SyncerOption {
 }
 
 // Add adds a routine to the syncer. This means that the syncer starts two goroutines one that incrementally
-// watches $prefix$uuid and one that is executed periodically in the specified interval. Both goroutines
-// fire $fn periodically / on change, passing the value of $prefix$uuid to $fn.
-func (s *Syncer) Add(uuid, prefix string, interval int64, fn func(context.Context, string) error) error {
+// watches $prefix and one that is executed periodically in the specified interval. Both goroutines
+// fire $fn periodically / on change, passing the value of $prefix to $fn.
+func (s *Syncer) Add(prefix string, interval int64, fn func(context.Context, string, string) error) {
 	s.trackMapLock.Lock()
 	defer s.trackMapLock.Unlock()
 
-	if _, ok := s.trackMap[uuid]; ok {
-		return fmt.Errorf("syncer routine for device '%s' is already running", uuid)
+	if _, ok := s.trackMap[prefix]; ok {
+		return
 	}
 
-	syncKey := fmt.Sprintf("%s/%s", strings.TrimSuffix(prefix, "/"), uuid)
-	
 	funcWg := sync.WaitGroup{}
 	funcCtx, funcCtxCancel := context.WithCancel(s.rootCtx)
 
@@ -105,23 +102,23 @@ func (s *Syncer) Add(uuid, prefix string, interval int64, fn func(context.Contex
 		defer s.operationWg.Done()
 		defer funcWg.Done()
 		for {
-			ctx, cancel := context.WithTimeout(funcCtx, time.Duration(interval) * time.Second)
+			ctx, cancel := context.WithTimeout(funcCtx, time.Duration(interval)*time.Second)
 			defer cancel()
-				
-			state, err := s.client.Get(ctx, syncKey)
-			if err!=nil {
-				s.logger.Err("syncer", fmt.Sprintf("failed to load key '%s': %s",
-					syncKey, err.Error(),
-				))
+
+			result, err := s.client.GetRange(ctx, prefix)
+			if err != nil {
+				s.logger.Err("syncer", fmt.Sprintf("failed to load key '%s': %s", prefix, err.Error()))
 			} else {
-				err = fn(ctx, state)
-				if err!=nil {
-					s.logger.Err("syncer", fmt.Sprintf("cannot apply state to '%s': %s", uuid, err.Error()))
-				} else {
-					s.logger.Debug("syncer", fmt.Sprintf("applied state '%s' to '%s'", state, uuid))
+				for k, state := range result {
+					err = fn(ctx, k, state)
+					if err != nil {
+						s.logger.Err("syncer", fmt.Sprintf("cannot apply state to '%s': %s", k, err.Error()))
+					} else {
+						s.logger.Debug("syncer", fmt.Sprintf("successfully applied state '%s'", k))
+					}
 				}
 			}
-			
+
 			select {
 			case <-funcCtx.Done():
 				return
@@ -135,35 +132,33 @@ func (s *Syncer) Add(uuid, prefix string, interval int64, fn func(context.Contex
 	go func() {
 		defer s.operationWg.Done()
 		defer funcWg.Done()
-		err := s.client.WatchRange(funcCtx, syncKey, func(_, state string, err error) {
-			if err!=nil {
-				s.logger.Err("syncer", fmt.Sprintf("failed to load key '%s': %s",
-					syncKey, err.Error(),
-				))
+		err := s.client.WatchRange(funcCtx, prefix, func(k, state string, err error) {
+			if err != nil {
+				s.logger.Err("syncer", fmt.Sprintf("failed to load key '%s': %s", k, err.Error()))
 				return
 			}
-			err = fn(funcCtx, state)
-			if err!=nil {
-				s.logger.Err("syncer", fmt.Sprintf("cannot apply state to '%s': %s", uuid, err.Error()))
+			err = fn(funcCtx, k, state)
+			if err != nil {
+				s.logger.Err("syncer", fmt.Sprintf("cannot apply state to '%s': %s", k, err.Error()))
 			} else {
-				s.logger.Debug("syncer", fmt.Sprintf("applied state '%s' to '%s'", state, uuid))
+				s.logger.Debug("syncer", fmt.Sprintf("successfully applied state '%s'", k))
 			}
 		})
-		if err!=nil {
+		if err != nil {
 			s.logger.Crit("syncer", fmt.Sprintf(
-				"failed to watch '%s' state: %s; exiting state watcher...", syncKey, err.Error(),
+				"failed to watch '%s' state: %s; exiting state watcher...", prefix, err.Error(),
 			))
 		}
 	}()
 
-	s.trackMap[uuid] = func(wait bool) {
+	s.trackMap[prefix] = func(wait bool) {
 		funcCtxCancel()
 		if wait {
 			funcWg.Wait()
 		}
 	}
 
-	return nil
+	return 
 }
 
 // Remove stops and removes a syncer routine (idempotent). Specifing the wait flag, ensures the function

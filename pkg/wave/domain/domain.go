@@ -40,9 +40,9 @@ type Controller struct {
 	adapter domain.Adapter
 }
 
-type ControllerOption func(*Controller)
+type Option func(*Controller)
 
-func NewController(client db.Client, adapter domain.Adapter, opts ...ControllerOption) *Controller {
+func New(client db.Client, adapter domain.Adapter, opts ...Option) *Controller {
 	controller := &Controller{
 		client: client,
 		adapter: adapter,

@@ -27,6 +27,7 @@ import (
 	"cthul.io/cthul/pkg/db"
 	"cthul.io/cthul/pkg/log"
 	"cthul.io/cthul/pkg/log/discard"
+	"cthul.io/cthul/pkg/syncer"
 )
 
 // Operator is responsible for applying the domains database state to the local virtual machine monitor.
@@ -44,40 +45,34 @@ type Operator struct {
 	adapter domadapter.Adapter
 	client db.Client
 	logger log.Logger
+  syncer *syncer.Syncer
 
-	// nodeId specifies the id of the node, this is used to determine which domains must be applied.
+	// nodeId specifies the id of the node, this is used to determine which domains must be applieo.
 	nodeId string
 
 	// updateCycleTTL specifies the ttl of the cycle that updates the domain syncers
 	// (cycle essentially finds out what domains must be synced by this node).
 	updateCycleTTL int64
 	
-	// pruneCycleTTL specifies the ttl of the cycle that prunes unused domains from the local node.
-	// Value is also used as context timeout of prune watcher calls (prune calls made by update watcher).
-	pruneCycleTTL int64
+  // localCycleTTL specifies the ttl of the cycle that manually resyncs the local domains.
+  // This includes caching local domains and removing orphaned ones. 
+  localCycleTTL int64
+
+  // stateCycleTTL specifies the ttl of the cycle that manually syncs the domain state.
+  stateCycleTTL int64
+
+  // configCycleTTL specifies the ttl of teh cylce that manually syncs the domain config.
+  configCycleTTL int64
 
 	// localDomains is a buffer holding all domains installed on the local machine.
 	// Map is used to avoid many libvirt list requests.
 	localDomains map[string]string
 	localDomainsLock sync.RWMutex
-	localDomainsCycleTTL int64 // ttl of the cycle that renews the buffer.
-
-	// stateSyncers is a simple register for tracking running state synchronizers.
-	stateSyncers map[string]context.CancelFunc
-	stateSyncersLock sync.RWMutex
-	
-	// configSyncers is a simple register for tracking running config synchronizers.
-	configSyncers map[string]context.CancelFunc
-	configSyncersLock sync.RWMutex
-
-	// operationWg is a waitgroup used to track all detached operations (like syncers, pruners, etc).
-	// It is used to correctly wait for all running operation before exiting the operator.
-	operationWg sync.WaitGroup
 }
 
-type OperatorOption func(*Operator)
+type Option func(*Operator)
 
-func NewOperator(client db.Client, adapter domadapter.Adapter, opts ...OperatorOption) *Operator {
+func New(client db.Client, adapter domadapter.Adapter, opts ...Option) *Operator {
 	rootCtx, rootCtxCancel := context.WithCancel(context.Background())
 	workCtx, workCtxCancel := context.WithCancel(rootCtx)
 	operator := &Operator{
@@ -89,17 +84,14 @@ func NewOperator(client db.Client, adapter domadapter.Adapter, opts ...OperatorO
 		adapter: adapter,
 		client: client,
 		logger:          discard.NewDiscardLogger(),
+    syncer: syncer.New(client),
 		nodeId: "undefined",
 		updateCycleTTL: 10,
-		pruneCycleTTL: 30,
+    localCycleTTL: 60,
+    stateCycleTTL: 30,
+    configCycleTTL: 30,
 		localDomains: map[string]string{},
 		localDomainsLock: sync.RWMutex{},
-		localDomainsCycleTTL: 30,
-		stateSyncers: map[string]context.CancelFunc{},
-		stateSyncersLock: sync.RWMutex{},
-		configSyncers: map[string]context.CancelFunc{},
-		configSyncersLock: sync.RWMutex{},
-		operationWg: sync.WaitGroup{},
 	}
 
 	for _, opt := range opts {
@@ -110,15 +102,15 @@ func NewOperator(client db.Client, adapter domadapter.Adapter, opts ...OperatorO
 }
 
 // WithLogger sets a custom logger for the domain operator.
-func WithLogger(logger log.Logger) OperatorOption {
-	return func(d *Operator) {
-		d.logger = logger
+func WithLogger(logger log.Logger) Option {
+	return func(o *Operator) {
+		o.logger = logger
 	}
 }
 
 // WithNodeId specifies the id of the local node. This id is used to identify which domains
 // must be synced to this node.
-func WithNodeId(id string) OperatorOption {
+func WithNodeId(id string) Option {
 	return func(n *Operator) {
 		n.nodeId = id
 	}
@@ -127,56 +119,61 @@ func WithNodeId(id string) OperatorOption {
 // WithUpdateCylceTTL defines a custom update cycle interval.
 // Every cycle checks which domains are managed by the local node and fully refreshes all running syncers.
 // Syncers are also incrementally updated in realtime when updated on database, this cycle just fully resyncs.
-func WithUpdateCylceTTL(ttl int64) OperatorOption {
-	return func(d *Operator) {
-		d.updateCycleTTL = ttl
+func WithUpdateCylceTTL(ttl int64) Option {
+	return func(o *Operator) {
+		o.updateCycleTTL = ttl
 	}
 }
 
-// WithPruneCylceTTL defines a custom prune cycle interval.
-// Every cycle checks which local domains can be removed and destroys them.
-// Domains are also incrementally pruned in realtime when deleted, this cycle just rechecks all domains.
-func WithPruneCylceTTL(ttl int64) OperatorOption {
-	return func(d *Operator) {
-		d.pruneCycleTTL = ttl
+// WithLocalCycle defines a custom local cycle interval.
+// The cycle is responsible for synchronizing the local domains (e.g. caching or removing orphaned)
+func WithLocalCycle(ttl int64) Option {
+	return func(o *Operator) {
+    o.localCycleTTL = ttl
 	}
 }
 
-// WithLocalDomainsCylceTTL defines a custom local domains cycle interval.
-// Every cycle reads the local domains into an internal buffer (avoids listing all domains on every operation).
-func WithLocalDomainsCylceTTL(ttl int64) OperatorOption {
-	return func(d *Operator) {
-		d.localDomainsCycleTTL = ttl
+// WithStateCycleTTL defines a custom cycle interval for manually syncing the domain state (up, down, paused, etc.)
+func WithStateCycleTTL(ttl int64) Option {
+	return func(o *Operator) {
+		o.stateCycleTTL = ttl
+	}
+}
+
+// WithConfigCycleTTL defines a custom cycle interval for manually syncing the domain config.
+func WithConfigCycleTTL(ttl int64) Option {
+	return func(o *Operator) {
+		o.configCycleTTL = ttl
 	}
 }
 
 // ServeAndDetach starts the Operator reporting process in a detached goroutine.
-func (d *Operator) ServeAndDetach() {
+func (o *Operator) ServeAndDetach() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		d.synchronize()
+		o.synchronize()
 	}()
 
 	go func() {
 		wg.Wait()
-		d.finChan <- struct{}{}
+		o.finChan <- struct{}{}
 	}()
 }
 
 // Terminate shuts down the domain operator gracefully, if shutdown did not complete in the provided context
 // window the operator is terminated forcefully.
 // Never returns an error (just there to match termination pattern).
-func (d *Operator) Terminate(ctx context.Context) error {
-	d.workCtxCancel()
-	defer d.rootCtxCancel()
+func (o *Operator) Terminate(ctx context.Context) error {
+	o.workCtxCancel()
+	defer o.rootCtxCancel()
 	select {
-	case <-d.finChan:
+	case <-o.finChan:
 		return nil
 	case <-ctx.Done():
-		d.rootCtxCancel()
-		<-d.finChan
+		o.rootCtxCancel()
+		<-o.finChan
 		return nil
 	}
 }

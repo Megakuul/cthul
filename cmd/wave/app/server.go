@@ -37,6 +37,8 @@ import (
 	"cthul.io/cthul/pkg/log/adapter"
 	"cthul.io/cthul/pkg/log/bootstrap"
 	"cthul.io/cthul/pkg/log/runtime"
+	"cthul.io/cthul/pkg/wave/domain"
+	"cthul.io/cthul/pkg/wave/node"
 	"google.golang.org/grpc/grpclog"
 )
 
@@ -92,11 +94,12 @@ func Run(config *BaseConfig) error {
 		cancel()
 	}
 
+  nodeController := node.NewController(dbClient)
+  domainController := domain.NewController(dbClient)
 	scheduler := scheduler.NewScheduler(dbClient,
-		scheduler.WithLocalNode(config.Scheduler.Register, config.NodeId),
-		scheduler.WithLocalResourceThreshold(config.Scheduler.CpuThreshold, config.Scheduler.MemThreshold),
-		scheduler.WithRegisterTTL(config.Scheduler.RegisterTTL),
-		scheduler.WithLogger(coreLogger),
+    scheduler.WithLogger(coreLogger),
+    scheduler.WithCycleTTL(config.Scheduler.CycleTTL),
+    scheduler.WithRescheduleCycles(config.Scheduler.RescheduleCycles),
 	)
 	scheduler.ServeAndDetach()
 	terminationManager.AddHook(scheduler.Terminate)
