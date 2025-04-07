@@ -1,0 +1,4 @@
+- move domain operator to reqnode pattern (always one core field which must be done before the others) x
+- refactor to slog instead of internal logger
+- update controllers with reqnode (domain, video)
+- implement other devices (besides video)

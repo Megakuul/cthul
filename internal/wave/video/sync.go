@@ -28,16 +28,16 @@ import (
 )
 
 func (o *Operator) synchronize() {
-  o.syncer.Add("/WAVE/VIDEO/REQNODE", o.updateCycleTTL, func(ctx context.Context, k, node string) error {
+  o.syncer.Add("/WAVE/VIDEO/REQNODE", o.updateCycleTTL, func(ctx context.Context, k, reqnode string) error {
     uuid := strings.TrimPrefix(k, "/WAVE/VIDEO/REQNODE/")
     pathKey := fmt.Sprintf("/WAVE/VIDEO/PATH/%s", uuid)
-    if uuid == o.nodeId {
+    if reqnode == o.nodeId {
       o.syncer.Add(pathKey, o.pathCycleTTL, func(ctx context.Context, k, path string) error {
         err := o.ensurePath(o.waveRunRoot, path)
         if err!=nil {
           return err
         }
-        _, err = o.client.Set(ctx, fmt.Sprintf("/WAVE/VIDEO/NODE/%s", uuid), node, 0)
+        _, err = o.client.Set(ctx, fmt.Sprintf("/WAVE/VIDEO/NODE/%s", uuid), reqnode, 0)
         if err!=nil {
           return err
         }

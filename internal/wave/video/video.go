@@ -21,10 +21,9 @@ package video
 
 import (
 	"context"
+  "log/slog"
 
 	"cthul.io/cthul/pkg/db"
-	"cthul.io/cthul/pkg/log"
-	"cthul.io/cthul/pkg/log/discard"
 	"cthul.io/cthul/pkg/syncer"
 )
 
@@ -33,8 +32,8 @@ import (
 // ensuring the environment allows bootstrap of the video server endpoint (e.g. mkdirall() the socket path).
 type Operator struct {
 	client db.Client
+  logger *slog.Logger
 	syncer *syncer.Syncer
-	logger log.Logger
 
 	// waveRunRoot specifies the wave base path for runtime files (unix-sockets and stuff).
 	waveRunRoot string
@@ -52,11 +51,11 @@ type Operator struct {
 
 type Option func(*Operator)
 
-func New(client db.Client, opts ...Option) *Operator {
+func New(logger *slog.Logger, client db.Client, opts ...Option) *Operator {
 	operator := &Operator{
 		client:        client,
-		syncer:        syncer.New(client),
-		logger:        discard.NewDiscardLogger(),
+		logger:        logger.WithGroup("video-operator"),
+		syncer:        syncer.New(logger.WithGroup("video-operator"), client),
 		waveRunRoot:   "/run/cthul/wave/",
 		nodeId:        "undefined",
     updateCycleTTL: 30,
@@ -70,12 +69,6 @@ func New(client db.Client, opts ...Option) *Operator {
 	return operator
 }
 
-// WithLogger sets a custom logger for the video operator.
-func WithLogger(logger log.Logger) Option {
-	return func(o *Operator) {
-		o.logger = logger
-	}
-}
 
 // WithWaveRunRoot defines a custom root path for wave runtime files (sockets, etc.).
 func WithWaveRunRoot(path string) Option {

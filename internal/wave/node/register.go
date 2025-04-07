@@ -41,14 +41,14 @@ func (n *Operator) register() {
 		ctx, cancel := context.WithTimeout(n.workCtx, time.Second*time.Duration(n.cycleTTL))
 		defer cancel()
 		
-		n.logger.Debug("node-operator", "measuring local node resource capacity...")
+		n.logger.Debug("measuring local node resource capacity...")
 		node, err := n.acquireNodeInfo(ctx)
 		if err!=nil {
-			n.logger.Err("node-operator", fmt.Sprintf("cannot report node state: %s", err.Error()))
+			n.logger.Error(fmt.Sprintf("cannot report node state: %s", err.Error()))
 		} else {
 			err = nodeController.Register(ctx, n.nodeId, *node, n.cycleTTL*2)
 			if err != nil {
-				n.logger.Err("node-operator", fmt.Sprintf("failed to register node: %s", err.Error()))
+				n.logger.Error(fmt.Sprintf("failed to register node: %s", err.Error()))
 			}
 		}
 
@@ -58,7 +58,7 @@ func (n *Operator) register() {
 		case <-n.workCtx.Done():
 			err = nodeController.Unregister(n.rootCtx, n.nodeId)
 			if err != nil {
-				n.logger.Err("node-operator", "failed to unregister node before termination")
+				n.logger.Error("failed to unregister node before termination")
 			}
 			return
 		}

@@ -20,13 +20,12 @@
 package domain
 
 import (
+  "log/slog"
 	"context"
 	"sync"
 
 	domadapter "cthul.io/cthul/pkg/adapter/domain"
 	"cthul.io/cthul/pkg/db"
-	"cthul.io/cthul/pkg/log"
-	"cthul.io/cthul/pkg/log/discard"
 	"cthul.io/cthul/pkg/syncer"
 )
 
@@ -37,7 +36,7 @@ type Operator struct {
 
 	adapter domadapter.Adapter
 	client db.Client
-	logger log.Logger
+  logger *slog.Logger
   syncer *syncer.Syncer
 
 	// nodeId specifies the id of the node, this is used to determine which domains must be applieo.
@@ -68,15 +67,15 @@ type Operator struct {
 
 type Option func(*Operator)
 
-func New(client db.Client, adapter domadapter.Adapter, opts ...Option) *Operator {
+func New(logger *slog.Logger, client db.Client, adapter domadapter.Adapter, opts ...Option) *Operator {
   rootCtx, rootCtxCancel := context.WithCancel(context.Background())
 	operator := &Operator{
     rootCtx: rootCtx,
     rootCtxCancel: rootCtxCancel,
 		adapter: adapter,
 		client: client,
-		logger:          discard.NewDiscardLogger(),
-    syncer: syncer.New(client),
+		logger: logger.WithGroup("domain-operator"),
+    syncer: syncer.New(logger.WithGroup("domain-operator"), client),
 		nodeId: "undefined",
 		updateCycleTTL: 10,
     localCycleTTL: 60,
@@ -94,12 +93,6 @@ func New(client db.Client, adapter domadapter.Adapter, opts ...Option) *Operator
 	return operator
 }
 
-// WithLogger sets a custom logger for the domain operator.
-func WithLogger(logger log.Logger) Option {
-	return func(o *Operator) {
-		o.logger = logger
-	}
-}
 
 // WithNodeId specifies the id of the local node. This id is used to identify which domains
 // must be synced to this node.

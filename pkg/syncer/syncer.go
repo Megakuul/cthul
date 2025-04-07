@@ -20,14 +20,13 @@
 package syncer
 
 import (
+  "log/slog"
 	"context"
 	"fmt"
 	"sync"
 	"time"
 
 	"cthul.io/cthul/pkg/db"
-	"cthul.io/cthul/pkg/log"
-	"cthul.io/cthul/pkg/log/discard"
 )
 
 // Syncer is a utility component that helps operators to apply a state from the database to the system.
@@ -41,7 +40,7 @@ type Syncer struct {
 	rootCtxCancel context.CancelFunc
 
 	client db.Client
-	logger log.Logger
+  logger *slog.Logger
 
 	// operationWg tracks every single operation started on the syncer, this ensures that even goroutines
 	// that were removed from the trackMap without waiting for them, are not leaking.
@@ -54,15 +53,15 @@ type Syncer struct {
 	trackMap     map[string]func(bool)
 }
 
-type SyncerOption func(*Syncer)
+type Option func(*Syncer)
 
-func New(client db.Client, opts ...SyncerOption) *Syncer {
+func New(logger* slog.Logger, client db.Client, opts ...Option) *Syncer {
 	rootCtx, rootCtxCancel := context.WithCancel(context.Background())
 	syncer := &Syncer{
 		rootCtx:       rootCtx,
 		rootCtxCancel: rootCtxCancel,
 		client:        client,
-		logger:        discard.NewDiscardLogger(),
+		logger:       logger.WithGroup("syncer"),
 		operationWg:   sync.WaitGroup{},
 		trackMapLock:  sync.Mutex{},
 		trackMap:      map[string]func(bool){},
@@ -73,13 +72,6 @@ func New(client db.Client, opts ...SyncerOption) *Syncer {
 	}
 
 	return syncer
-}
-
-// WithLogger sets a custom logger used to report syncer events.
-func WithLogger(logger log.Logger) SyncerOption {
-	return func(s *Syncer) {
-		s.logger = logger
-	}
 }
 
 // Add adds a routine to the syncer. This means that the syncer starts two goroutines one that incrementally
@@ -107,14 +99,14 @@ func (s *Syncer) Add(prefix string, interval int64, fn func(context.Context, str
 
 			result, err := s.client.GetRange(ctx, prefix)
 			if err != nil {
-				s.logger.Err("syncer", fmt.Sprintf("failed to load key '%s': %s", prefix, err.Error()))
+				s.logger.Error(fmt.Sprintf("failed to load key '%s': %s", prefix, err.Error()))
 			} else {
 				for k, state := range result {
 					err = fn(ctx, k, state)
 					if err != nil {
-						s.logger.Err("syncer", fmt.Sprintf("cannot apply state to '%s': %s", k, err.Error()))
+						s.logger.Error(fmt.Sprintf("cannot apply state to '%s': %s", k, err.Error()))
 					} else {
-						s.logger.Debug("syncer", fmt.Sprintf("successfully applied state '%s'", k))
+						s.logger.Debug(fmt.Sprintf("successfully applied state '%s'", k))
 					}
 				}
 			}
@@ -134,20 +126,20 @@ func (s *Syncer) Add(prefix string, interval int64, fn func(context.Context, str
 		defer funcWg.Done()
 		err := s.client.WatchRange(funcCtx, prefix, func(k, state string, err error) {
 			if err != nil {
-				s.logger.Err("syncer", fmt.Sprintf("failed to load key '%s': %s", k, err.Error()))
+				s.logger.Error(fmt.Sprintf("failed to load key '%s': %s", k, err.Error()))
 				return
 			}
 			err = fn(funcCtx, k, state)
 			if err != nil {
-				s.logger.Err("syncer", fmt.Sprintf("cannot apply state to '%s': %s", k, err.Error()))
+				s.logger.Error(fmt.Sprintf("cannot apply state to '%s': %s", k, err.Error()))
 			} else {
-				s.logger.Debug("syncer", fmt.Sprintf("successfully applied state '%s'", k))
+				s.logger.Debug(fmt.Sprintf("successfully applied state '%s'", k))
 			}
 		})
 		if err != nil {
-			s.logger.Crit("syncer", fmt.Sprintf(
+			s.logger.Error(fmt.Sprintf(
 				"failed to watch '%s' state: %s; exiting state watcher...", prefix, err.Error(),
-			))
+        ), slog.Bool("unrecoverable", true))
 		}
 	}()
 

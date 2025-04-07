@@ -1,3 +1,22 @@
+/**
+ * Cthul System
+ *
+ * Copyright (C) 2025 Linus Ilian Moser <linus.moser@megakuul.ch>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package api
 
 import (
@@ -5,38 +24,35 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+  "log/slog"
 	golog "log"
 	"net/http"
-	"sync"
 	"time"
 
 	"connectrpc.com/connect"
 	"cthul.io/cthul/pkg/api/wave/v1"
 	"cthul.io/cthul/pkg/api/wave/v1/wavev1connect"
-	"cthul.io/cthul/pkg/log"
-	"cthul.io/cthul/pkg/log/adapter"
-	"cthul.io/cthul/pkg/log/discard"
 )
 
 
-type ApiEndpoint struct {
+type Endpoint struct {
 	addr string
 	tlsConfig *tls.Config
-	logger log.Logger
+  logger *slog.Logger
 	server *http.Server
 }
 
-type ApiEndpointOption func(*ApiEndpoint)
+type Option func(*Endpoint)
 
-func NewApiEndpoint(addr string, cert tls.Certificate, opts ...ApiEndpointOption) *ApiEndpoint {
+func NewEndpoint(logger *slog.Logger, addr string, cert tls.Certificate, opts ...Option) *Endpoint {
 	mux := http.NewServeMux()
 	mux.Handle(wavev1connect.NewDomainServiceHandler(&domainService{}))
-	endpoint := &ApiEndpoint{
+	endpoint := &Endpoint{
 		addr: addr,
 		tlsConfig: &tls.Config{
 			Certificates: []tls.Certificate{cert},
 		},
-		logger: discard.NewDiscardLogger(),
+		logger: logger.WithGroup("api-endpoint"),
 		server: &http.Server{
 			Handler: mux,
 			ErrorLog: golog.New(io.Discard, "", 0),
@@ -52,44 +68,37 @@ func NewApiEndpoint(addr string, cert tls.Certificate, opts ...ApiEndpointOption
 }
 
 // WithIdleTimeout sets a custom timeout for idle http connections.
-func WithIdleTimeout(timeout time.Duration) ApiEndpointOption {
-	return func (a *ApiEndpoint) {
-		a.server.IdleTimeout = timeout
+func WithIdleTimeout(timeout time.Duration) Option {
+	return func (e *Endpoint) {
+		e.server.IdleTimeout = timeout
 	}
 }
 
 // WithSkipInsecure enables skipping of insecure public certificates when mTLS is used.
-func WithSkipInsecure(skip bool) ApiEndpointOption {
-	return func (a *ApiEndpoint) {
-		a.server.TLSConfig.InsecureSkipVerify = skip
-	}
-}
-
-// WithApplicationLog enables api logs and writes them to the specified logger.
-func WithApplicationLog(logger log.Logger) ApiEndpointOption {
-	return func (a *ApiEndpoint) {
-		a.logger = logger
+func WithSkipInsecure(skip bool) Option {
+	return func (e *Endpoint) {
+		e.server.TLSConfig.InsecureSkipVerify = skip
 	}
 }
 
 // WithSystemLog enables http system error logs and writes them to the specified logger.
 // The logs are written as "error" with the category "api_server".
-func WithSystemLog(logger log.Logger) ApiEndpointOption {
-	return func (a *ApiEndpoint) {
-		a.server.ErrorLog = golog.New(adapter.NewCommonLogAdapter("api_server", logger.Err), "", 0)
+func WithSystemLog(logger log.Logger) Option {
+	return func (e *Endpoint) {
+		e.server.ErrorLog = golog.New(adapter.NewCommonLogAdapter("api_server", logger.Err), "", 0)
 	}
 }
 
 // ServeAndDetach starts the api endpoint in a seperate goroutine and immediately returns.
 // The server can be started only once.
-func (a *ApiEndpoint) ServeAndDetach() error {
-	listener, err := tls.Listen("tcp", a.addr, a.tlsConfig)
+func (e *Endpoint) ServeAndDetach() error {
+	listener, err := tls.Listen("tcp", e.addr, e.tlsConfig)
 	if err!=nil {
 		return err
 	}
 	go func() {
-		if err := a.server.Serve(listener); err!=nil {
-			a.logger.Crit("api_server", fmt.Sprintf("unrecoverable api error: %s", err.Error())) 
+		if err := e.server.Serve(listener); err!=nil {
+			e.logger.Error(fmt.Sprintf("unrecoverable api error: %s", err.Error())) 
 		}
 	}()
 	return nil
@@ -98,9 +107,9 @@ func (a *ApiEndpoint) ServeAndDetach() error {
 // Terminate tries to gracefully shutdown the api endpoint (waiting for connections to finish)
 // if this fails or exceeds the provided context window, the connection is forcefully closed.
 // If forcefully closing the connection fails too, an error is returned.
-func (a *ApiEndpoint) Terminate(ctx context.Context) error {
-	if err := a.server.Shutdown(ctx); err!=nil {
-		return a.server.Close()
+func (e *Endpoint) Terminate(ctx context.Context) error {
+	if err := e.server.Shutdown(ctx); err!=nil {
+		return e.server.Close()
 	}
 	return nil
 }

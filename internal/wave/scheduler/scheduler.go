@@ -22,10 +22,9 @@ package scheduler
 import (
 	"context"
 	"sync"
+  "log/slog"
 
 	"cthul.io/cthul/pkg/db"
-	"cthul.io/cthul/pkg/log"
-	"cthul.io/cthul/pkg/log/discard"
 	"cthul.io/cthul/pkg/wave/domain"
 	"cthul.io/cthul/pkg/wave/node"
 )
@@ -48,7 +47,7 @@ type Scheduler struct {
 	finChan chan struct{}
 
 	client db.Client
-	logger log.Logger
+  logger *slog.Logger
 	domainController *domain.Controller
 	nodeController *node.Controller
 
@@ -65,7 +64,7 @@ type Scheduler struct {
 type SchedulerOption func(*Scheduler)
 
 // NewScheduler creates a new scheduler instance.
-func NewScheduler(client db.Client, domain *domain.Controller, node *node.Controller, opts ...SchedulerOption) *Scheduler {
+func NewScheduler(logger *slog.Logger, client db.Client, domain *domain.Controller, node *node.Controller, opts ...SchedulerOption) *Scheduler {
 	rootCtx, rootCtxCancel := context.WithCancel(context.Background())
 	workCtx, workCtxCancel := context.WithCancel(rootCtx)
 	scheduler := &Scheduler{
@@ -75,7 +74,7 @@ func NewScheduler(client db.Client, domain *domain.Controller, node *node.Contro
 		workCtxCancel:   workCtxCancel,
 		finChan:         make(chan struct{}),
 		client:          client,
-		logger:          discard.NewDiscardLogger(),
+    logger: logger.WithGroup("scheduler"),
 		leaderStateChan: make(chan bool),
 		cycleTTL: 5,
 		rescheduleCycles: 2,
@@ -88,12 +87,6 @@ func NewScheduler(client db.Client, domain *domain.Controller, node *node.Contro
 	return scheduler
 }
 
-// WithLogger sets a custom logger for the scheduler.
-func WithLogger(logger log.Logger) SchedulerOption {
-	return func(s *Scheduler) {
-		s.logger = logger
-	}
-}
 
 // WithCycleTTL defines a custom scheduler cycle interval.
 func WithCycleTTL(ttl int64) SchedulerOption {

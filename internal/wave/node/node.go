@@ -22,10 +22,9 @@ package node
 import (
 	"context"
 	"sync"
+	"log/slog"
 
 	"cthul.io/cthul/pkg/db"
-	"cthul.io/cthul/pkg/log"
-	"cthul.io/cthul/pkg/log/discard"
 )
 
 // Operator is responsible to monitor and measure the state and resources of the host node.
@@ -42,7 +41,7 @@ type Operator struct {
 	finChan chan struct{}
 
 	client db.Client
-	logger log.Logger
+	logger *slog.Logger
 
 	// nodeId specifies the id of the node that is reported to the cluster.
 	nodeId string
@@ -52,7 +51,7 @@ type Operator struct {
 	maintenance bool
 	// affinity holds node affinity tags used for scheduling decisions.
 	affinity []string
-	// cpuFactor specifies how much host cpu is incorporated to the reported values. 
+	// cpuFactor specifies how much host cpu is incorporated to the reported values.
 	cpuFactor float64
 	// memoryFactor specifies how much host memory is incorporated to the reported values.
 	memoryFactor float64
@@ -60,23 +59,23 @@ type Operator struct {
 
 type OperatorOption func(*Operator)
 
-func NewOperator(client db.Client, opts ...OperatorOption) *Operator {
+func NewOperator(logger *slog.Logger, client db.Client, opts ...OperatorOption) *Operator {
 	rootCtx, rootCtxCancel := context.WithCancel(context.Background())
 	workCtx, workCtxCancel := context.WithCancel(rootCtx)
 	operator := &Operator{
-		rootCtx:         rootCtx,
-		rootCtxCancel:   rootCtxCancel,
-		workCtx:         workCtx,
-		workCtxCancel:   workCtxCancel,
-		finChan:         make(chan struct{}),
-		client:          client,
-		logger:          discard.NewDiscardLogger(),
-		nodeId: "undefined",
-		cycleTTL: 5,
-		maintenance: false,
-		affinity: []string{},
-		cpuFactor: 1,
-		memoryFactor: 1,
+		rootCtx:       rootCtx,
+		rootCtxCancel: rootCtxCancel,
+		workCtx:       workCtx,
+		workCtxCancel: workCtxCancel,
+		finChan:       make(chan struct{}),
+		client:        client,
+		logger:        logger.WithGroup("node-operator"),
+		nodeId:        "undefined",
+		cycleTTL:      5,
+		maintenance:   false,
+		affinity:      []string{},
+		cpuFactor:     1,
+		memoryFactor:  1,
 	}
 
 	for _, opt := range opts {
@@ -86,12 +85,6 @@ func NewOperator(client db.Client, opts ...OperatorOption) *Operator {
 	return operator
 }
 
-// WithLogger sets a custom logger for the node operator.
-func WithLogger(logger log.Logger) OperatorOption {
-	return func(n *Operator) {
-		n.logger = logger
-	}
-}
 
 // WithNodeId specifies the id of the node that is reported to the cluster.
 func WithNodeId(id string) OperatorOption {

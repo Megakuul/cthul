@@ -33,7 +33,7 @@ import (
 
 // synchronize starts the core synchronization which is responsible for applying the database state to the local node.
 func (o *Operator) synchronize() {
-  o.operationWg.Add(1)
+	o.operationWg.Add(1)
 	go func() {
 		defer o.operationWg.Done()
 		for {
@@ -42,7 +42,7 @@ func (o *Operator) synchronize() {
 
 			domains, err := o.adapter.List(ctx)
 			if err != nil {
-				o.logger.Err("domain-operator", fmt.Sprintf("failed to load local domains: %s", err.Error()))
+				o.logger.Error(fmt.Sprintf("failed to load local domains: %s", err.Error()))
 			}
 
 			o.localDomainsLock.Lock()
@@ -59,22 +59,37 @@ func (o *Operator) synchronize() {
 		}
 	}()
 
-	o.syncer.Add("/WAVE/DOMAIN/NODE/", o.updateCycleTTL, func(ctx context.Context, k, node string) error {
-		uuid := strings.TrimPrefix(k, "/WAVE/DOMAIN/NODE/")
+	o.syncer.Add("/WAVE/DOMAIN/REQNODE/", o.updateCycleTTL, func(ctx context.Context, k, reqnode string) error {
+		uuid := strings.TrimPrefix(k, "/WAVE/DOMAIN/REQNODE/")
 		stateKey := fmt.Sprintf("/WAVE/DOMAIN/STATE/%s", uuid)
 		configKey := fmt.Sprintf("/WAVE/DOMAIN/CONFIG/%s", uuid)
-		if node == o.nodeId {
-			o.syncer.Add(stateKey, o.stateCycleTTL, func(ctx context.Context, k, v string) error {
-				return o.applyState(ctx, uuid, v)
-			})
+		if reqnode == o.nodeId {
 			o.syncer.Add(configKey, o.configCycleTTL, func(ctx context.Context, k, v string) error {
-				return o.applyConfig(ctx, uuid, v)
+        err := o.applyConfig(ctx, uuid, v)
+        if err!=nil {
+          return err
+        }
+				_, err = o.client.Set(ctx, fmt.Sprintf("/WAVE/DOMAIN/NODE/%s", uuid), reqnode, 0)
+				if err != nil {
+					return err
+				}
+        return nil 
 			})
 		} else {
 			o.syncer.Remove(stateKey, false)
 			o.syncer.Remove(configKey, false)
-			o.pruneDomain(ctx, uuid, node)
+			o.pruneDomain(ctx, uuid, reqnode)
+      return nil
 		}
+    node, err := o.client.Get(ctx, "/WAVE/DOMAIN/NODE")
+    if err!=nil {
+      return err
+    }
+    if node == o.nodeId {
+			o.syncer.Add(stateKey, o.stateCycleTTL, func(ctx context.Context, k, v string) error {
+				return o.applyState(ctx, uuid, v)
+			})
+    }
 		return nil
 	})
 }
@@ -100,22 +115,22 @@ func (o *Operator) applyState(ctx context.Context, uuid, state string) error {
 	switch structure.DOMAIN_STATE(state) {
 	case structure.DOMAIN_UP:
 		err := o.adapter.Start(ctx, uuid)
-		if err!=nil {
+		if err != nil {
 			return fmt.Errorf("failed to start domain: %w", err)
 		}
 	case structure.DOMAIN_PAUSE:
 		err := o.adapter.Pause(ctx, uuid)
-		if err!=nil {
+		if err != nil {
 			return fmt.Errorf("failed to pause domain: %w", err)
 		}
 	case structure.DOMAIN_DOWN:
 		err := o.adapter.Shutdown(ctx, uuid)
-		if err!=nil {
+		if err != nil {
 			return fmt.Errorf("failed to shutdown domain: %w", err)
 		}
 	case structure.DOMAIN_FORCED_DOWN:
 		err := o.adapter.Kill(ctx, uuid)
-		if err!=nil {
+		if err != nil {
 			return fmt.Errorf("failed to kill domain: %w", err)
 		}
 	}
@@ -125,9 +140,9 @@ func (o *Operator) applyState(ctx context.Context, uuid, state string) error {
 // pruneAllDomains compares the local domains with the desired domains on the database. All domains that are
 // present on the node but not on the database (managed by this node) are removed with pruneDomain().
 func (o *Operator) pruneAllDomains(ctx context.Context) {
-	domains, err := o.client.GetRange(o.rootCtx, "/WAVE/DOMAIN/NODE/")
+	domains, err := o.client.GetRange(o.rootCtx, "/WAVE/DOMAIN/REQNODE/")
 	if err != nil {
-		o.logger.Err("domain-operator", fmt.Sprintf(
+		o.logger.Error(fmt.Sprintf(
 			"failed to load domains: %s; skipping prune process...", err.Error(),
 		))
 		return
@@ -168,17 +183,17 @@ func (o *Operator) pruneDomain(ctx context.Context, uuid, node string) {
 		return
 	}
 
-	o.logger.Debug("domain-operator", fmt.Sprintf("starting graceful destruction of domain '%s'...", uuid))
+	o.logger.Debug(fmt.Sprintf("starting graceful destruction of domain '%s'...", uuid))
 
 	rawConfig, err := o.client.Get(ctx, fmt.Sprintf("/WAVE/DOMAIN/CONFIG/%s", uuid))
 	if err != nil {
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-			o.logger.Warn("domain-operator", fmt.Sprintf(
+			o.logger.Warn(fmt.Sprintf(
 				"failed to load domain '%s' config: %s; skipping forceful destruction...", uuid, err.Error(),
 			))
 			return
 		} else {
-			o.logger.Warn("domain-operator", fmt.Sprintf(
+			o.logger.Warn(fmt.Sprintf(
 				"failed to load domain '%s' config: %s; starting forceful destruction...", uuid, err.Error(),
 			))
 			// defaulting to empty config means Destroy() is "forceful" as no cthul devices must be deallocated.
@@ -188,24 +203,24 @@ func (o *Operator) pruneDomain(ctx context.Context, uuid, node string) {
 	config := adapterstruct.Domain{}
 	err = json.Unmarshal([]byte(rawConfig), &config)
 	if err != nil {
-		o.logger.Warn("domain-operator", fmt.Sprintf(
+		o.logger.Warn(fmt.Sprintf(
 			"failed to parse domain '%s' config: %s; starting forceful destruction...", uuid, err.Error(),
 		))
 	}
 
 	err = o.adapter.Destroy(ctx, uuid, config)
 	if err != nil {
-		o.logger.Err("domain-operator", fmt.Sprintf("failed to destroy domain '%s': %s", uuid, err.Error()))
+		o.logger.Error(fmt.Sprintf("failed to destroy domain '%s': %s", uuid, err.Error()))
 		return
 	}
 
-  // technically removing the domain from the cache is not strictly required (it's not avoiding race conditions!)
-  // however, it avoids unnecessary calls to pruneDomain() until the cache is renewed.
-  o.localDomainsLock.Lock()
-  delete(o.localDomains, uuid)
-  o.localDomainsLock.Unlock()
+	// technically removing the domain from the cache is not strictly required (it's not avoiding race conditions!)
+	// however, it avoids unnecessary calls to pruneDomain() until the cache is renewed.
+	o.localDomainsLock.Lock()
+	delete(o.localDomains, uuid)
+	o.localDomainsLock.Unlock()
 
-	o.logger.Info("domain-operator", fmt.Sprintf(
+	o.logger.Info(fmt.Sprintf(
 		"removed local domain '%s'; domain is now managed by '%s'...", uuid, node,
 	))
 }

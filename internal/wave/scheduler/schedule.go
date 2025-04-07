@@ -44,7 +44,7 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 	
 	next, err := s.client.Get(schedulerCtx, "/WAVE/SCHEDULER/NEXT")
 	if err!=nil {
-		s.logger.Err("scheduler", "failed to fetch next scheduler cycle initially; initiating schedule...")
+		s.logger.Error("failed to fetch next scheduler cycle initially; initiating schedule...")
 	}
 	nextSchedule := parseTime(next)
 	
@@ -63,30 +63,30 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 			serializeTime(nextSchedule), 0,
 		)
 		if err!=nil {
-			s.logger.Err("scheduler", "failed to update scheduler cycle; waiting for next cycle...")
+			s.logger.Error("failed to update scheduler cycle; waiting for next cycle...")
 			continue
 		}
 		if parseTime(prevNext).After(time.Now()) {
-			s.logger.Debug("scheduler", "scheduler possibly double contested; waiting for next cycle...")
+			s.logger.Debug("scheduler possibly double contested; waiting for next cycle...")
 			continue
 		}
 		
 
 		domains, err := s.domainController.List(s.workCtx)
 		if err!=nil {
-			s.logger.Err("scheduler", "failed to load domains: " + err.Error())
+			s.logger.Error("failed to load domains: " + err.Error())
 			continue
 		}
 
 		nodes, err := s.nodeController.List(s.workCtx)
 		if err!=nil {
-			s.logger.Err("scheduler", "failed to load nodes: " + err.Error())
+			s.logger.Error("failed to load nodes: " + err.Error())
 			continue
 		}
 		
 		for domainId, domain  := range domains {
 			if domain.Error != nil {
-				s.logger.Warn("scheduler", fmt.Sprintf(
+				s.logger.Warn(fmt.Sprintf(
 					"skipping scheduler analysis for '%s': domain information is malformed: %s", domainId, domain.Error,
 				))
 				continue
@@ -106,7 +106,7 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 			
 			targetNodeId, targetNode, err := s.findNode(domain, domains, nodes)
 			if err!=nil {
-				s.logger.Warn("scheduler", fmt.Sprintf(
+				s.logger.Warn(fmt.Sprintf(
 					"skipping reschedule for '%s': %s", domainId, err.Error(),
 				))
 				continue
@@ -114,7 +114,7 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 
 			s.domainController.SetNode(s.workCtx, domainId, targetNodeId)
 			if err!=nil {
-				s.logger.Err("scheduler", fmt.Sprintf(
+				s.logger.Error(fmt.Sprintf(
 					"failed to reschedule '%s': %s", domainId, err.Error(),
 				))
 				continue
