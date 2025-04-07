@@ -1,1 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap');
 @import 'tailwindcss';
+
+* {
+  font-family: "Ubuntu", "Roboto", sans-serif;
+}
+
+html, body {
+  margin: 0;  
+  overflow-x: hidden;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.animate-breath {
+  animation: breath 5s ease infinite;
+}
+
+@keyframes breath {
+  0%, 30%, 58%, 75%, 100% {
+    filter: brightness(100%);
+}
+22%, 53%, 65%, 89% {
+  filter: brightness(80%);
+}
+10%, 43%, 80%, 95% {
+  filter: brightness(120%);
+}
+}
+
+.overflow-scroll-hidden::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+.overflow-scroll-hidden {
+  overflow: scroll;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
