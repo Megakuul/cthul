@@ -39,9 +39,9 @@ type Adapter struct {
 	hotplugger *hotplug.Hotplugger
 }
 
-type AdapterOption func(*Adapter)
+type Option func(*Adapter)
 
-func NewAdapter(generator *generator.Generator, hotplugger *hotplug.Hotplugger, opts ...AdapterOption) *Adapter {
+func New(generator *generator.Generator, hotplugger *hotplug.Hotplugger, opts ...Option) *Adapter {
 	controller := &Adapter{
 		initLock: sync.Mutex{},
 		client: nil,
@@ -54,12 +54,6 @@ func NewAdapter(generator *generator.Generator, hotplugger *hotplug.Hotplugger, 
 	}
 
 	return controller
-}
-
-func WithRunRoot(path string) AdapterOption {
-	return func (a *Adapter) {
-		a.runRoot = path
-	}
 }
 
 // initClient creates the underlying libvirt connection client if not already initialized.

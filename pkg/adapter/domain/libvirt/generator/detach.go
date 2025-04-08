@@ -20,13 +20,14 @@
 package generator
 
 import (
+	"context"
 	"fmt"
 
 	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
 )
 
 // Detach releases all devices that were used by the domain config.
-func (l *Generator) Detach(config *cthulstruct.Domain) error {
+func (l *Generator) Detach(ctx context.Context, config *cthulstruct.Domain) error {
 	for _, device := range config.NetworkDevices {
 		// PoC: l.proton.DetachInterface(device.DeviceId)
 		_ = device
@@ -43,8 +44,11 @@ func (l *Generator) Detach(config *cthulstruct.Domain) error {
 	}
 
 	for _, device := range config.VideoAdapters {
-		// PoC: l.wave.DetachVideo(config.adapter.DeviceId)
 		_ =  device
+    err := l.video.Detach(ctx, device.DeviceId, l.nodeId)
+    if err!=nil {
+      return err
+    }
 	}
 
 	

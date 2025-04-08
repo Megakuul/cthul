@@ -22,7 +22,6 @@ package generator
 import (
 	granitdevice "cthul.io/cthul/pkg/granit/device"
 	protondevice "cthul.io/cthul/pkg/proton/device"
-	wavedevice "cthul.io/cthul/pkg/wave/device"
 	"cthul.io/cthul/pkg/wave/video"
 )
 
@@ -31,27 +30,34 @@ import (
 // (resolving things like 'GranitBlockDeviceId').
 // It also provides operations to attach and release those required devices.
 type Generator struct {
-	// waveRunRoot specifies the wave base path for runtime files (unix-sockets and stuff).
-	waveRunRoot string
-	
+  nodeId string
+
 	video *video.Controller
 	granit *granitdevice.DeviceController
 	proton *protondevice.DeviceController
+
+  videoRoot string
+  granitRoot string
+  protonRoot string
 }
 
-type GeneratorOption func(*Generator)
+type Option func(*Generator)
 
-func NewGenerator(
+func New(
+  nodeId string,
 	videoDevice *video.Controller,
 	granitDevice *granitdevice.DeviceController,
 	protonDevice *protondevice.DeviceController,
-	opts ...GeneratorOption) *Generator {
+	opts ...Option) *Generator {
 
 	generator := &Generator{
-		waveRunRoot: "/run/cthul/wave/",
+    nodeId: nodeId,
 		video: videoDevice,
 		granit: granitDevice,
 		proton: protonDevice,
+    videoRoot: "/run/cthul/wave/video/",
+    granitRoot: "/run/cthul/granit/",
+    protonRoot: "/run/cthul/proton/",
 	}
 
 	for _, opt := range opts {
@@ -61,9 +67,3 @@ func NewGenerator(
 	return generator
 }
 
-// WithWaveRunRoot defines a custom root path for wave runtime files (sockets, etc.).
-func WithWaveRunRoot(path string) GeneratorOption {
-	return func(g *Generator) {
-		g.waveRunRoot = path
-	}
-}

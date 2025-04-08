@@ -28,6 +28,7 @@ const (
 
 // Video holds all information about a video adapter device.
 type Video struct {
+  Reqnode string `json:"reqnode"`
 	Node string `json:"node"`
 	Type VIDEO_TYPE `json:"type"`
 	Path string `json:"path"`

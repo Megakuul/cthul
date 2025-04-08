@@ -24,7 +24,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"cthul.io/cthul/pkg/db"
 	"cthul.io/cthul/pkg/wave/video/structure"
@@ -37,9 +36,9 @@ type Controller struct {
 	client db.Client
 }
 
-type ControllerOption func(*Controller)
+type Option func(*Controller)
 
-func NewController(client db.Client, opts ...ControllerOption) *Controller {
+func New(client db.Client, opts ...Option) *Controller {
 	controller := &Controller{
 		client: client,
 	}
@@ -54,29 +53,35 @@ func NewController(client db.Client, opts ...ControllerOption) *Controller {
 // List returns a map containing video device uuids and associated metadata from the database.
 func (c *Controller) List(ctx context.Context) (map[string]structure.Video, error) {
 	videos := map[string]structure.Video{}
-	
-	videoNodes, err := c.client.GetRange(ctx, "/WAVE/VIDEO/NODE/")
-	if err!=nil {
+
+	reqnodes, err := c.client.GetRange(ctx, "/WAVE/VIDEO/REQNODE/")
+	if err != nil {
 		return nil, fmt.Errorf("fetching video device node: %w", err)
 	}
-	videoTypes, err := c.client.GetRange(ctx, "/WAVE/VIDEO/TYPE/")
-	if err!=nil {
+	nodes, err := c.client.GetRange(ctx, "/WAVE/VIDEO/NODE/")
+	if err != nil {
+		return nil, fmt.Errorf("fetching video device node: %w", err)
+	}
+	types, err := c.client.GetRange(ctx, "/WAVE/VIDEO/TYPE/")
+	if err != nil {
 		return nil, fmt.Errorf("fetching video device type: %w", err)
 	}
-	videoPaths, err := c.client.GetRange(ctx, "/WAVE/VIDEO/PATH/")
-	if err!=nil {
+	paths, err := c.client.GetRange(ctx, "/WAVE/VIDEO/PATH/")
+	if err != nil {
 		return nil, fmt.Errorf("fetching video device path: %w", err)
 	}
-	
-	for key, node := range videoNodes {
-		uuid := strings.TrimPrefix(key, "/WAVE/VIDEO/NODE/")
-		typ := videoTypes[fmt.Sprint("/WAVE/VIDEO/TYPE/", uuid)]
-		path := videoPaths[fmt.Sprint("/WAVE/VIDEO/PATH", uuid)]
-		
+
+	for key, path := range paths {
+		uuid := strings.TrimPrefix(key, "/WAVE/VIDEO/PATH/")
+		reqnode := reqnodes[fmt.Sprint("/WAVE/VIDEO/REQNODE/", uuid)]
+		node := nodes[fmt.Sprint("/WAVE/VIDEO/NODE/", uuid)]
+		typ := types[fmt.Sprint("/WAVE/VIDEO/TYPE/", uuid)]
+
 		videos[uuid] = structure.Video{
-			Node: node,
-			Type: structure.VIDEO_TYPE(typ),
-			Path: path,
+			Reqnode: reqnode,
+			Node:    node,
+			Type:    structure.VIDEO_TYPE(typ),
+			Path:    path,
 		}
 	}
 	return videos, nil
@@ -84,108 +89,137 @@ func (c *Controller) List(ctx context.Context) (map[string]structure.Video, erro
 
 // Create creates a video device with the specified configuration and default metadata values.
 // If the creation fails, the function tries to remove already created resources from the database.
-func (c *Controller) Create(ctx context.Context, id string) (string, error) {
-	uuid := uuid.New().String()
-	err := c.SetType(ctx, uuid, structure.VIDEO_SPICE)
-	if err!=nil {
-		return "", errors.Join(err, c.Delete(ctx, uuid))
+func (c *Controller) Create(ctx context.Context, typ structure.VIDEO_TYPE, path string) (string, error) {
+	id := uuid.New().String()
+	err := c.SetType(ctx, id, typ)
+	if err != nil {
+		return "", errors.Join(err, c.Delete(ctx, id))
 	}
-	err = c.SetNode(ctx, uuid, "")
-	if err!=nil {
-		return "", errors.Join(err, c.Delete(ctx, uuid))
+	err = c.SetPath(ctx, id, path)
+	if err != nil {
+		return "", errors.Join(err, c.Delete(ctx, id))
 	}
-	return uuid, nil
+	return id, nil
 }
 
-// SetType updates the type of the video device and .
 func (c *Controller) SetType(ctx context.Context, id string, typ structure.VIDEO_TYPE) error {
 	_, err := c.client.Set(ctx, fmt.Sprintf("/WAVE/VIDEO/TYPE/%s", id), string(typ), 0)
-	if err!=nil {
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// PoC
-func (c *Controller) Attach(ctx context.Context, id string, node string) error {
-	deviceNode, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/VIDEO/NODE/%s", id))
-	if err!=nil {
+func (c *Controller) SetPath(ctx context.Context, id, path string) error {
+	_, err := c.client.Set(ctx, fmt.Sprintf("/WAVE/VIDEO/PATH/%s", id), path, 0)
+	if err != nil {
 		return err
 	}
-	if deviceNode == node {
-		return nil
-	}  else if deviceNode != "" {
-		return fmt.Errorf("cannot attach video device because it is already attached to '%s'", deviceNode)
-	}
-
-	pollCtx, pollCtxCancel := context.WithCancel(ctx)
-	pollG, _ := errgroup.WithContext(ctx)
-
-	pollG.Go(func () error {
-		defer pollCtxCancel()
-		for {
-			deviceNode, err := c.client.Get(pollCtx, fmt.Sprintf("/WAVE/VIDEO/NODE/%s", id))
-			if err!=nil {
-				return err
-			}
-
-			if deviceNode == node {
-				return nil
-			}
-
-			select {
-			case <-pollCtx.Done():
-				return fmt.Errorf("polling context exceeded")
-			case <-time.After(time.Second):
-			}
-		}
-	})
-
-	pollG.Go(func () error {
-		defer pollCtxCancel()
-		for {
-			requestNode, err := c.client.Get(pollCtx, fmt.Sprintf("/WAVE/VIDEO/REQNODE/%s", id))
-			if err!=nil {
-				return err
-			}
-
-			if requestNode != node {
-				return fmt.Errorf("node '%s' overwrote the request", requestNode)
-			}
-
-			select {
-			case <-pollCtx.Done():
-				return fmt.Errorf("polling context exceeded")
-			case <-time.After(time.Second):
-			}
-		}
-	})
-	
-	_, err = c.client.Set(ctx, fmt.Sprintf("/WAVE/VIDEO/REQNODE/%s", id), node, 0)
-	if err!=nil {
-		return err
-	}
-
-	return pollG.Wait()
+	return nil
 }
 
+// Lookup searches for the device by id and returns its configuration.
+func (c *Controller) Lookup(ctx context.Context, id string) (*structure.Video, error) {
+	reqnode, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/VIDEO/REQNODE/%s", id))
+	if err != nil {
+		return nil, fmt.Errorf("fetching video device node: %w", err)
+	}
+	node, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/VIDEO/NODE/%s", id))
+	if err != nil {
+		return nil, fmt.Errorf("fetching video device node: %w", err)
+	}
+	typ, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/VIDEO/TYPE/%s", id))
+	if err != nil {
+		return nil, fmt.Errorf("fetching video device type: %w", err)
+	}
+	path, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/VIDEO/PATH/%s", id))
+	if err != nil {
+		return nil, fmt.Errorf("fetching video device path: %w", err)
+	}
+
+	if path == "" {
+		return nil, fmt.Errorf("device not found")
+	}
+
+	return &structure.Video{
+		Reqnode: reqnode,
+		Node:    node,
+		Type:    structure.VIDEO_TYPE(typ),
+		Path:    path,
+	}, nil
+}
+
+// Attach requests the device to be relocated to the specified node and waits until it's ready.
+func (c *Controller) Attach(ctx context.Context, id string, node string) error {
+	pollCtx, pollCtxCancel := context.WithCancel(ctx)
+	pollG, pollGCtx := errgroup.WithContext(pollCtx)
+
+	pollG.Go(func() error {
+		err := c.client.Watch(pollGCtx, fmt.Sprintf("/WAVE/VIDEO/NODE/%s", id), func(_, activeNode string, err error) {
+			if err == nil && node == activeNode {
+				pollCtxCancel()
+			}
+		})
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	// initial check, required in case the node is already set to the requested node (watch will not trigger in this case)
+	pollG.Go(func() error {
+		activeNode, err := c.client.Get(pollGCtx, fmt.Sprintf("/WAVE/VIDEO/NODE/%s", id))
+		if err != nil {
+			return err
+		}
+		if node == activeNode {
+			pollCtxCancel()
+		}
+		return nil
+	})
+
+	_, err := c.client.Set(ctx, fmt.Sprintf("/WAVE/VIDEO/REQNODE/%s", id), node, 0)
+	if err != nil {
+		return err
+	}
+
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("context exceeded: device couldn't be attached in the provided context window")
+	default:
+		return nil
+	}
+}
+
+// Detach removes the device from the current node. It doesn't wait until the node fully detached it.
+func (c *Controller) Detach(ctx context.Context, id string) error {
+	err := c.client.Delete(ctx, fmt.Sprintf("/WAVE/VIDEO/NODE/%s", id))
+	if err != nil {
+		return err
+	}
+	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/VIDEO/REQNODE/%s", id))
+	if err != nil {
+		return nil
+	}
+	return nil
+}
 
 // Delete completely removes a video device and its associated metadata.
 func (c *Controller) Delete(ctx context.Context, id string) error {
 	err := c.client.Delete(ctx, fmt.Sprintf("/WAVE/VIDEO/NODE/%s", id))
-	if err!=nil {
+	if err != nil {
 		return err
 	}
 	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/VIDEO/REQNODE/%s", id))
-	if err!=nil {
+	if err != nil {
 		return err
 	}
 	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/VIDEO/TYPE/%s", id))
-	if err!=nil {
+	if err != nil {
 		return err
 	}
 	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/VIDEO/PATH/%s", id))
-	if err!=nil {
+	if err != nil {
 		return err
 	}
 	return nil

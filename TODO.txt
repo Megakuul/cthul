@@ -1,4 +1,7 @@
 - move domain operator to reqnode pattern (always one core field which must be done before the others) x
-- refactor to slog instead of internal logger
+- refactor to slog instead of internal logger x
 - update controllers with reqnode (domain, video)
+- refactor controllers to use core property as anchor
+- fix the detach logic (-> device is just never detached by the libvirt adapter)
 - implement other devices (besides video)
+- create startup code + perform initial wave tests

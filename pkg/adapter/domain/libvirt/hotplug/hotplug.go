@@ -33,7 +33,7 @@ type Hotplugger struct {
 	client *libvirt.Libvirt
 }
 
-func NewHotplugger(client *libvirt.Libvirt) *Hotplugger {
+func New(client *libvirt.Libvirt) *Hotplugger {
 	return &Hotplugger{
 		client: client,
 	}
