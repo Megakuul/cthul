@@ -9,7 +9,7 @@
 </script>
 
 <center
-  style="background-color: {Palette.bgSecondary()};"
+  style="background-color: {Palette().bgSecondary()};"
   class="relative h-48 overflow-hidden"
 >
   <Cthul
