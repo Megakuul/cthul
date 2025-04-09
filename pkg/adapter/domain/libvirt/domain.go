@@ -59,7 +59,7 @@ func (l *Adapter) Apply(ctx context.Context, id string, domainCfg structure.Doma
 		return err
 	}
 
-	err = l.generator.Attach(&domainCfg)
+	err = l.generator.Attach(ctx, &domainCfg)
 	if err!=nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (l *Adapter) Apply(ctx context.Context, id string, domainCfg structure.Doma
 		return err
 	}
 	
-	hotplugger := hotplug.NewLibvirtHotplugger(l.client)
+	hotplugger := hotplug.New(l.client)
 	err = hotplugger.Hotplug(domain)
 	if err!=nil {
 		return err
@@ -106,11 +106,6 @@ func (l *Adapter) Destroy(ctx context.Context, id string, domainCfg structure.Do
 	}
 
 	err = l.client.DomainUndefine(domain)
-	if err!=nil {
-		return err
-	}
-
-	err = l.generator.Detach(&domainCfg)
 	if err!=nil {
 		return err
 	}

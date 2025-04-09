@@ -24,7 +24,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"cthul.io/cthul/pkg/adapter/domain"
@@ -32,11 +31,12 @@ import (
 	"cthul.io/cthul/pkg/db"
 	"cthul.io/cthul/pkg/wave/domain/structure"
 	"github.com/google/uuid"
+	"golang.org/x/sync/errgroup"
 )
 
 // Controller provides an interface for wave domain related operations.
 type Controller struct {
-	client db.Client
+	client  db.Client
 	adapter domain.Adapter
 }
 
@@ -44,7 +44,7 @@ type Option func(*Controller)
 
 func New(client db.Client, adapter domain.Adapter, opts ...Option) *Controller {
 	controller := &Controller{
-		client: client,
+		client:  client,
 		adapter: adapter,
 	}
 
@@ -60,102 +60,82 @@ type affinity []string
 
 // resources provides the domain resource structure stored in the database.
 type resources struct {
-	AllocatedCpu float64 `json:"allocated_cpu"`
-	AllocatedMemory int64 `json:"allocated_memory"`
+	AllocatedCpu    float64 `json:"allocated_cpu"`
+	AllocatedMemory int64   `json:"allocated_memory"`
 }
 
-// List returns a map containing domain uuids and associated metadata from the database.
+// List returns a map containing domain ids and associated metadata from the database.
 func (c *Controller) List(ctx context.Context) (map[string]structure.Domain, error) {
 	domains := map[string]structure.Domain{}
-	
-	domainNodes, err := c.client.GetRange(ctx, "/WAVE/DOMAIN/NODE/")
-	if err!=nil {
+
+	reqnodes, err := c.client.GetRange(ctx, "/WAVE/DOMAIN/REQNODE/")
+	if err != nil {
+		return nil, fmt.Errorf("fetching domain reqnode: %w", err)
+	}
+	nodes, err := c.client.GetRange(ctx, "/WAVE/DOMAIN/NODE/")
+	if err != nil {
 		return nil, fmt.Errorf("fetching domain node: %w", err)
 	}
-	domainStates, err := c.client.GetRange(ctx, "/WAVE/DOMAIN/STATE/")
-	if err!=nil {
+	configs, err := c.client.GetRange(ctx, "/WAVE/DOMAIN/CONFIG/")
+	if err != nil {
+		return nil, fmt.Errorf("fetching domain configs: %w", err)
+	}
+	states, err := c.client.GetRange(ctx, "/WAVE/DOMAIN/STATE/")
+	if err != nil {
 		return nil, fmt.Errorf("fetching domain state: %w", err)
 	}
-	domainStatePushIntervals, err := c.client.GetRange(ctx, "/WAVE/DOMAIN/STATEPUSHINT/")
-	if err!=nil {
-		return nil, fmt.Errorf("fetching domain state push interval: %w", err)
-	}
-	domainConfigPushIntervals, err := c.client.GetRange(ctx, "/WAVE/DOMAIN/CONFIGPUSHINT/")
-	if err!=nil {
-		return nil, fmt.Errorf("fetching domain config push interval: %w", err)
-	}
-	domainAffinities, err := c.client.GetRange(ctx, "/WAVE/DOMAIN/AFFINITY/")
-	if err!=nil {
+	affinities, err := c.client.GetRange(ctx, "/WAVE/DOMAIN/AFFINITY/")
+	if err != nil {
 		return nil, fmt.Errorf("fetching domain affinity: %w", err)
 	}
-	domainResources, err := c.client.GetRange(ctx, "/WAVE/DOMAIN/RESOURCES/")
-	if err!=nil {
+	domResources, err := c.client.GetRange(ctx, "/WAVE/DOMAIN/RESOURCES/")
+	if err != nil {
 		return nil, fmt.Errorf("fetching domain resources: %w", err)
 	}
-	
-	for key, node := range domainNodes {
+
+	for key, domConfig := range configs {
 		var domainErr error
-		uuid := strings.TrimPrefix(key, "/WAVE/DOMAIN/NODE/")
-		state := domainStates[fmt.Sprint("/WAVE/DOMAIN/STATE/", uuid)]
+		id := strings.TrimPrefix(key, "/WAVE/DOMAIN/NODE/")
+		reqnode := reqnodes[fmt.Sprint("/WAVE/DOMAIN/REQNODE/", id)]
+		node := nodes[fmt.Sprint("/WAVE/DOMAIN/NODE/", id)]
+		state := states[fmt.Sprint("/WAVE/DOMAIN/STATE/", id)]
 
-		statePushInterval, err := strconv.Atoi(
-			domainStatePushIntervals[fmt.Sprint("/WAVE/DOMAIN/STATEPUSHINT/", uuid)],
-		)
-		if err!=nil {
-			domainErr = errors.Join(domainErr, fmt.Errorf("parsing state push interval: %w", err))
-		}
-
-		configPushInterval, err := strconv.Atoi(
-			domainConfigPushIntervals[fmt.Sprint("/WAVE/DOMAIN/CONFIGPUSHINT/", uuid)],
-		)
-		if err!=nil {
-			domainErr = errors.Join(domainErr, fmt.Errorf("parsing state push interval: %w", err))
+		config := &adapterstruct.Domain{}
+		err = json.Unmarshal([]byte(domConfig), config)
+		if err != nil {
+			domainErr = errors.Join(domainErr, fmt.Errorf("parsing node config: %w", err))
 		}
 
 		affinity := &affinity{}
-		err = json.Unmarshal([]byte(domainAffinities[fmt.Sprint("/WAVE/DOMAIN/AFFINITY/", uuid)]), affinity)
-		if err!=nil {
+		err = json.Unmarshal([]byte(affinities[fmt.Sprint("/WAVE/DOMAIN/AFFINITY/", id)]), affinity)
+		if err != nil {
 			domainErr = errors.Join(domainErr, fmt.Errorf("parsing node affinity tags: %w", err))
 		}
-		
+
 		resources := &resources{}
-		err = json.Unmarshal([]byte(domainResources[fmt.Sprint("/WAVE/DOMAIN/RESOURCES/", uuid)]), resources)
-		if err!=nil {
+		err = json.Unmarshal([]byte(domResources[fmt.Sprint("/WAVE/DOMAIN/RESOURCES/", id)]), resources)
+		if err != nil {
 			domainErr = errors.Join(domainErr, fmt.Errorf("parsing domain resources: %w", err))
 		}
-		
-		domains[uuid] = structure.Domain{
-			Node: node,
-			Affinity: *affinity,
-			State: structure.DOMAIN_STATE(state),
-			StatePushInterval: int64(statePushInterval),
-			ConfigPushInterval: int64(configPushInterval),
-			AllocatedCPU: resources.AllocatedCpu,
+
+		domains[id] = structure.Domain{
+			Reqnode:         reqnode,
+			Node:            node,
+			Config:          config,
+			Affinity:        *affinity,
+			State:           structure.DOMAIN_STATE(state),
+			AllocatedCPU:    resources.AllocatedCpu,
 			AllocatedMemory: resources.AllocatedMemory,
-			Error: domainErr,
+			Error:           domainErr,
 		}
 	}
 	return domains, nil
 }
 
-// GetConfig returns the deserialized configuration of one node.
-func (c *Controller) GetConfig(ctx context.Context, id string) (*adapterstruct.Domain, error) {
-	result, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/DOMAIN/CONFIG/%s", id))
-	if err!=nil {
-		return nil, err
-	}
-	config := &adapterstruct.Domain{}
-	err = json.Unmarshal([]byte(result), config)
-	if err!=nil {
-		return nil, err
-	}
-	return config, nil
-}
-
 // GetStats returns the current statistics of the domain. The data is read directly from the vmm (e.g. qemu).
 func (c *Controller) GetStats(ctx context.Context, id string) (*adapterstruct.DomainStats, error) {
 	stats, err := c.adapter.GetStats(ctx, id)
-	if err!=nil {
+	if err != nil {
 		return nil, err
 	}
 	return stats, nil
@@ -164,41 +144,20 @@ func (c *Controller) GetStats(ctx context.Context, id string) (*adapterstruct.Do
 // Create creates a domain with the specified configuration and default metadata values.
 // If the creation fails, the function tries to remove already created resources from the database.
 func (c *Controller) Create(ctx context.Context, config *adapterstruct.Domain) (string, error) {
-	uuid := uuid.New().String()
-	err := c.SetConfig(ctx, uuid, config)
-	if err!=nil {
-		return "", errors.Join(err, c.Delete(ctx, uuid))
+	id := uuid.New().String()
+	err := c.SetConfig(ctx, id, config)
+	if err != nil {
+		return "", errors.Join(err, c.Delete(ctx, id))
 	}
-	err = c.SetState(ctx, uuid, structure.DOMAIN_DOWN)
-	if err!=nil {
-		return "", errors.Join(err, c.Delete(ctx, uuid))
+	err = c.SetState(ctx, id, structure.DOMAIN_DOWN)
+	if err != nil {
+		return "", errors.Join(err, c.Delete(ctx, id))
 	}
-	err = c.SetStatePushInterval(ctx, uuid, 20)
-	if err!=nil {
-		return "", errors.Join(err, c.Delete(ctx, uuid))
+	err = c.SetAffinity(ctx, id, []string{})
+	if err != nil {
+		return "", errors.Join(err, c.Delete(ctx, id))
 	}
-	err = c.SetConfigPushInterval(ctx, uuid, 30)
-	if err!=nil {
-		return "", errors.Join(err, c.Delete(ctx, uuid))
-	}
-	err = c.SetAffinity(ctx, uuid, []string{})
-	if err!=nil {
-		return "", errors.Join(err, c.Delete(ctx, uuid))
-	}
-	err = c.SetNode(ctx, uuid, "")
-	if err!=nil {
-		return "", errors.Join(err, c.Delete(ctx, uuid))
-	}
-	return uuid, nil
-}
-
-// SetNode updates the node that is responsible for the domain.
-func (c *Controller) SetNode(ctx context.Context, id string, node string) error {
-	_, err := c.client.Set(ctx, fmt.Sprintf("/WAVE/DOMAIN/NODE/%s", id), node, 0)
-	if err!=nil {
-		return err
-	}
-	return nil
+	return id, nil
 }
 
 // SetAffinity updates the affinity of the domain. The affinity specifies a list of affinity tags; any node
@@ -206,11 +165,11 @@ func (c *Controller) SetNode(ctx context.Context, id string, node string) error 
 // eligible.
 func (c *Controller) SetAffinity(ctx context.Context, id string, tags []string) error {
 	rawTags, err := json.Marshal(affinity(tags))
-	if err!=nil {
+	if err != nil {
 		return fmt.Errorf("cannot serialize affinity tags: %w", err)
 	}
 	_, err = c.client.Set(ctx, fmt.Sprintf("/WAVE/DOMAIN/AFFINITY/%s", id), string(rawTags), 0)
-	if err!=nil {
+	if err != nil {
 		return err
 	}
 	return nil
@@ -219,52 +178,158 @@ func (c *Controller) SetAffinity(ctx context.Context, id string, tags []string) 
 // SetState updates the desired state of the domain.
 func (c *Controller) SetState(ctx context.Context, id string, state structure.DOMAIN_STATE) error {
 	_, err := c.client.Set(ctx, fmt.Sprintf("/WAVE/DOMAIN/STATE/%s", id), string(state), 0)
-	if err!=nil {
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// SetStatePushInterval updates the state push interval of the domain.
-func (c *Controller) SetStatePushInterval(ctx context.Context, id string, interval int) error {
-	_, err := c.client.Set(ctx, fmt.Sprintf("/WAVE/DOMAIN/STATEPUSHINT/%s", id), strconv.Itoa(interval), 0)
-	if err!=nil {
-		return err
-	}
-	return nil
-}
-
-// SetConfigPushInterval updates the config push interval of the domain.
-func (c *Controller) SetConfigPushInterval(ctx context.Context, id string, interval int) error {
-	_, err := c.client.Set(ctx, fmt.Sprintf("/WAVE/DOMAIN/CONFIGPUSHINT/%s", id), strconv.Itoa(interval), 0)
-	if err!=nil {
-		return err
-	}
-	return nil
-}
-
-// SetConfig updates the domain configuration and updates associated metadata on the database. 
+// SetConfig updates the domain configuration and updates associated metadata on the database.
 func (c *Controller) SetConfig(ctx context.Context, id string, config *adapterstruct.Domain) error {
 	rawConfig, err := json.Marshal(config)
-	if err!=nil {
+	if err != nil {
 		return fmt.Errorf("cannot serialize config: %w", err)
 	}
 
 	rawResources, err := json.Marshal(resources{
-		AllocatedCpu: float64(config.ResourceConfig.VCPUs),
+		AllocatedCpu:    float64(config.ResourceConfig.VCPUs),
 		AllocatedMemory: config.ResourceConfig.Memory,
 	})
-	if err!=nil {
+	if err != nil {
 		return fmt.Errorf("cannot serialize resource config: %w", err)
 	}
 	_, err = c.client.Set(ctx, fmt.Sprintf("/WAVE/DOMAIN/RESOURCES/%s", id), string(rawResources), 0)
-	if err!=nil {
+	if err != nil {
 		return err
 	}
-	
+
 	_, err = c.client.Set(ctx, fmt.Sprintf("/WAVE/DOMAIN/CONFIG/%s", id), string(rawConfig), 0)
-	if err!=nil {
+	if err != nil {
 		return err
+	}
+	return nil
+}
+
+// Lookup searches for the domain by id and returns its configuration.
+func (c *Controller) Lookup(ctx context.Context, id string) (*structure.Domain, error) {
+	reqnode, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/DOMAIN/REQNODE/%s", id))
+	if err != nil {
+		return nil, fmt.Errorf("fetching domain reqnode: %w", err)
+	}
+	node, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/DOMAIN/NODE/%s", id))
+	if err != nil {
+		return nil, fmt.Errorf("fetching domain node: %w", err)
+	}
+	domConfig, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/DOMAIN/CONFIG/%s", id))
+	if err != nil {
+		return nil, fmt.Errorf("fetching domain configs: %w", err)
+	}
+	state, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/DOMAIN/STATE/%s", id))
+	if err != nil {
+		return nil, fmt.Errorf("fetching domain state: %w", err)
+	}
+	domAffinity, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/DOMAIN/AFFINITY/%s", id))
+	if err != nil {
+		return nil, fmt.Errorf("fetching domain affinity: %w", err)
+	}
+	domResources, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/DOMAIN/RESOURCES/%s", id))
+	if err != nil {
+		return nil, fmt.Errorf("fetching domain resources: %w", err)
+	}
+
+	config := &adapterstruct.Domain{}
+	err = json.Unmarshal([]byte(domConfig), config)
+	if err != nil {
+		return nil, fmt.Errorf("parsing node config: %w", err)
+	}
+
+	affinity := &affinity{}
+	err = json.Unmarshal([]byte(domAffinity), affinity)
+	if err != nil {
+		return nil, fmt.Errorf("parsing node affinity tags: %w", err)
+	}
+
+	resources := &resources{}
+	err = json.Unmarshal([]byte(domResources), resources)
+	if err != nil {
+		return nil, fmt.Errorf("parsing domain resources: %w", err)
+	}
+
+	return &structure.Domain{
+		Reqnode:         reqnode,
+		Node:            node,
+		Config:          config,
+		Affinity:        *affinity,
+		State:           structure.DOMAIN_STATE(state),
+		AllocatedCPU:    resources.AllocatedCpu,
+		AllocatedMemory: resources.AllocatedMemory,
+	}, nil
+}
+
+// Attach requests the domain to be relocated to the specified node and waits until it's ready (if wait flag is set).
+func (c *Controller) Attach(ctx context.Context, id, node string, wait bool) error {
+	if !wait {
+		_, err := c.client.Set(ctx, fmt.Sprintf("/WAVE/DOMAIN/REQNODE/%s", id), node, 0)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	pollCtx, pollCtxCancel := context.WithCancel(ctx)
+	pollG, pollGCtx := errgroup.WithContext(pollCtx)
+
+	pollG.Go(func() error {
+		err := c.client.Watch(pollGCtx, fmt.Sprintf("/WAVE/DOMAIN/NODE/%s", id), func(_, activeNode string, err error) {
+			if err == nil && node == activeNode {
+				pollCtxCancel()
+			}
+		})
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	// initial check, required in case the node is already set to the requested node (watch will not trigger in this case)
+	pollG.Go(func() error {
+		activeNode, err := c.client.Get(pollGCtx, fmt.Sprintf("/WAVE/DOMAIN/NODE/%s", id))
+		if err != nil {
+			return err
+		}
+		if node == activeNode {
+			pollCtxCancel()
+		}
+		return nil
+	})
+
+	_, err := c.client.Set(ctx, fmt.Sprintf("/WAVE/DOMAIN/REQNODE/%s", id), node, 0)
+	if err != nil {
+		return err
+	}
+
+	err = pollG.Wait()
+	if err != nil {
+		return err
+	}
+
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("context exceeded: domain couldn't be attached in the provided context window")
+	default:
+		return nil
+	}
+}
+
+// Detach removes the domain from the current node. It doesn't wait until the node fully detached it.
+func (c *Controller) Detach(ctx context.Context, id string) error {
+	err := c.client.Delete(ctx, fmt.Sprintf("/WAVE/DOMAIN/NODE/%s", id))
+	if err != nil {
+		return err
+	}
+	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/DOMAIN/REQNODE/%s", id))
+	if err != nil {
+		return nil
 	}
 	return nil
 }
@@ -272,27 +337,27 @@ func (c *Controller) SetConfig(ctx context.Context, id string, config *adapterst
 // Delete completely removes a domain and its associated metadata.
 func (c *Controller) Delete(ctx context.Context, id string) error {
 	err := c.client.Delete(ctx, fmt.Sprintf("/WAVE/DOMAIN/NODE/%s", id))
-	if err!=nil {
+	if err != nil {
+		return err
+	}
+	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/DOMAIN/REQNODE/%s", id))
+	if err != nil {
 		return err
 	}
 	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/DOMAIN/AFFINITY/%s", id))
-	if err!=nil {
-		return err
-	}
-	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/DOMAIN/CONFIGPUSHINT/%s", id))
-	if err!=nil {
-		return err
-	}
-	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/DOMAIN/STATEPUSHINT/%s", id))
-	if err!=nil {
+	if err != nil {
 		return err
 	}
 	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/DOMAIN/STATE/%s", id))
-	if err!=nil {
+	if err != nil {
 		return err
 	}
 	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/DOMAIN/RESOURCES/%s", id))
-	if err!=nil {
+	if err != nil {
+		return err
+	}
+	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/DOMAIN/CONFIG/%s", id))
+	if err != nil {
 		return err
 	}
 	return nil

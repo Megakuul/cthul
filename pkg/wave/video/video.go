@@ -56,19 +56,19 @@ func (c *Controller) List(ctx context.Context) (map[string]structure.Video, erro
 
 	reqnodes, err := c.client.GetRange(ctx, "/WAVE/VIDEO/REQNODE/")
 	if err != nil {
-		return nil, fmt.Errorf("fetching video device node: %w", err)
+		return nil, fmt.Errorf("fetching video device reqnode: %w", err)
 	}
 	nodes, err := c.client.GetRange(ctx, "/WAVE/VIDEO/NODE/")
 	if err != nil {
 		return nil, fmt.Errorf("fetching video device node: %w", err)
 	}
-	types, err := c.client.GetRange(ctx, "/WAVE/VIDEO/TYPE/")
-	if err != nil {
-		return nil, fmt.Errorf("fetching video device type: %w", err)
-	}
 	paths, err := c.client.GetRange(ctx, "/WAVE/VIDEO/PATH/")
 	if err != nil {
 		return nil, fmt.Errorf("fetching video device path: %w", err)
+	}
+	types, err := c.client.GetRange(ctx, "/WAVE/VIDEO/TYPE/")
+	if err != nil {
+		return nil, fmt.Errorf("fetching video device type: %w", err)
 	}
 
 	for key, path := range paths {
@@ -111,6 +111,9 @@ func (c *Controller) SetType(ctx context.Context, id string, typ structure.VIDEO
 }
 
 func (c *Controller) SetPath(ctx context.Context, id, path string) error {
+	if path == "" {
+		return fmt.Errorf("path must be non-empty because it is the device core-property")
+	}
 	_, err := c.client.Set(ctx, fmt.Sprintf("/WAVE/VIDEO/PATH/%s", id), path, 0)
 	if err != nil {
 		return err
@@ -122,7 +125,7 @@ func (c *Controller) SetPath(ctx context.Context, id, path string) error {
 func (c *Controller) Lookup(ctx context.Context, id string) (*structure.Video, error) {
 	reqnode, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/VIDEO/REQNODE/%s", id))
 	if err != nil {
-		return nil, fmt.Errorf("fetching video device node: %w", err)
+		return nil, fmt.Errorf("fetching video device reqnode: %w", err)
 	}
 	node, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/VIDEO/NODE/%s", id))
 	if err != nil {
@@ -149,8 +152,15 @@ func (c *Controller) Lookup(ctx context.Context, id string) (*structure.Video, e
 	}, nil
 }
 
-// Attach requests the device to be relocated to the specified node and waits until it's ready.
-func (c *Controller) Attach(ctx context.Context, id string, node string) error {
+// Attach requests the device to be relocated to the specified node and waits until it's ready (if wait flag is set).
+func (c *Controller) Attach(ctx context.Context, id, node string, wait bool) error {
+	if !wait {
+		_, err := c.client.Set(ctx, fmt.Sprintf("/WAVE/VIDEO/REQNODE/%s", id), node, 0)
+		if err != nil {
+			return err
+		}
+	}
+
 	pollCtx, pollCtxCancel := context.WithCancel(ctx)
 	pollG, pollGCtx := errgroup.WithContext(pollCtx)
 
@@ -179,6 +189,11 @@ func (c *Controller) Attach(ctx context.Context, id string, node string) error {
 	})
 
 	_, err := c.client.Set(ctx, fmt.Sprintf("/WAVE/VIDEO/REQNODE/%s", id), node, 0)
+	if err != nil {
+		return err
+	}
+
+	err = pollG.Wait()
 	if err != nil {
 		return err
 	}

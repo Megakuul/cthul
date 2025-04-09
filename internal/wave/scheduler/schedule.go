@@ -22,6 +22,7 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"time"
 
@@ -92,7 +93,7 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 				continue
 			}
 			
-			_, ok := nodes[domain.Node]
+			_, ok := nodes[domain.Reqnode]
 			if !ok {
 				retries := unmanagedDomains[domainId]
 				unmanagedDomains[domainId] = retries + 1
@@ -112,7 +113,7 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 				continue
 			}
 
-			s.domainController.SetNode(s.workCtx, domainId, targetNodeId)
+			err = s.domainController.Attach(s.workCtx, domainId, targetNodeId, false)
 			if err!=nil {
 				s.logger.Error(fmt.Sprintf(
 					"failed to reschedule '%s': %s", domainId, err.Error(),
@@ -120,7 +121,7 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 				continue
 			}
 			
-			domain.Node = targetNodeId			
+			domain.Reqnode = targetNodeId			
 			domains[domainId] = domain
 			nodes[targetNodeId] = *targetNode
 		}
@@ -198,7 +199,7 @@ func (s *Scheduler) findNode(
 		availableCpu := node.AllocatedCpu
 		availableMem := node.AllocatedMemory
 		for _, dom := range domains {
-			if dom.Node == nodeId {
+			if dom.Reqnode == nodeId {
 				availableCpu -= dom.AllocatedCPU
 				availableMem -= dom.AllocatedMemory
 			}
@@ -225,11 +226,9 @@ func (s *Scheduler) findNode(
 // checkAffinity checks if any affinity searchTag is contained in the targetTags.
 func checkAffinity(searchTags, targetTags []string) bool {
 	for _, searchTag := range searchTags {
-		for _, targetTag  := range targetTags {
-			if searchTag == targetTag {
-				return true
-			}
-		}
+    if slices.Contains(targetTags, searchTag) {
+      return true
+    }
 	}
 	return false
 }

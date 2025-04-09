@@ -29,7 +29,7 @@ import (
 // Attach installs / locks all devices that are required by the domain config.
 func (l *Generator) Attach(ctx context.Context, config *cthulstruct.Domain) error {
 	for _, device := range config.VideoAdapters {
-    err := l.video.Attach(ctx, device.DeviceId, l.nodeId)
+    err := l.video.Attach(ctx, device.DeviceId, l.nodeId, true)
 		if err!=nil {
 			return err
 		}

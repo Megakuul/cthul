@@ -19,6 +19,10 @@
 
 package structure
 
+import (
+  adapterstruct "cthul.io/cthul/pkg/adapter/domain/structure"
+)
+
 // Domain "should've" state used by cthul.
 // It's not representing the actual state but rather the state the domain should be pushed by the operator.
 type DOMAIN_STATE string
@@ -35,12 +39,12 @@ const (
 // of the current state of the domain. The error field contains parsing failures of single fields; if the error
 // is not nil, the values may be used for informational purposes but should not be relied on.
 type Domain struct {
-	Node               string       `json:"node"`
-	Affinity           []string     `json:"affinity"`
-	State              DOMAIN_STATE `json:"state"`
-	StatePushInterval  int64        `json:"state_push_interval"`
-	ConfigPushInterval int64        `json:"config_push_interval"`
-	AllocatedCPU       float64      `json:"allocated_cpu"`
-	AllocatedMemory    int64        `json:"allocated_memory"`
-	Error              error        `json:"-"`
+	Reqnode         string                `json:"reqnode"`
+	Node            string                `json:"node"`
+	Config          *adapterstruct.Domain `json:config`
+	Affinity        []string              `json:"affinity"`
+	State           DOMAIN_STATE          `json:"state"`
+	AllocatedCPU    float64               `json:"allocated_cpu"`
+	AllocatedMemory int64                 `json:"allocated_memory"`
+	Error           error                 `json:"-"`
 }
