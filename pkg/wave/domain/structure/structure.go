@@ -41,9 +41,9 @@ const (
 type Domain struct {
 	Reqnode         string                `json:"reqnode"`
 	Node            string                `json:"node"`
-	Config          *adapterstruct.Domain `json:config`
-	Affinity        []string              `json:"affinity"`
+	Config          *adapterstruct.Domain `json:"config"` // core
 	State           DOMAIN_STATE          `json:"state"`
+	Affinity        []string              `json:"affinity"`
 	AllocatedCPU    float64               `json:"allocated_cpu"`
 	AllocatedMemory int64                 `json:"allocated_memory"`
 	Error           error                 `json:"-"`

@@ -20,7 +20,10 @@
 package generator
 
 import (
+	"context"
 	"fmt"
+  "path/filepath"
+  "strings"
 
 	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
 	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
@@ -33,24 +36,28 @@ import (
 // sending every chunk via separate PIO instruction.
 
 // generateSerial generates a libvirt serial device from the cthul serial device.
-func (l *Generator) generateSerial(device *cthulstruct.SerialDevice) (*libvirtstruct.Serial, error) {
+func (g *Generator) generateSerial(ctx context.Context, device *cthulstruct.SerialDevice) (*libvirtstruct.Serial, error) {
 	serial := &libvirtstruct.Serial{
 		MetaType: libvirtstruct.SERIAL_UNIX,
-		Source: &libvirtstruct.SerialSource{},
+		Source:   &libvirtstruct.SerialSource{},
 		Target: &libvirtstruct.SerialTarget{
 			MetaPort: device.Port,
 		},
 	}
 
-	serialDevice, err := l.wave.LookupSerial(device.DeviceId)
-	if err!=nil {
+	serialDevice, err := g.serial.Lookup(ctx, device.DeviceId)
+	if err != nil {
 		return nil, err
 	}
 
 	// Source (on host)
 	serial.MetaType = libvirtstruct.SERIAL_UNIX
 	serial.Source.MetaMode = libvirtstruct.SERIAL_SOURCE_BIND
-	serial.Source.MetaPath = serialDevice.Path
+	path := filepath.Join(g.waveRoot, serialDevice.Path)
+	if !strings.HasPrefix(filepath.Clean(path), g.waveRoot) {
+		return nil, fmt.Errorf("serial device uses a socket path that escapes the run root '%s'", g.waveRoot)
+	}
+	serial.Source.MetaPath = path
 
 	// Target (on guest)
 	switch device.SerialBus {
@@ -61,6 +68,6 @@ func (l *Generator) generateSerial(device *cthulstruct.SerialDevice) (*libvirtst
 	default:
 		return nil, fmt.Errorf("unknown serial bus type: %s", device.SerialBus)
 	}
-	
+
 	return serial, nil
 }

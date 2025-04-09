@@ -19,17 +19,9 @@
 
 package structure
 
-// VIDEO_TYPE specifies what protocol / type of host-side video adapter is used.
-// Currently only spice is supported which uses the qemu host spice server.
-type VIDEO_TYPE string
-const (
-	VIDEO_SPICE VIDEO_TYPE = "spice"
-)
-
-// Video holds all information about a video adapter device.
-type Video struct {
+// Serial holds all information about a serial adapter device.
+type Serial struct {
   Reqnode string `json:"reqnode"`
 	Node string `json:"node"`
-	Type VIDEO_TYPE `json:"type"`
-	Path string `json:"path"` // core
+	Path string `json:"path"`
 }

@@ -30,15 +30,27 @@ import (
 	"cthul.io/cthul/pkg/wave/node/structure"
 )
 
+// NodeMismatchErr indicates that the action cannot be executed on this node.
+type NodeMismatchErr struct {
+  Node string
+  Message string
+}
+
+func (n *NodeMismatchErr) Error() string {
+  return n.Message
+}
+
 // Controller provides an interface for wave node related operations.
 type Controller struct {
+  node string
 	client db.Client
 }
 
 type ControllerOption func(*Controller)
 
-func NewController(client db.Client, opts ...ControllerOption) *Controller {
+func NewController(node string, client db.Client, opts ...ControllerOption) *Controller {
 	controller := &Controller{
+    node: node,
 		client: client,
 	}
 

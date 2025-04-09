@@ -17,7 +17,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package video
+package serial
 
 import (
 	"context"
@@ -28,16 +28,16 @@ import (
 )
 
 func (o *Operator) synchronize() {
-  o.syncer.Add("/WAVE/VIDEO/REQNODE", o.updateCycleTTL, func(ctx context.Context, k, reqnode string) error {
-    uuid := strings.TrimPrefix(k, "/WAVE/VIDEO/REQNODE/")
-    pathKey := fmt.Sprintf("/WAVE/VIDEO/PATH/%s", uuid)
+  o.syncer.Add("/WAVE/SERIAL/REQNODE", o.updateCycleTTL, func(ctx context.Context, k, reqnode string) error {
+    uuid := strings.TrimPrefix(k, "/WAVE/SERIAL/REQNODE/")
+    pathKey := fmt.Sprintf("/WAVE/SERIAL/PATH/%s", uuid)
     if reqnode == o.nodeId {
       o.syncer.Add(pathKey, o.pathCycleTTL, func(ctx context.Context, k, path string) error {
-        err := o.ensurePath(o.waveRunRoot, path)
+        err := o.ensurePath(o.runRoot, path)
         if err!=nil {
           return err
         }
-        _, err = o.client.Set(ctx, fmt.Sprintf("/WAVE/VIDEO/NODE/%s", uuid), reqnode, 0)
+        _, err = o.client.Set(ctx, fmt.Sprintf("/WAVE/SERIAL/NODE/%s", uuid), reqnode, 0)
         if err!=nil {
           return err
         }

@@ -34,16 +34,30 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// NodeMismatchErr indicates that the action cannot be executed on this node.
+type NodeMismatchErr struct {
+  Node string
+  Message string
+}
+
+func (n *NodeMismatchErr) Error() string {
+  return n.Message
+}
+
 // Controller provides an interface for wave domain related operations.
 type Controller struct {
+  node string
+  runRoot string
 	client  db.Client
 	adapter domain.Adapter
 }
 
 type Option func(*Controller)
 
-func New(client db.Client, adapter domain.Adapter, opts ...Option) *Controller {
+func New(node string, client db.Client, adapter domain.Adapter, opts ...Option) *Controller {
 	controller := &Controller{
+    node: node,
+    runRoot: "/run/cthul/wave/",
 		client:  client,
 		adapter: adapter,
 	}
@@ -53,6 +67,14 @@ func New(client db.Client, adapter domain.Adapter, opts ...Option) *Controller {
 	}
 
 	return controller
+}
+
+// WithRunRoot defines a custom root for runtime files (bsd sockets etc.).
+// The controller needs this information to understand where to find those files (usually created by operators).
+func WithRunRoot(path string) Option {
+  return func(c *Controller) {
+    c.runRoot = path
+  }
 }
 
 // affinity provides the domain affinity tags structure stored in the database.
@@ -132,14 +154,6 @@ func (c *Controller) List(ctx context.Context) (map[string]structure.Domain, err
 	return domains, nil
 }
 
-// GetStats returns the current statistics of the domain. The data is read directly from the vmm (e.g. qemu).
-func (c *Controller) GetStats(ctx context.Context, id string) (*adapterstruct.DomainStats, error) {
-	stats, err := c.adapter.GetStats(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return stats, nil
-}
 
 // Create creates a domain with the specified configuration and default metadata values.
 // If the creation fails, the function tries to remove already created resources from the database.
@@ -208,6 +222,22 @@ func (c *Controller) SetConfig(ctx context.Context, id string, config *adapterst
 		return err
 	}
 	return nil
+}
+
+// Stat returns the current statistics of the domain. The data is read directly from the vmm (e.g. qemu).
+func (c *Controller) Stat(ctx context.Context, id string) (*adapterstruct.DomainStats, error) {
+  node, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/DOMAIN/NODE/%s", id))
+  if err!=nil {
+    return nil, err
+  }
+  if node != c.node {
+    return nil, &NodeMismatchErr{Message: "domain must be on the same node as the controller", Node: c.node}
+  }
+	stats, err := c.adapter.GetStats(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return stats, nil
 }
 
 // Lookup searches for the domain by id and returns its configuration.

@@ -35,12 +35,12 @@ import (
 // guest keyboard and mouse.
 
 // generateGraphic generates a libvirt graphics device from the cthul video adapter.
-func (l *Generator) generateGraphic(ctx context.Context, adapter *cthulstruct.VideoAdapter) (*libvirtstruct.Graphics, error) {
+func (g *Generator) generateGraphic(ctx context.Context, adapter *cthulstruct.VideoAdapter) (*libvirtstruct.Graphics, error) {
 	graphics := &libvirtstruct.Graphics{
 		Listen: &libvirtstruct.GraphicsListen{},
 	}
 
-	graphicDevice, err := l.video.Lookup(ctx, adapter.DeviceId)
+	graphicDevice, err := g.video.Lookup(ctx, adapter.DeviceId)
 	if err!=nil {
 		return nil, err
 	}
@@ -49,9 +49,9 @@ func (l *Generator) generateGraphic(ctx context.Context, adapter *cthulstruct.Vi
 	case videostruct.VIDEO_SPICE:
 		graphics.MetaType = libvirtstruct.GRAPHICS_SPICE
 		graphics.Listen.MetaType = libvirtstruct.GRAPHICS_LISTEN_SOCKET
-    path := filepath.Join(l.videoRoot, graphicDevice.Path)
-    if !strings.HasPrefix(filepath.Clean(path), l.videoRoot) {
-      return nil, fmt.Errorf("video device uses a socket path that escapes the run root '%s'", l.videoRoot)
+    path := filepath.Join(g.waveRoot, graphicDevice.Path)
+    if !strings.HasPrefix(filepath.Clean(path), g.waveRoot) {
+      return nil, fmt.Errorf("video device uses a socket path that escapes the run root '%s'", g.waveRoot)
     }
 		graphics.Listen.MetaPath = path 
 	default:

@@ -17,7 +17,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package video
+package serial
 
 import (
 	"context"
@@ -27,9 +27,9 @@ import (
 	"cthul.io/cthul/pkg/syncer"
 )
 
-// Operator is responsible for applying the video device database state to the local node.
-// Because the main video server is provided by the vmm, the wave video device is mainly responsible for
-// ensuring the environment allows bootstrap of the video server endpoint (e.g. mkdirall() the socket path).
+// Operator is responsible for applying the serial device database state to the local node.
+// Because the main serial server is provided by the vmm, the wave serial device is mainly responsible for
+// ensuring the environment allows bootstrap of the serial server endpoint (e.g. mkdirall() the socket path).
 type Operator struct {
 	client db.Client
   logger *slog.Logger
@@ -38,14 +38,14 @@ type Operator struct {
 	// runRoot specifies the base path for runtime files (unix-sockets and stuff).
 	runRoot string
 
-	// nodeId specifies the id of the node, this is used to determine which video devices must be applieo.
+	// nodeId specifies the id of the node, this is used to determine which serial devices must be applieo.
 	nodeId string
 
 	// updateCycleTTL specifies the ttl of the cycle that updates the devices syncers
 	// (cycle essentially finds out what device must be synced by this node).
 	updateCycleTTL int64
 
-	// pathCycleTTL defines the ttl of the cycle that prepares the unix socket path for the video device.
+	// pathCycleTTL defines the ttl of the cycle that prepares the unix socket path for the serial device.
 	pathCycleTTL int64
 }
 
@@ -54,9 +54,9 @@ type Option func(*Operator)
 func New(logger *slog.Logger, client db.Client, opts ...Option) *Operator {
 	operator := &Operator{
 		client:        client,
-		logger:        logger.WithGroup("video-operator"),
-		syncer:        syncer.New(logger.WithGroup("video-operator"), client),
-    runRoot: "/run/cthul/wave/video/",
+		logger:        logger.WithGroup("serial-operator"),
+		syncer:        syncer.New(logger.WithGroup("serial-operator"), client),
+    runRoot: "/run/cthul/wave/serial/",
 		nodeId:        "undefined",
     updateCycleTTL: 30,
     pathCycleTTL: 30,
@@ -77,7 +77,7 @@ func WithRunRoot(path string) Option {
 	}
 }
 
-// WithNodeId specifies the id of the local node. This id is used to identify which videos
+// WithNodeId specifies the id of the local node. This id is used to identify which serials
 // must be synced to this node.
 func WithNodeId(id string) Option {
 	return func(n *Operator) {

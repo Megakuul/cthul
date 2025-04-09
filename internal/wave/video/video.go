@@ -56,7 +56,7 @@ func New(logger *slog.Logger, client db.Client, opts ...Option) *Operator {
 		client:        client,
 		logger:        logger.WithGroup("video-operator"),
 		syncer:        syncer.New(logger.WithGroup("video-operator"), client),
-    runRoot: "/run/cthul/wave/video/",
+    runRoot: "/run/cthul/wave/",
 		nodeId:        "undefined",
     updateCycleTTL: 30,
     pathCycleTTL: 30,

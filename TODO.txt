@@ -3,5 +3,8 @@
 - update controllers with reqnode (domain, video) x
 - refactor controllers to use core property as anchor x
 - fix the detach logic (-> device is just never detached by the libvirt adapter) x
-- implement other devices (besides video)
+- implement other devices (video x serial x disk x interface _)
 - create startup code + perform initial wave tests
+- Move the NodeMismatchErr anywhere more useful (in a util or something, just that its not seperate for every controller)
+- Implement granit + proton operators (disk / interface)
+- Check if granit must store device FORMAT on database (should that not be rather important in the config and not to the underlying granit)

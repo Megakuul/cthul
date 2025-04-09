@@ -20,10 +20,12 @@
 package generator
 
 import (
+	"context"
 	"fmt"
 
 	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
 	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
+  diskstruct "cthul.io/cthul/pkg/granit/disk/structure"
 )
 
 // Explanation: A libvirt disk device represents a device which is provided to the guest os via a custom
@@ -37,7 +39,7 @@ import (
 // For the host driver this feels like reading/writing to a regular source (e.g. a block device).
 
 // generateDisk generates a libvirt disk device from the cthul storage device.
-func (l *Generator) generateDisk(device *cthulstruct.StorageDevice) (*libvirtstruct.Disk, error) {
+func (g *Generator) generateDisk(ctx context.Context, device *cthulstruct.StorageDevice) (*libvirtstruct.Disk, error) {
 	disk := &libvirtstruct.Disk{
 		Source: &libvirtstruct.DiskSource{},
 		Driver: &libvirtstruct.DiskDriver{MetaName: libvirtstruct.DISK_DRIVER_QEMU},
@@ -45,7 +47,7 @@ func (l *Generator) generateDisk(device *cthulstruct.StorageDevice) (*libvirtstr
 		Boot: &libvirtstruct.Boot{MetaOrder: device.BootPriority},
 	}
 
-	storageDevice, err := l.granit.LookupStorage(device.DeviceId)
+	storageDevice, err := g.granit.Lookup(ctx, device.DeviceId)
 	if err!=nil {
 		return nil, err
 	}
@@ -78,9 +80,9 @@ func (l *Generator) generateDisk(device *cthulstruct.StorageDevice) (*libvirtstr
 
 	// Driver (transfering data between guest and host)
 	switch storageDevice.Format {
-	case granit.FORMAT_RAW:
+	case diskstruct.DISK_RAW:
 		disk.Driver.MetaType = libvirtstruct.DISK_STORAGE_RAW
-	case granit.FORMAT_QCOW2:
+	case diskstruct.DISK_QCOW2:
 		disk.Driver.MetaType = libvirtstruct.DISK_STORAGE_QCOW2
 	default:
 		return nil, fmt.Errorf("unsupported device format: %s", storageDevice.Format)
@@ -88,12 +90,12 @@ func (l *Generator) generateDisk(device *cthulstruct.StorageDevice) (*libvirtstr
 
 	// Source (on host)
 	switch storageDevice.Type {
-	case granit.STORAGE_BLOCK:
+	case diskstruct.DISK_BLOCK:
 		disk.MetaType = libvirtstruct.DISK_BLOCK
 		disk.Source = &libvirtstruct.DiskSource{
 			MetaDev: storageDevice.Path,
 		}
-	case granit.STORAGE_FILE:
+	case diskstruct.DISK_FILE:
 		disk.MetaType = libvirtstruct.DISK_FILE
 		disk.Source = &libvirtstruct.DiskSource{
 			MetaFile: storageDevice.Path,

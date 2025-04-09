@@ -113,7 +113,7 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 				continue
 			}
 
-			err = s.domainController.Attach(s.workCtx, domainId, targetNodeId, false)
+			err = s.domainController.Attach(s.workCtx, domainId, domain.Node, false)
 			if err!=nil {
 				s.logger.Error(fmt.Sprintf(
 					"failed to reschedule '%s': %s", domainId, err.Error(),

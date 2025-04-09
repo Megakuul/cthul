@@ -19,17 +19,26 @@
 
 package structure
 
-// VIDEO_TYPE specifies what protocol / type of host-side video adapter is used.
-// Currently only spice is supported which uses the qemu host spice server.
-type VIDEO_TYPE string
+type DISK_TYPE string
+
 const (
-	VIDEO_SPICE VIDEO_TYPE = "spice"
+  DISK_BLOCK DISK_TYPE = "block"
+  DISK_FILE DISK_TYPE = "file"
 )
 
-// Video holds all information about a video adapter device.
-type Video struct {
+type DISK_FORMAT string
+
+const (
+  DISK_RAW DISK_FORMAT = "raw"
+  DISK_QCOW2 DISK_FORMAT = "qcow2"
+)
+
+type Disk struct {
   Reqnode string `json:"reqnode"`
 	Node string `json:"node"`
-	Type VIDEO_TYPE `json:"type"`
+  Type DISK_TYPE `json:"type"`
+  Format DISK_FORMAT `json:"format"`
 	Path string `json:"path"` // core
+  Readonly bool `json:"readonly"`
+  Error error `json:"-"`
 }

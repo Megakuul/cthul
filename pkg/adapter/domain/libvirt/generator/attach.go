@@ -27,17 +27,19 @@ import (
 )
 
 // Attach installs / locks all devices that are required by the domain config.
-func (l *Generator) Attach(ctx context.Context, config *cthulstruct.Domain) error {
+func (g *Generator) Attach(ctx context.Context, config *cthulstruct.Domain) error {
 	for _, device := range config.VideoAdapters {
-    err := l.video.Attach(ctx, device.DeviceId, l.nodeId, true)
+    err := g.video.Attach(ctx, device.DeviceId, g.nodeId, true)
 		if err!=nil {
 			return err
 		}
 	}
 
 	for _, device := range config.SerialDevices {
-		// PoC: l.wave.AttachSerial(device.DeviceId)
-		_ = device
+    err := g.serial.Attach(ctx, device.DeviceId, g.nodeId, true)
+    if err!=nil {
+      return err
+    }
 	}
 	
 	for _, device := range config.StorageDevices {

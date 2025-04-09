@@ -8,7 +8,7 @@
 
 <center
   style="color: {Palette().fgPrimary()}; background-color: {Palette().bgPrimary()};"
-  class="h-full min-h-screen box-border"
+  class="h-full min-h-screen box-border transition-all duration-700"
 >
   {@render children()}
 </center>
