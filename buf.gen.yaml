@@ -7,5 +7,8 @@ plugins:
   - remote: buf.build/protocolbuffers/go:v1.34.2 # protoc-gen-go
     out: pkg/api
     opt: paths=source_relative
+  - remote: buf.build/bufbuild/es:v2.2.5
+    out: web/sisyphos/src/lib/types
+    opt: target=ts
 inputs:
   - directory: api

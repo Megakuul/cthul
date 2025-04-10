@@ -17,21 +17,63 @@
   /** @type {"rune" | "wave" | "granit" | "proton" | undefined} */
   let selected = $state(undefined);
 
+  /** @typedef service
+   * @property {string} title
+   * @property {string} desc
+   * @property {string} route
+   */
+
+  /** @type {service[] | undefined} */
+  let services = $state(undefined);
+
   $effect(() => {
     switch (selected) {
       case "rune":
         SetPalette(NewRunePalette());
+        services = [];
         break;
       case "wave":
         SetPalette(NewWavePalette());
+        services = [
+          {
+            title: "Domain",
+            desc: "Manage virtual machines",
+            route: "/wave/domain",
+          },
+          {
+            title: "Serial",
+            desc: "Configure serial devices",
+            route: "/wave/serial",
+          },
+          {
+            title: "Video",
+            desc: "Adjust video devices",
+            route: "/wave/video",
+          },
+        ];
         break;
       case "granit":
         SetPalette(NewGranitPalette());
+        services = [
+          {
+            title: "Disk",
+            desc: "Manage replicated disks",
+            route: "/granit/disk",
+          },
+        ];
         break;
       case "proton":
         SetPalette(NewProtonPalette());
+        services = [
+          {
+            title: "Inter",
+            desc: "Manage network interfaces",
+            route: "/proton/inter",
+          },
+        ];
         break;
       default:
+        services = undefined;
         SetPalette(NewDefaultPalette());
     }
   });
@@ -45,7 +87,7 @@
   }
 </script>
 
-<div class="flex flex-row justify-around">
+<div class="flex flex-row justify-around p-4">
   <button
     id="rune"
     class:selected={selected === "rune"}
@@ -76,19 +118,23 @@
   </button>
 </div>
 
-<div class="m-4 grid grid-cols-3">
-  <div></div>
-</div>
-<a href="/domain">domain</a>
-<p>
-  Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the
-  documentation
-</p>
+{#if services}
+  <div class="grid grid-cols-3 gap-2 p-10">
+    {#each services as service}
+      <a href="{service.route}" class="w-64 rounded-2xl border-2">
+        <h1>{service.title}</h1>
+        <p>{service.desc}</p>
+      </a>  
+    {/each}
+  </div>
+{:else}
+  <div>Here is some general content</div>
+{/if}
 
 <style>
   #rune {
     cursor: pointer;
-    transition: all ease .25s;
+    transition: all ease 0.25s;
   }
 
   #rune:hover,
@@ -97,29 +143,32 @@
   }
 
   #wave {
-    transition: all ease .25s;
+    cursor: pointer;
+    transition: all ease 0.25s;
   }
 
   #wave:hover,
   #wave.selected {
-    filter: drop-shadow(6px 6px 10px  #0D65A4);
+    filter: drop-shadow(6px 6px 10px #0d65a4);
   }
 
   #granit {
-    transition: all ease .25s;
+    cursor: pointer;
+    transition: all ease 0.25s;
   }
 
   #granit:hover,
   #granit.selected {
-    filter: drop-shadow(6px 6px 10px  #042F0B);
+    filter: drop-shadow(6px 6px 10px #042f0b);
   }
 
   #proton {
-    transition: all ease .25s;
+    cursor: pointer;
+    transition: all ease 0.25s;
   }
 
   #proton:hover,
   #proton.selected {
-    filter: drop-shadow(6px 6px 10px #57056C);
+    filter: drop-shadow(6px 6px 10px #57056c);
   }
 </style>
