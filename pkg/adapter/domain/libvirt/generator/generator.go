@@ -20,8 +20,8 @@
 package generator
 
 import (
-	granitdevice "cthul.io/cthul/pkg/granit/device"
-	protondevice "cthul.io/cthul/pkg/proton/device"
+	"cthul.io/cthul/pkg/granit/disk"
+	"cthul.io/cthul/pkg/proton/inter"
 	"cthul.io/cthul/pkg/wave/serial"
 	"cthul.io/cthul/pkg/wave/video"
 )
@@ -35,8 +35,8 @@ type Generator struct {
 
 	video *video.Controller
   serial *serial.Controller
-	granit *granitdevice.DeviceController
-	proton *protondevice.DeviceController
+	disk *disk.Controller
+	inter *inter.Controller
 
   waveRoot string
   granitRoot string
@@ -47,18 +47,18 @@ type Option func(*Generator)
 
 func New(
   nodeId string,
-	videoDevice *video.Controller,
-	serialDevice *serial.Controller,
-	granitDevice *granitdevice.DeviceController,
-	protonDevice *protondevice.DeviceController,
+	videoController *video.Controller,
+	serialController *serial.Controller,
+	diskController *disk.Controller,
+	interController *inter.Controller,
 	opts ...Option) *Generator {
 
 	generator := &Generator{
     nodeId: nodeId,
-		video: videoDevice,
-    serial: serialDevice,
-		granit: granitDevice,
-		proton: protonDevice,
+		video: videoController,
+    serial: serialController,
+    disk: diskController,
+    inter: interController,
     waveRoot: "/run/cthul/wave",
     granitRoot: "/run/cthul/granit/",
     protonRoot: "/run/cthul/proton/",

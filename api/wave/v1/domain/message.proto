@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package wave.v1.domain;
+
+option go_package = "cthul.io/cthul/pkg/api/wave/v1/domain";
+
+import "wave/v1/domain/config.proto";
+import "wave/v1/domain/stat.proto";
+
+
+message Domain {
+  string reqnode = 1;
+  string node = 2;
+  DomainConfig config = 3; // core prop
+  string error = 8;
+}
+
+message GetRequest {
+  string id = 1;
+}
+
+message GetResponse {
+  Domain domain = 1;
+}
+
+message StatRequest {
+  string id = 1; 
+}
+
+message StatResponse {
+  DomainStats stats = 1;
+}
+
+message ListRequest {
+}
+
+message ListResponse {
+  repeated Domain domains = 1;
+}
+
+message CreateRequest {
+  DomainConfig config = 1;
+}
+
+message CreateResponse {
+
+}
+
+message UpdateRequest {
+  DomainConfig config = 1;
+}
+
+message UpdateResponse {
+  
+}
+
+message AttachRequest {
+  string id = 1;
+  string node = 2;
+}
+
+message AttachResponse {
+
+}
+
+message DetachRequest {
+  string id = 1; 
+}
+
+message DetachResponse {
+
+}
+
+message DeleteRequest {
+  string id = 1;
+}
+
+message DeleteResponse {
+
+}

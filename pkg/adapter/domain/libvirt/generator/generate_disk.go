@@ -47,7 +47,7 @@ func (g *Generator) generateDisk(ctx context.Context, device *cthulstruct.Storag
 		Boot: &libvirtstruct.Boot{MetaOrder: device.BootPriority},
 	}
 
-	storageDevice, err := g.granit.Lookup(ctx, device.DeviceId)
+	storageDevice, err := g.disk.Lookup(ctx, device.DeviceId)
 	if err!=nil {
 		return nil, err
 	}

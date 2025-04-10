@@ -43,13 +43,17 @@ func (g *Generator) Attach(ctx context.Context, config *cthulstruct.Domain) erro
 	}
 	
 	for _, device := range config.StorageDevices {
-		// PoC: l.granit.AttachStorage(device.DeviceId)
-		_ = device
+    err := g.disk.Attach(ctx, device.DeviceId, g.nodeId, true)
+    if err!=nil {
+      return err
+    }
 	}
 
 	for _, device := range config.NetworkDevices {
-		// PoC: l.proton.AttachInterface(device.DeviceId)
-		_ = device
+    err := g.inter.Attach(ctx, device.DeviceId, g.nodeId, true)
+    if err!=nil {
+      return err
+    }
 	}
 	
 	return fmt.Errorf("not implemented biatch")

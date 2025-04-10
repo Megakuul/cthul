@@ -20,10 +20,12 @@
 package generator
 
 import (
+	"context"
 	"fmt"
-	
+
 	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
 	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
+	interstruct "cthul.io/cthul/pkg/proton/inter/structure"
 )
 
 // Explanation: A libvirt interface device is a network adapter for the guest os. It intercepts MMIO calls
@@ -32,14 +34,14 @@ import (
 // The VIRTIO bus on the other hand uses virtqueues to transfer data.
 
 // generateInterface generates a libvirt network interface device from the cthul network device.
-func (l *Generator) generateInterface(device *cthulstruct.NetworkDevice) (*libvirtstruct.Interface, error) {
+func (g *Generator) generateInterface(ctx context.Context, device *cthulstruct.NetworkDevice) (*libvirtstruct.Interface, error) {
 	inter := &libvirtstruct.Interface{
 		Model: &libvirtstruct.InterfaceModel{},
 		Source: &libvirtstruct.InterfaceSource{},
 		Boot: &libvirtstruct.Boot{MetaOrder: device.BootPriority},
 	}
 
-	interDevice, err := l.proton.LookupInterface(device.DeviceId)
+	interDevice, err := g.inter.Lookup(ctx, device.DeviceId)
 	if err!=nil {
 		return nil, err
 	}
@@ -54,9 +56,9 @@ func (l *Generator) generateInterface(device *cthulstruct.NetworkDevice) (*libvi
 	}
 
 	switch interDevice.Type {
-	case proton.INTERFACE_BRIDGE:
+	case interstruct.INTER_BRIDGE:
 		inter.MetaType = libvirtstruct.INTERFACE_BRIDGE
-		inter.Source.MetaBridge = interDevice.Path
+		inter.Source.MetaBridge = interDevice.Device
 	default:
 		return nil, fmt.Errorf("unsupported interface type: %s", interDevice.Type)
 	}

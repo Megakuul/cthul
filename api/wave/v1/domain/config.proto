@@ -1,0 +1,156 @@
+syntax = "proto3";
+
+package wave.v1.domain;
+
+option go_package = "cthul.io/cthul/pkg/api/wave/v1/domain";
+
+enum DomainState {
+  DOMAIN_STATE_UNSPECIFIED = 0;
+  DOMAIN_STATE_UP = 1;
+  DOMAIN_STATE_PAUSE = 2;
+  DOMAIN_STATE_DOWN = 3;
+  DOMAIN_STATE_FORCED_DOWN = 4;
+}
+
+enum ArchOption {
+  ARCH_OPTION_UNSPECIFIED = 0;
+  ARCH_OPTION_AMD64 = 1;
+  ARCH_OPTION_AARCH64 = 2;
+}
+
+enum ChipsetOption {
+  CHIPSET_OPTION_UNSPECIFIED = 0;
+  CHIPSET_OPTION_I440FX = 1;
+  CHIPSET_OPTION_Q35 = 2;
+  CHIPSET_OPTION_VIRT = 3;
+}
+
+enum FirmwareOption {
+  FIRMWARE_OPTION_UNSPECIFIED = 0;
+  FIRMWARE_OPTION_OVMF = 1;
+  FIRMWARE_OPTION_SEABIOS = 2;
+}
+
+enum VideoOption {
+  VIDEO_OPTION_UNSPECIFIED = 0;
+  VIDEO_OPTION_VGA = 1;
+  VIDEO_OPTION_QXL = 2;
+  VIDEO_OPTION_HOST = 3;
+  VIDEO_OPTION_NONE = 4;
+}
+
+enum SerialBus {
+  SERIAL_BUS_UNSPECIFIED = 0;
+  SERIAL_BUS_ISA = 1;
+  SERIAL_BUS_VIRTIO = 2;
+}
+
+enum InputType {
+  INPUT_TYPE_UNSPECIFIED = 0;
+  INPUT_TYPE_MOUSE = 1;
+  INPUT_TYPE_TABLET = 2;
+  INPUT_TYPE_KEYBOARD = 3;
+}
+
+enum InputBus {
+  INPUT_BUS_UNSPECIFIED = 0;
+  INPUT_BUS_PS2 = 1;
+  INPUT_BUS_USB = 2;
+  INPUT_BUS_VIRTIO = 3;
+}
+
+enum StorageType {
+  STORAGE_TYPE_UNSPECIFIED = 0;
+  STORAGE_TYPE_CDROM = 1;
+  STORAGE_TYPE_DISK = 2;
+}
+
+enum StorageBus {
+  STORAGE_BUS_UNSPECIFIED = 0;
+  STORAGE_BUS_IDE = 1;
+  STORAGE_BUS_SATA = 2;
+  STORAGE_BUS_VIRTIO = 3;
+}
+
+enum NetworkBus {
+  NETWORK_BUS_UNSPECIFIED = 0;
+  NETWORK_BUS_E1000 = 1;
+  NETWORK_BUS_VIRTIO = 2;
+}
+
+
+message SystemConfig {
+  ArchOption architecture = 1;
+  ChipsetOption chipset = 2;
+}
+
+message FirmwareConfig {
+  FirmwareOption firmware = 1;
+  bool secure_boot = 2;
+  string loader_device_id = 3;
+  string tmpl_device_id = 4;
+  string nvram_device_id = 5;
+}
+
+message ResourceConfig {
+  int64 vcpus = 1;
+  int64 memory = 2;
+}
+
+message VideoDevice {
+  VideoOption video_option = 1;
+  int64 commandbuffer_size = 2;
+  int64 videobuffer_size = 3;
+  int64 framebuffer_size = 4;
+}
+
+message VideoAdapter {
+	string device_id = 1;
+}
+
+message SerialDevice {
+  string device_id = 1;
+  SerialBus serial_bus = 2;
+  int64 port = 3;
+}
+
+message InputDevice {
+  InputType input_type = 1;
+  InputBus input_bus = 2;
+}
+
+message StorageDevice {
+  string device_id = 1;
+  StorageType storage_type = 2;
+  StorageBus storage_bus = 3;
+  int64 boot_priority = 4;
+}
+
+message NetworkDevice {
+  string device_id = 1;
+  NetworkBus network_bus = 2;
+  int64 boot_priority = 3;
+}
+
+// DomainConfig represents a cthul domain. This format is used by the underlying domain controller
+// to build up the vendor specific config (e.g. libvirt xml).
+message DomainConfig {
+  string name = 1;
+  string title = 2;
+  string description = 3;
+
+  DomainState state = 4;
+  repeated string affinity = 5;
+
+  SystemConfig system_config = 6;
+  FirmwareConfig firmware_config = 7;
+  ResourceConfig resource_config = 8;
+
+  repeated VideoDevice video_devices = 9;
+  repeated VideoAdapter video_adapters = 10;
+  repeated InputDevice input_devices = 11;
+  repeated SerialDevice serial_devices = 12;
+  repeated StorageDevice storage_devices = 13;
+  repeated NetworkDevice network_devices = 14;
+}
+

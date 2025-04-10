@@ -27,11 +27,11 @@ import (
 	"strings"
 
 	"cthul.io/cthul/pkg/adapter/domain"
-	adapterstruct "cthul.io/cthul/pkg/adapter/domain/structure"
+	domainstruct "cthul.io/cthul/pkg/api/wave/v1/domain"
 	"cthul.io/cthul/pkg/db"
-	"cthul.io/cthul/pkg/wave/domain/structure"
 	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/proto"
 )
 
 // NodeMismatchErr indicates that the action cannot be executed on this node.
@@ -87,8 +87,8 @@ type resources struct {
 }
 
 // List returns a map containing domain ids and associated metadata from the database.
-func (c *Controller) List(ctx context.Context) (map[string]structure.Domain, error) {
-	domains := map[string]structure.Domain{}
+func (c *Controller) List(ctx context.Context) (map[string]domainstruct.Domain, error) {
+	domains := map[string]domainstruct.Domain{}
 
 	reqnodes, err := c.client.GetRange(ctx, "/WAVE/DOMAIN/REQNODE/")
 	if err != nil {
@@ -241,7 +241,7 @@ func (c *Controller) Stat(ctx context.Context, id string) (*adapterstruct.Domain
 }
 
 // Lookup searches for the domain by id and returns its configuration.
-func (c *Controller) Lookup(ctx context.Context, id string) (*structure.Domain, error) {
+func (c *Controller) Lookup(ctx context.Context, id string) (*domainstruct.Domain, error) {
 	reqnode, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/DOMAIN/REQNODE/%s", id))
 	if err != nil {
 		return nil, fmt.Errorf("fetching domain reqnode: %w", err)
@@ -267,8 +267,8 @@ func (c *Controller) Lookup(ctx context.Context, id string) (*structure.Domain, 
 		return nil, fmt.Errorf("fetching domain resources: %w", err)
 	}
 
-	config := &adapterstruct.Domain{}
-	err = json.Unmarshal([]byte(domConfig), config)
+	config := &domainstruct.DomainConfig{}
+	err = proto.Unmarshal([]byte(domConfig), config)
 	if err != nil {
 		return nil, fmt.Errorf("parsing node config: %w", err)
 	}
@@ -285,14 +285,11 @@ func (c *Controller) Lookup(ctx context.Context, id string) (*structure.Domain, 
 		return nil, fmt.Errorf("parsing domain resources: %w", err)
 	}
 
-	return &structure.Domain{
+	return &domainstruct.Domain{
 		Reqnode:         reqnode,
 		Node:            node,
 		Config:          config,
-		Affinity:        *affinity,
-		State:           structure.DOMAIN_STATE(state),
-		AllocatedCPU:    resources.AllocatedCpu,
-		AllocatedMemory: resources.AllocatedMemory,
+    Error: "",
 	}, nil
 }
 
