@@ -26,7 +26,7 @@ import (
 
 	"github.com/digitalocean/go-libvirt"
 	"cthul.io/cthul/pkg/adapter/domain/libvirt/hotplug"
-	"cthul.io/cthul/pkg/adapter/domain/structure"
+	"cthul.io/cthul/pkg/api/wave/v1/domain"
 )
 
 // List fetches the uuid & name of all domains located on this node.
@@ -53,18 +53,18 @@ func (l *Adapter) List(ctx context.Context) (map[string]string, error) {
 }
 
 // Apply applies the provided domain configuration to the host.
-func (l *Adapter) Apply(ctx context.Context, id string, domainCfg structure.Domain) error {
+func (l *Adapter) Apply(ctx context.Context, id string, domainCfg *domain.DomainConfig) error {
 	err := l.initClient()
 	if err!=nil {
 		return err
 	}
 
-	err = l.generator.Attach(ctx, &domainCfg)
+	err = l.generator.Attach(ctx, domainCfg)
 	if err!=nil {
 		return err
 	}
 
-	domain, err := l.generator.Generate(id, &domainCfg)
+	domain, err := l.generator.Generate(id, domainCfg)
 	if err!=nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (l *Adapter) Apply(ctx context.Context, id string, domainCfg structure.Doma
 }
 
 // Destroy removes (undefines) the domain from the host. Domain must be in shutdown state for this action.
-func (l *Adapter) Destroy(ctx context.Context, id string, domainCfg structure.Domain) error {
+func (l *Adapter) Destroy(ctx context.Context, id string, domainCfg *domain.DomainConfig) error {
 	err := l.initClient()
 	if err!=nil {
 		return err

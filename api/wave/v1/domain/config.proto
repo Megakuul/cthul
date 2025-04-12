@@ -12,31 +12,31 @@ enum DomainState {
   DOMAIN_STATE_FORCED_DOWN = 4;
 }
 
-enum ArchOption {
-  ARCH_OPTION_UNSPECIFIED = 0;
-  ARCH_OPTION_AMD64 = 1;
-  ARCH_OPTION_AARCH64 = 2;
+enum Arch {
+  ARCH_UNSPECIFIED = 0;
+  ARCH_AMD64 = 1;
+  ARCH_AARCH64 = 2;
 }
 
-enum ChipsetOption {
-  CHIPSET_OPTION_UNSPECIFIED = 0;
-  CHIPSET_OPTION_I440FX = 1;
-  CHIPSET_OPTION_Q35 = 2;
-  CHIPSET_OPTION_VIRT = 3;
+enum Chipset {
+  CHIPSET_UNSPECIFIED = 0;
+  CHIPSET_I440FX = 1;
+  CHIPSET_Q35 = 2;
+  CHIPSET_VIRT = 3;
 }
 
-enum FirmwareOption {
-  FIRMWARE_OPTION_UNSPECIFIED = 0;
-  FIRMWARE_OPTION_OVMF = 1;
-  FIRMWARE_OPTION_SEABIOS = 2;
+enum Firmware {
+  FIRMWARE_UNSPECIFIED = 0;
+  FIRMWARE_OVMF = 1;
+  FIRMWARE_SEABIOS = 2;
 }
 
-enum VideoOption {
-  VIDEO_OPTION_UNSPECIFIED = 0;
-  VIDEO_OPTION_VGA = 1;
-  VIDEO_OPTION_QXL = 2;
-  VIDEO_OPTION_HOST = 3;
-  VIDEO_OPTION_NONE = 4;
+enum Video {
+  VIDEO_UNSPECIFIED = 0;
+  VIDEO_VGA = 1;
+  VIDEO_QXL = 2;
+  VIDEO_HOST = 3;
+  VIDEO_NONE = 4;
 }
 
 enum SerialBus {
@@ -80,12 +80,12 @@ enum NetworkBus {
 
 
 message SystemConfig {
-  ArchOption architecture = 1;
-  ChipsetOption chipset = 2;
+  Arch architecture = 1;
+  Chipset chipset = 2;
 }
 
 message FirmwareConfig {
-  FirmwareOption firmware = 1;
+  Firmware firmware = 1;
   bool secure_boot = 2;
   string loader_device_id = 3;
   string tmpl_device_id = 4;
@@ -98,7 +98,7 @@ message ResourceConfig {
 }
 
 message VideoDevice {
-  VideoOption video_option = 1;
+  Video video_ = 1;
   int64 commandbuffer_size = 2;
   int64 videobuffer_size = 3;
   int64 framebuffer_size = 4;

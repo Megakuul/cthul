@@ -10,21 +10,21 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file wave/v1/domain/config.proto.
  */
 export const file_wave_v1_domain_config: GenFile = /*@__PURE__*/
-  fileDesc("Cht3YXZlL3YxL2RvbWFpbi9jb25maWcucHJvdG8SDndhdmUudjEuZG9tYWluInAKDFN5c3RlbUNvbmZpZxIwCgxhcmNoaXRlY3R1cmUYASABKA4yGi53YXZlLnYxLmRvbWFpbi5BcmNoT3B0aW9uEi4KB2NoaXBzZXQYAiABKA4yHS53YXZlLnYxLmRvbWFpbi5DaGlwc2V0T3B0aW9uIqIBCg5GaXJtd2FyZUNvbmZpZxIwCghmaXJtd2FyZRgBIAEoDjIeLndhdmUudjEuZG9tYWluLkZpcm13YXJlT3B0aW9uEhMKC3NlY3VyZV9ib290GAIgASgIEhgKEGxvYWRlcl9kZXZpY2VfaWQYAyABKAkSFgoOdG1wbF9kZXZpY2VfaWQYBCABKAkSFwoPbnZyYW1fZGV2aWNlX2lkGAUgASgJIi8KDlJlc291cmNlQ29uZmlnEg0KBXZjcHVzGAEgASgDEg4KBm1lbW9yeRgCIAEoAyKQAQoLVmlkZW9EZXZpY2USMQoMdmlkZW9fb3B0aW9uGAEgASgOMhsud2F2ZS52MS5kb21haW4uVmlkZW9PcHRpb24SGgoSY29tbWFuZGJ1ZmZlcl9zaXplGAIgASgDEhgKEHZpZGVvYnVmZmVyX3NpemUYAyABKAMSGAoQZnJhbWVidWZmZXJfc2l6ZRgEIAEoAyIhCgxWaWRlb0FkYXB0ZXISEQoJZGV2aWNlX2lkGAEgASgJIl4KDFNlcmlhbERldmljZRIRCglkZXZpY2VfaWQYASABKAkSLQoKc2VyaWFsX2J1cxgCIAEoDjIZLndhdmUudjEuZG9tYWluLlNlcmlhbEJ1cxIMCgRwb3J0GAMgASgDImkKC0lucHV0RGV2aWNlEi0KCmlucHV0X3R5cGUYASABKA4yGS53YXZlLnYxLmRvbWFpbi5JbnB1dFR5cGUSKwoJaW5wdXRfYnVzGAIgASgOMhgud2F2ZS52MS5kb21haW4uSW5wdXRCdXMinQEKDVN0b3JhZ2VEZXZpY2USEQoJZGV2aWNlX2lkGAEgASgJEjEKDHN0b3JhZ2VfdHlwZRgCIAEoDjIbLndhdmUudjEuZG9tYWluLlN0b3JhZ2VUeXBlEi8KC3N0b3JhZ2VfYnVzGAMgASgOMhoud2F2ZS52MS5kb21haW4uU3RvcmFnZUJ1cxIVCg1ib290X3ByaW9yaXR5GAQgASgDImoKDU5ldHdvcmtEZXZpY2USEQoJZGV2aWNlX2lkGAEgASgJEi8KC25ldHdvcmtfYnVzGAIgASgOMhoud2F2ZS52MS5kb21haW4uTmV0d29ya0J1cxIVCg1ib290X3ByaW9yaXR5GAMgASgDIukECgxEb21haW5Db25maWcSDAoEbmFtZRgBIAEoCRINCgV0aXRsZRgCIAEoCRITCgtkZXNjcmlwdGlvbhgDIAEoCRIqCgVzdGF0ZRgEIAEoDjIbLndhdmUudjEuZG9tYWluLkRvbWFpblN0YXRlEhAKCGFmZmluaXR5GAUgAygJEjMKDXN5c3RlbV9jb25maWcYBiABKAsyHC53YXZlLnYxLmRvbWFpbi5TeXN0ZW1Db25maWcSNwoPZmlybXdhcmVfY29uZmlnGAcgASgLMh4ud2F2ZS52MS5kb21haW4uRmlybXdhcmVDb25maWcSNwoPcmVzb3VyY2VfY29uZmlnGAggASgLMh4ud2F2ZS52MS5kb21haW4uUmVzb3VyY2VDb25maWcSMgoNdmlkZW9fZGV2aWNlcxgJIAMoCzIbLndhdmUudjEuZG9tYWluLlZpZGVvRGV2aWNlEjQKDnZpZGVvX2FkYXB0ZXJzGAogAygLMhwud2F2ZS52MS5kb21haW4uVmlkZW9BZGFwdGVyEjIKDWlucHV0X2RldmljZXMYCyADKAsyGy53YXZlLnYxLmRvbWFpbi5JbnB1dERldmljZRI0Cg5zZXJpYWxfZGV2aWNlcxgMIAMoCzIcLndhdmUudjEuZG9tYWluLlNlcmlhbERldmljZRI2Cg9zdG9yYWdlX2RldmljZXMYDSADKAsyHS53YXZlLnYxLmRvbWFpbi5TdG9yYWdlRGV2aWNlEjYKD25ldHdvcmtfZGV2aWNlcxgOIAMoCzIdLndhdmUudjEuZG9tYWluLk5ldHdvcmtEZXZpY2UqjQEKC0RvbWFpblN0YXRlEhwKGERPTUFJTl9TVEFURV9VTlNQRUNJRklFRBAAEhMKD0RPTUFJTl9TVEFURV9VUBABEhYKEkRPTUFJTl9TVEFURV9QQVVTRRACEhUKEURPTUFJTl9TVEFURV9ET1dOEAMSHAoYRE9NQUlOX1NUQVRFX0ZPUkNFRF9ET1dOEAQqWQoKQXJjaE9wdGlvbhIbChdBUkNIX09QVElPTl9VTlNQRUNJRklFRBAAEhUKEUFSQ0hfT1BUSU9OX0FNRDY0EAESFwoTQVJDSF9PUFRJT05fQUFSQ0g2NBACKnsKDUNoaXBzZXRPcHRpb24SHgoaQ0hJUFNFVF9PUFRJT05fVU5TUEVDSUZJRUQQABIZChVDSElQU0VUX09QVElPTl9JNDQwRlgQARIWChJDSElQU0VUX09QVElPTl9RMzUQAhIXChNDSElQU0VUX09QVElPTl9WSVJUEAMqaAoORmlybXdhcmVPcHRpb24SHwobRklSTVdBUkVfT1BUSU9OX1VOU1BFQ0lGSUVEEAASGAoURklSTVdBUkVfT1BUSU9OX09WTUYQARIbChdGSVJNV0FSRV9PUFRJT05fU0VBQklPUxACKoUBCgtWaWRlb09wdGlvbhIcChhWSURFT19PUFRJT05fVU5TUEVDSUZJRUQQABIUChBWSURFT19PUFRJT05fVkdBEAESFAoQVklERU9fT1BUSU9OX1FYTBACEhUKEVZJREVPX09QVElPTl9IT1NUEAMSFQoRVklERU9fT1BUSU9OX05PTkUQBCpSCglTZXJpYWxCdXMSGgoWU0VSSUFMX0JVU19VTlNQRUNJRklFRBAAEhIKDlNFUklBTF9CVVNfSVNBEAESFQoRU0VSSUFMX0JVU19WSVJUSU8QAiptCglJbnB1dFR5cGUSGgoWSU5QVVRfVFlQRV9VTlNQRUNJRklFRBAAEhQKEElOUFVUX1RZUEVfTU9VU0UQARIVChFJTlBVVF9UWVBFX1RBQkxFVBACEhcKE0lOUFVUX1RZUEVfS0VZQk9BUkQQAyphCghJbnB1dEJ1cxIZChVJTlBVVF9CVVNfVU5TUEVDSUZJRUQQABIRCg1JTlBVVF9CVVNfUFMyEAESEQoNSU5QVVRfQlVTX1VTQhACEhQKEElOUFVUX0JVU19WSVJUSU8QAypaCgtTdG9yYWdlVHlwZRIcChhTVE9SQUdFX1RZUEVfVU5TUEVDSUZJRUQQABIWChJTVE9SQUdFX1RZUEVfQ0RST00QARIVChFTVE9SQUdFX1RZUEVfRElTSxACKmwKClN0b3JhZ2VCdXMSGwoXU1RPUkFHRV9CVVNfVU5TUEVDSUZJRUQQABITCg9TVE9SQUdFX0JVU19JREUQARIUChBTVE9SQUdFX0JVU19TQVRBEAISFgoSU1RPUkFHRV9CVVNfVklSVElPEAMqWAoKTmV0d29ya0J1cxIbChdORVRXT1JLX0JVU19VTlNQRUNJRklFRBAAEhUKEU5FVFdPUktfQlVTX0UxMDAwEAESFgoSTkVUV09SS19CVVNfVklSVElPEAJCJ1olY3RodWwuaW8vY3RodWwvcGtnL2FwaS93YXZlL3YxL2RvbWFpbmIGcHJvdG8z");
+  fileDesc("Cht3YXZlL3YxL2RvbWFpbi9jb25maWcucHJvdG8SDndhdmUudjEuZG9tYWluImQKDFN5c3RlbUNvbmZpZxIqCgxhcmNoaXRlY3R1cmUYASABKA4yFC53YXZlLnYxLmRvbWFpbi5BcmNoEigKB2NoaXBzZXQYAiABKA4yFy53YXZlLnYxLmRvbWFpbi5DaGlwc2V0IpwBCg5GaXJtd2FyZUNvbmZpZxIqCghmaXJtd2FyZRgBIAEoDjIYLndhdmUudjEuZG9tYWluLkZpcm13YXJlEhMKC3NlY3VyZV9ib290GAIgASgIEhgKEGxvYWRlcl9kZXZpY2VfaWQYAyABKAkSFgoOdG1wbF9kZXZpY2VfaWQYBCABKAkSFwoPbnZyYW1fZGV2aWNlX2lkGAUgASgJIi8KDlJlc291cmNlQ29uZmlnEg0KBXZjcHVzGAEgASgDEg4KBm1lbW9yeRgCIAEoAyKEAQoLVmlkZW9EZXZpY2USJQoGdmlkZW9fGAEgASgOMhUud2F2ZS52MS5kb21haW4uVmlkZW8SGgoSY29tbWFuZGJ1ZmZlcl9zaXplGAIgASgDEhgKEHZpZGVvYnVmZmVyX3NpemUYAyABKAMSGAoQZnJhbWVidWZmZXJfc2l6ZRgEIAEoAyIhCgxWaWRlb0FkYXB0ZXISEQoJZGV2aWNlX2lkGAEgASgJIl4KDFNlcmlhbERldmljZRIRCglkZXZpY2VfaWQYASABKAkSLQoKc2VyaWFsX2J1cxgCIAEoDjIZLndhdmUudjEuZG9tYWluLlNlcmlhbEJ1cxIMCgRwb3J0GAMgASgDImkKC0lucHV0RGV2aWNlEi0KCmlucHV0X3R5cGUYASABKA4yGS53YXZlLnYxLmRvbWFpbi5JbnB1dFR5cGUSKwoJaW5wdXRfYnVzGAIgASgOMhgud2F2ZS52MS5kb21haW4uSW5wdXRCdXMinQEKDVN0b3JhZ2VEZXZpY2USEQoJZGV2aWNlX2lkGAEgASgJEjEKDHN0b3JhZ2VfdHlwZRgCIAEoDjIbLndhdmUudjEuZG9tYWluLlN0b3JhZ2VUeXBlEi8KC3N0b3JhZ2VfYnVzGAMgASgOMhoud2F2ZS52MS5kb21haW4uU3RvcmFnZUJ1cxIVCg1ib290X3ByaW9yaXR5GAQgASgDImoKDU5ldHdvcmtEZXZpY2USEQoJZGV2aWNlX2lkGAEgASgJEi8KC25ldHdvcmtfYnVzGAIgASgOMhoud2F2ZS52MS5kb21haW4uTmV0d29ya0J1cxIVCg1ib290X3ByaW9yaXR5GAMgASgDIukECgxEb21haW5Db25maWcSDAoEbmFtZRgBIAEoCRINCgV0aXRsZRgCIAEoCRITCgtkZXNjcmlwdGlvbhgDIAEoCRIqCgVzdGF0ZRgEIAEoDjIbLndhdmUudjEuZG9tYWluLkRvbWFpblN0YXRlEhAKCGFmZmluaXR5GAUgAygJEjMKDXN5c3RlbV9jb25maWcYBiABKAsyHC53YXZlLnYxLmRvbWFpbi5TeXN0ZW1Db25maWcSNwoPZmlybXdhcmVfY29uZmlnGAcgASgLMh4ud2F2ZS52MS5kb21haW4uRmlybXdhcmVDb25maWcSNwoPcmVzb3VyY2VfY29uZmlnGAggASgLMh4ud2F2ZS52MS5kb21haW4uUmVzb3VyY2VDb25maWcSMgoNdmlkZW9fZGV2aWNlcxgJIAMoCzIbLndhdmUudjEuZG9tYWluLlZpZGVvRGV2aWNlEjQKDnZpZGVvX2FkYXB0ZXJzGAogAygLMhwud2F2ZS52MS5kb21haW4uVmlkZW9BZGFwdGVyEjIKDWlucHV0X2RldmljZXMYCyADKAsyGy53YXZlLnYxLmRvbWFpbi5JbnB1dERldmljZRI0Cg5zZXJpYWxfZGV2aWNlcxgMIAMoCzIcLndhdmUudjEuZG9tYWluLlNlcmlhbERldmljZRI2Cg9zdG9yYWdlX2RldmljZXMYDSADKAsyHS53YXZlLnYxLmRvbWFpbi5TdG9yYWdlRGV2aWNlEjYKD25ldHdvcmtfZGV2aWNlcxgOIAMoCzIdLndhdmUudjEuZG9tYWluLk5ldHdvcmtEZXZpY2UqjQEKC0RvbWFpblN0YXRlEhwKGERPTUFJTl9TVEFURV9VTlNQRUNJRklFRBAAEhMKD0RPTUFJTl9TVEFURV9VUBABEhYKEkRPTUFJTl9TVEFURV9QQVVTRRACEhUKEURPTUFJTl9TVEFURV9ET1dOEAMSHAoYRE9NQUlOX1NUQVRFX0ZPUkNFRF9ET1dOEAQqPgoEQXJjaBIUChBBUkNIX1VOU1BFQ0lGSUVEEAASDgoKQVJDSF9BTUQ2NBABEhAKDEFSQ0hfQUFSQ0g2NBACKlkKB0NoaXBzZXQSFwoTQ0hJUFNFVF9VTlNQRUNJRklFRBAAEhIKDkNISVBTRVRfSTQ0MEZYEAESDwoLQ0hJUFNFVF9RMzUQAhIQCgxDSElQU0VUX1ZJUlQQAypNCghGaXJtd2FyZRIYChRGSVJNV0FSRV9VTlNQRUNJRklFRBAAEhEKDUZJUk1XQVJFX09WTUYQARIUChBGSVJNV0FSRV9TRUFCSU9TEAIqXAoFVmlkZW8SFQoRVklERU9fVU5TUEVDSUZJRUQQABINCglWSURFT19WR0EQARINCglWSURFT19RWEwQAhIOCgpWSURFT19IT1NUEAMSDgoKVklERU9fTk9ORRAEKlIKCVNlcmlhbEJ1cxIaChZTRVJJQUxfQlVTX1VOU1BFQ0lGSUVEEAASEgoOU0VSSUFMX0JVU19JU0EQARIVChFTRVJJQUxfQlVTX1ZJUlRJTxACKm0KCUlucHV0VHlwZRIaChZJTlBVVF9UWVBFX1VOU1BFQ0lGSUVEEAASFAoQSU5QVVRfVFlQRV9NT1VTRRABEhUKEUlOUFVUX1RZUEVfVEFCTEVUEAISFwoTSU5QVVRfVFlQRV9LRVlCT0FSRBADKmEKCElucHV0QnVzEhkKFUlOUFVUX0JVU19VTlNQRUNJRklFRBAAEhEKDUlOUFVUX0JVU19QUzIQARIRCg1JTlBVVF9CVVNfVVNCEAISFAoQSU5QVVRfQlVTX1ZJUlRJTxADKloKC1N0b3JhZ2VUeXBlEhwKGFNUT1JBR0VfVFlQRV9VTlNQRUNJRklFRBAAEhYKElNUT1JBR0VfVFlQRV9DRFJPTRABEhUKEVNUT1JBR0VfVFlQRV9ESVNLEAIqbAoKU3RvcmFnZUJ1cxIbChdTVE9SQUdFX0JVU19VTlNQRUNJRklFRBAAEhMKD1NUT1JBR0VfQlVTX0lERRABEhQKEFNUT1JBR0VfQlVTX1NBVEEQAhIWChJTVE9SQUdFX0JVU19WSVJUSU8QAypYCgpOZXR3b3JrQnVzEhsKF05FVFdPUktfQlVTX1VOU1BFQ0lGSUVEEAASFQoRTkVUV09SS19CVVNfRTEwMDAQARIWChJORVRXT1JLX0JVU19WSVJUSU8QAkInWiVjdGh1bC5pby9jdGh1bC9wa2cvYXBpL3dhdmUvdjEvZG9tYWluYgZwcm90bzM");
 
 /**
  * @generated from message wave.v1.domain.SystemConfig
  */
 export type SystemConfig = Message<"wave.v1.domain.SystemConfig"> & {
   /**
-   * @generated from field: wave.v1.domain.ArchOption architecture = 1;
+   * @generated from field: wave.v1.domain.Arch architecture = 1;
    */
-  architecture: ArchOption;
+  architecture: Arch;
 
   /**
-   * @generated from field: wave.v1.domain.ChipsetOption chipset = 2;
+   * @generated from field: wave.v1.domain.Chipset chipset = 2;
    */
-  chipset: ChipsetOption;
+  chipset: Chipset;
 };
 
 /**
@@ -39,9 +39,9 @@ export const SystemConfigSchema: GenMessage<SystemConfig> = /*@__PURE__*/
  */
 export type FirmwareConfig = Message<"wave.v1.domain.FirmwareConfig"> & {
   /**
-   * @generated from field: wave.v1.domain.FirmwareOption firmware = 1;
+   * @generated from field: wave.v1.domain.Firmware firmware = 1;
    */
-  firmware: FirmwareOption;
+  firmware: Firmware;
 
   /**
    * @generated from field: bool secure_boot = 2;
@@ -98,9 +98,9 @@ export const ResourceConfigSchema: GenMessage<ResourceConfig> = /*@__PURE__*/
  */
 export type VideoDevice = Message<"wave.v1.domain.VideoDevice"> & {
   /**
-   * @generated from field: wave.v1.domain.VideoOption video_option = 1;
+   * @generated from field: wave.v1.domain.Video video_ = 1;
    */
-  videoOption: VideoOption;
+  video: Video;
 
   /**
    * @generated from field: int64 commandbuffer_size = 2;
@@ -372,122 +372,122 @@ export const DomainStateSchema: GenEnum<DomainState> = /*@__PURE__*/
   enumDesc(file_wave_v1_domain_config, 0);
 
 /**
- * @generated from enum wave.v1.domain.ArchOption
+ * @generated from enum wave.v1.domain.Arch
  */
-export enum ArchOption {
+export enum Arch {
   /**
-   * @generated from enum value: ARCH_OPTION_UNSPECIFIED = 0;
+   * @generated from enum value: ARCH_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: ARCH_OPTION_AMD64 = 1;
+   * @generated from enum value: ARCH_AMD64 = 1;
    */
   AMD64 = 1,
 
   /**
-   * @generated from enum value: ARCH_OPTION_AARCH64 = 2;
+   * @generated from enum value: ARCH_AARCH64 = 2;
    */
   AARCH64 = 2,
 }
 
 /**
- * Describes the enum wave.v1.domain.ArchOption.
+ * Describes the enum wave.v1.domain.Arch.
  */
-export const ArchOptionSchema: GenEnum<ArchOption> = /*@__PURE__*/
+export const ArchSchema: GenEnum<Arch> = /*@__PURE__*/
   enumDesc(file_wave_v1_domain_config, 1);
 
 /**
- * @generated from enum wave.v1.domain.ChipsetOption
+ * @generated from enum wave.v1.domain.Chipset
  */
-export enum ChipsetOption {
+export enum Chipset {
   /**
-   * @generated from enum value: CHIPSET_OPTION_UNSPECIFIED = 0;
+   * @generated from enum value: CHIPSET_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: CHIPSET_OPTION_I440FX = 1;
+   * @generated from enum value: CHIPSET_I440FX = 1;
    */
   I440FX = 1,
 
   /**
-   * @generated from enum value: CHIPSET_OPTION_Q35 = 2;
+   * @generated from enum value: CHIPSET_Q35 = 2;
    */
   Q35 = 2,
 
   /**
-   * @generated from enum value: CHIPSET_OPTION_VIRT = 3;
+   * @generated from enum value: CHIPSET_VIRT = 3;
    */
   VIRT = 3,
 }
 
 /**
- * Describes the enum wave.v1.domain.ChipsetOption.
+ * Describes the enum wave.v1.domain.Chipset.
  */
-export const ChipsetOptionSchema: GenEnum<ChipsetOption> = /*@__PURE__*/
+export const ChipsetSchema: GenEnum<Chipset> = /*@__PURE__*/
   enumDesc(file_wave_v1_domain_config, 2);
 
 /**
- * @generated from enum wave.v1.domain.FirmwareOption
+ * @generated from enum wave.v1.domain.Firmware
  */
-export enum FirmwareOption {
+export enum Firmware {
   /**
-   * @generated from enum value: FIRMWARE_OPTION_UNSPECIFIED = 0;
+   * @generated from enum value: FIRMWARE_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: FIRMWARE_OPTION_OVMF = 1;
+   * @generated from enum value: FIRMWARE_OVMF = 1;
    */
   OVMF = 1,
 
   /**
-   * @generated from enum value: FIRMWARE_OPTION_SEABIOS = 2;
+   * @generated from enum value: FIRMWARE_SEABIOS = 2;
    */
   SEABIOS = 2,
 }
 
 /**
- * Describes the enum wave.v1.domain.FirmwareOption.
+ * Describes the enum wave.v1.domain.Firmware.
  */
-export const FirmwareOptionSchema: GenEnum<FirmwareOption> = /*@__PURE__*/
+export const FirmwareSchema: GenEnum<Firmware> = /*@__PURE__*/
   enumDesc(file_wave_v1_domain_config, 3);
 
 /**
- * @generated from enum wave.v1.domain.VideoOption
+ * @generated from enum wave.v1.domain.Video
  */
-export enum VideoOption {
+export enum Video {
   /**
-   * @generated from enum value: VIDEO_OPTION_UNSPECIFIED = 0;
+   * @generated from enum value: VIDEO_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: VIDEO_OPTION_VGA = 1;
+   * @generated from enum value: VIDEO_VGA = 1;
    */
   VGA = 1,
 
   /**
-   * @generated from enum value: VIDEO_OPTION_QXL = 2;
+   * @generated from enum value: VIDEO_QXL = 2;
    */
   QXL = 2,
 
   /**
-   * @generated from enum value: VIDEO_OPTION_HOST = 3;
+   * @generated from enum value: VIDEO_HOST = 3;
    */
   HOST = 3,
 
   /**
-   * @generated from enum value: VIDEO_OPTION_NONE = 4;
+   * @generated from enum value: VIDEO_NONE = 4;
    */
   NONE = 4,
 }
 
 /**
- * Describes the enum wave.v1.domain.VideoOption.
+ * Describes the enum wave.v1.domain.Video.
  */
-export const VideoOptionSchema: GenEnum<VideoOption> = /*@__PURE__*/
+export const VideoSchema: GenEnum<Video> = /*@__PURE__*/
   enumDesc(file_wave_v1_domain_config, 4);
 
 /**

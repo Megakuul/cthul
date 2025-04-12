@@ -26,7 +26,7 @@ import (
 	"strconv"
 	"time"
 
-	domstruct "cthul.io/cthul/pkg/wave/domain/structure"
+  "cthul.io/cthul/pkg/api/wave/v1/domain"
 	nodestruct "cthul.io/cthul/pkg/wave/node/structure"
 )
 
@@ -71,7 +71,6 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 			s.logger.Debug("scheduler possibly double contested; waiting for next cycle...")
 			continue
 		}
-		
 
 		domains, err := s.domainController.List(s.workCtx)
 		if err!=nil {
@@ -86,7 +85,7 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 		}
 		
 		for domainId, domain  := range domains {
-			if domain.Error != nil {
+			if domain.Error != "" {
 				s.logger.Warn(fmt.Sprintf(
 					"skipping scheduler analysis for '%s': domain information is malformed: %s", domainId, domain.Error,
 				))
@@ -131,8 +130,8 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 // findNode evaluates the optimal node to move the domain to. Returns the new target node id and its associated
 // node information. The assumed resource impact of the new domain is already factored in.
 func (s *Scheduler) findNode(
-	domain domstruct.Domain,
-	domains map[string]domstruct.Domain,
+	domain *domain.Domain,
+	domains map[string]*domain.Domain,
 	nodes map[string]nodestruct.Node,
 ) (string, *nodestruct.Node, error) {
 
@@ -144,7 +143,7 @@ func (s *Scheduler) findNode(
 		if node.State != nodestruct.NODE_HEALTHY {
 			continue
 		}
-		if !checkAffinity(domain.Affinity, node.Affinity) {
+		if !checkAffinity(domain.Config.Affinity, node.Affinity) {
 			continue
 		}
 		eligibleNodes[nodeId] = node
@@ -159,8 +158,8 @@ func (s *Scheduler) findNode(
 	const DOMAIN_CPU_USAGE_FACTOR_HEURISTIC = 0.3
 	const DOMAIN_MEM_USAGE_FACTOR_HEURISTIC = 0.6
 	
-	assumedCpuUsage := domain.AllocatedCPU * DOMAIN_CPU_USAGE_FACTOR_HEURISTIC
-	assumedMemUsage := int64(float64(domain.AllocatedMemory) * DOMAIN_MEM_USAGE_FACTOR_HEURISTIC)
+	assumedCpuUsage := float64(domain.Config.ResourceConfig.Vcpus) * DOMAIN_CPU_USAGE_FACTOR_HEURISTIC
+	assumedMemUsage := int64(float64(domain.Config.ResourceConfig.Memory) * DOMAIN_MEM_USAGE_FACTOR_HEURISTIC)
 
 	// filter out nodes that currently do not provide enough available resources.
 	// This is done to prevent moving a domain to a node that has currently not sufficient capacity.
@@ -187,8 +186,8 @@ func (s *Scheduler) findNode(
 	// This influences the algorithm to weight either cpu or mem stronger, therefore it is set to the resource
 	// requirements of the domain (e.g. if domain has 8 cores and 2GB memory, the cpu weight is 8 and the mem 2)
 	var (
-		CPU_POINT_WEIGHT = domain.AllocatedCPU * CPU_POINT_FACTOR
-		MEM_POINT_WEIGHT = float64(domain.AllocatedMemory) * MEM_POINT_FACTOR
+		CPU_POINT_WEIGHT = float64(domain.Config.ResourceConfig.Vcpus) * CPU_POINT_FACTOR
+		MEM_POINT_WEIGHT = float64(domain.Config.ResourceConfig.Memory) * MEM_POINT_FACTOR
 	)
 
 	// search the node with the highest rating, rating points are calculated based on a simple formula:
@@ -200,8 +199,8 @@ func (s *Scheduler) findNode(
 		availableMem := node.AllocatedMemory
 		for _, dom := range domains {
 			if dom.Reqnode == nodeId {
-				availableCpu -= dom.AllocatedCPU
-				availableMem -= dom.AllocatedMemory
+				availableCpu -= float64(dom.Config.ResourceConfig.Vcpus)
+				availableMem -= dom.Config.ResourceConfig.Memory
 			}
 		}
 

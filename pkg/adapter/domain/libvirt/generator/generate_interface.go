@@ -23,8 +23,8 @@ import (
 	"context"
 	"fmt"
 
-	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
-	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
+	"cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
+  "cthul.io/cthul/pkg/api/wave/v1/domain"
 	interstruct "cthul.io/cthul/pkg/proton/inter/structure"
 )
 
@@ -34,11 +34,11 @@ import (
 // The VIRTIO bus on the other hand uses virtqueues to transfer data.
 
 // generateInterface generates a libvirt network interface device from the cthul network device.
-func (g *Generator) generateInterface(ctx context.Context, device *cthulstruct.NetworkDevice) (*libvirtstruct.Interface, error) {
-	inter := &libvirtstruct.Interface{
-		Model: &libvirtstruct.InterfaceModel{},
-		Source: &libvirtstruct.InterfaceSource{},
-		Boot: &libvirtstruct.Boot{MetaOrder: device.BootPriority},
+func (g *Generator) generateInterface(ctx context.Context, device *domain.NetworkDevice) (*structure.Interface, error) {
+	inter := &structure.Interface{
+		Model: &structure.InterfaceModel{},
+		Source: &structure.InterfaceSource{},
+		Boot: &structure.Boot{MetaOrder: device.BootPriority},
 	}
 
 	interDevice, err := g.inter.Lookup(ctx, device.DeviceId)
@@ -47,17 +47,17 @@ func (g *Generator) generateInterface(ctx context.Context, device *cthulstruct.N
 	}
 
 	switch device.NetworkBus {
-	case cthulstruct.NETWORK_E1000:
-		inter.Model.MetaType = libvirtstruct.INTERFACE_MODEL_E1000
-	case cthulstruct.NETWORK_VIRTIO:
-		inter.Model.MetaType = libvirtstruct.INTERFACE_MODEL_VIRTIO
+	case domain.NetworkBus_NETWORK_BUS_E1000:
+		inter.Model.MetaType = structure.INTERFACE_MODEL_E1000
+	case domain.NetworkBus_NETWORK_BUS_VIRTIO:
+		inter.Model.MetaType = structure.INTERFACE_MODEL_VIRTIO
 	default:
 		return nil, fmt.Errorf("unknown network bus type: %s", device.NetworkBus)
 	}
 
 	switch interDevice.Type {
 	case interstruct.INTER_BRIDGE:
-		inter.MetaType = libvirtstruct.INTERFACE_BRIDGE
+		inter.MetaType = structure.INTERFACE_BRIDGE
 		inter.Source.MetaBridge = interDevice.Device
 	default:
 		return nil, fmt.Errorf("unsupported interface type: %s", interDevice.Type)

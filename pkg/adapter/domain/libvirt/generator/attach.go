@@ -23,11 +23,11 @@ import (
 	"context"
 	"fmt"
 
-	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
+	"cthul.io/cthul/pkg/api/wave/v1/domain"
 )
 
 // Attach installs / locks all devices that are required by the domain config.
-func (g *Generator) Attach(ctx context.Context, config *cthulstruct.Domain) error {
+func (g *Generator) Attach(ctx context.Context, config *domain.DomainConfig) error {
 	for _, device := range config.VideoAdapters {
     err := g.video.Attach(ctx, device.DeviceId, g.nodeId, true)
 		if err!=nil {

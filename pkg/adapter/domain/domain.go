@@ -22,7 +22,7 @@ package domain
 import (
 	"context"
 
-	"cthul.io/cthul/pkg/adapter/domain/structure"
+  "cthul.io/cthul/pkg/api/wave/v1/domain"
 )
 
 // Adapter provides the direct domain abstraction layer.
@@ -31,12 +31,12 @@ type Adapter interface {
 	// List returns a map with uuids & name of all domains on the host.
 	List(context.Context) (map[string]string, error)
 	// GetStats fetches all domain stats directly from the underlying vmm.
-	GetStats(context.Context, string) (*structure.DomainStats, error)
+	GetStats(context.Context, string) (*domain.DomainStats, error)
 	// Apply updates the domain to the specified state. Updates that can be hotplugged are hotplugged, other
 	// updates are applied at next reboot. Operation is idempotent.
-	Apply(context.Context, string, structure.Domain) error
+	Apply(context.Context, string, domain.DomainConfig) error
 	// Destroy removes a domain from the local machine. Operation is idempotent.
-	Destroy(context.Context, string, structure.Domain) error
+	Destroy(context.Context, string, domain.DomainConfig) error
 	// Start starts the domain or resumes it if it was paused.
 	Start(context.Context, string) error
 	// Reboot reboots the domain if in running state.

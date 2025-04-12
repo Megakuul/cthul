@@ -20,22 +20,22 @@
 package generator
 
 import (
-	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
-	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
+	"cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
+  "cthul.io/cthul/pkg/api/wave/v1/domain"
 )
 
 // generateVCPU generates libvirt VCPUs from resource configuration.
-func (l *Generator) generateVCPU(resource *cthulstruct.ResourceConfig) *libvirtstruct.VCPU {
-	return &libvirtstruct.VCPU{
-		MetaPlacement: libvirtstruct.CPU_PLACEMENT_STATIC,
-		Data: resource.VCPUs,
+func (l *Generator) generateVCPU(resource *domain.ResourceConfig) *structure.VCPU {
+	return &structure.VCPU{
+		MetaPlacement: structure.CPU_PLACEMENT_STATIC,
+		Data: resource.Vcpus,
 	}
 }
 
 // generateMemory generates libvirt Memory from resource configuration.
-func (l *Generator) generateMemory(resource *cthulstruct.ResourceConfig) *libvirtstruct.Memory {
-	return &libvirtstruct.Memory{
-		MetaUnit: libvirtstruct.MEMORY_UNIT_BYTES,
+func (l *Generator) generateMemory(resource *domain.ResourceConfig) *structure.Memory {
+	return &structure.Memory{
+		MetaUnit: structure.MEMORY_UNIT_BYTES,
 		Data: resource.Memory,
 	}
 }

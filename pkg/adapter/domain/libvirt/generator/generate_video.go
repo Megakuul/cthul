@@ -22,8 +22,8 @@ package generator
 import (
 	"fmt"
 
-	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
-	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
+	"cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
+	"cthul.io/cthul/pkg/api/wave/v1/domain"
 )
 
 // Explanation: A libvirt video device provides frame- and commandbuffers to the guest os.
@@ -41,28 +41,28 @@ import (
 // for rendering this intermediate representation leveraging the hosts GPU.
 
 // generateVideo generates a libvirt video device from the cthul video device.
-func (l *Generator) generateVideo(device *cthulstruct.VideoDevice) (*libvirtstruct.Video, error) {
-	video := &libvirtstruct.Video{
-		Model: &libvirtstruct.VideoModel{},
+func (l *Generator) generateVideo(device *domain.VideoDevice) (*structure.Video, error) {
+	video := &structure.Video{
+		Model: &structure.VideoModel{},
 	}
 
-	switch device.VideoOption {
-	case cthulstruct.VIDEO_NONE:
-		video.Model.MetaType = libvirtstruct.VIDEO_MODEL_NONE
-	case cthulstruct.VIDEO_VGA:
-		video.Model.MetaType = libvirtstruct.VIDEO_MODEL_VGA
+	switch device.Video {
+	case domain.Video_VIDEO_NONE:
+		video.Model.MetaType = structure.VIDEO_MODEL_NONE
+	case domain.Video_VIDEO_VGA:
+		video.Model.MetaType = structure.VIDEO_MODEL_VGA
 		video.Model.MetaVRam = device.VideoBufferSize + device.FramebufferSize // framebuffer is inside vram in vga
 		video.Model.MetaVGAMem = device.FramebufferSize
-	case cthulstruct.VIDEO_QXL:
-		video.Model.MetaType = libvirtstruct.VIDEO_MODEL_QXL
+	case domain.Video_VIDEO_QXL:
+		video.Model.MetaType = structure.VIDEO_MODEL_QXL
 		video.Model.MetaRam = device.CommandBufferSize + device.FramebufferSize // framebuffer is inside ram in qxl
 		video.Model.MetaVRam = device.VideoBufferSize
 		video.Model.MetaVGAMem = device.FramebufferSize
-	case cthulstruct.VIDEO_HOST:
-		video.Model.MetaType = libvirtstruct.VIDEO_MODEL_VIRTIO
+	case domain.Video_VIDEO_HOST:
+		video.Model.MetaType = structure.VIDEO_MODEL_VIRTIO
 	default:
 		return nil, fmt.Errorf("unknown video option: %s", device.VideoOption)
 	}
-	
+
 	return video, nil
 }

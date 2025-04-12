@@ -20,16 +20,18 @@
 package generator
 
 import (
-	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
-	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
+	"context"
+
+	"cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
+	"cthul.io/cthul/pkg/api/wave/v1/domain"
 )
 
 // Generate transpiles the domain config to a libvirt xml file. Cthul devices are dynamically resolved with
 // the generator attached device controllers. Devices must be attached to the node otherwise lookups will fail.
-func (l *Generator) Generate(id string, config *cthulstruct.Domain) (*libvirtstruct.Domain, error) {
+func (l *Generator) Generate(ctx context.Context, id string, config *domain.DomainConfig) (*structure.Domain, error) {
 	var err error
-	domain := &libvirtstruct.Domain{
-		MetaType: libvirtstruct.DOMAIN_KVM,
+	domain := &structure.Domain{
+		MetaType: structure.DOMAIN_KVM,
 		UUID: id,
 		Name: config.Name,
 		Title: config.Title,
@@ -54,7 +56,7 @@ func (l *Generator) Generate(id string, config *cthulstruct.Domain) (*libvirtstr
 	}
 	
 	for _, videoAdapter := range config.VideoAdapters {
-		device, err := l.generateGraphic(&videoAdapter)
+		device, err := l.generateGraphic(ctx, &videoAdapter)
 		if err!=nil {
 			return nil, err
 		}
@@ -62,7 +64,7 @@ func (l *Generator) Generate(id string, config *cthulstruct.Domain) (*libvirtstr
 	}
 	
 	for _, serialDevice := range config.SerialDevices {
-		device, err := l.generateSerial(&serialDevice)
+		device, err := l.generateSerial(ctx, &serialDevice)
 		if err!=nil {
 			return nil, err
 		}
@@ -70,7 +72,7 @@ func (l *Generator) Generate(id string, config *cthulstruct.Domain) (*libvirtstr
 	}
 	
 	for _, serialDevice := range config.SerialDevices {
-		device, err := l.generateSerial(&serialDevice)
+		device, err := l.generateSerial(ctx, &serialDevice)
 		if err!=nil {
 			return nil, err
 		}
@@ -86,7 +88,7 @@ func (l *Generator) Generate(id string, config *cthulstruct.Domain) (*libvirtstr
 	}
 	
 	for _, storageDevice := range config.StorageDevices {
-		device, err := l.generateDisk(&storageDevice)
+		device, err := l.generateDisk(ctx, &storageDevice)
 		if err!=nil {
 			return nil, err
 		}
@@ -94,7 +96,7 @@ func (l *Generator) Generate(id string, config *cthulstruct.Domain) (*libvirtstr
 	}
 
 	for _, networkDevice := range config.NetworkDevices {
-		device, err := l.generateInterface(&networkDevice)
+		device, err := l.generateInterface(ctx, &networkDevice)
 		if err!=nil {
 			return nil, err
 		}

@@ -22,8 +22,8 @@ package generator
 import (
 	"fmt"
 
-	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
-	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
+	"cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
+  "cthul.io/cthul/pkg/api/wave/v1/domain"
 )
 
 // Explanation: A libvirt input device can represent multiple human interface devices, like a mouse, tablet or
@@ -32,27 +32,27 @@ import (
 // Using the VIRTIO bus leverages virtqueues to transfer data between the guest and host os.
 
 // generateInterface generates a libvirt network interface device from the cthul network device.
-func (l *Generator) generateInput(device *cthulstruct.InputDevice) (*libvirtstruct.Input, error) {
-	input := &libvirtstruct.Input{}
+func (l *Generator) generateInput(device *domain.InputDevice) (*structure.Input, error) {
+	input := &structure.Input{}
 
 	switch device.InputType {
-	case cthulstruct.INPUT_MOUSE:
-		input.MetaType = libvirtstruct.INPUT_MOUSE
-	case cthulstruct.INPUT_TABLET:
-		input.MetaType = libvirtstruct.INPUT_TABLET
-	case cthulstruct.INPUT_KEYBOARD:
-		input.MetaType = libvirtstruct.INPUT_KEYBOARD
+	case domain.InputType_INPUT_TYPE_MOUSE:
+		input.MetaType = structure.INPUT_MOUSE
+	case domain.InputType_INPUT_TYPE_TABLET:
+		input.MetaType = structure.INPUT_TABLET
+	case domain.InputType_INPUT_TYPE_KEYBOARD:
+		input.MetaType = structure.INPUT_KEYBOARD
 	default:
 		return nil, fmt.Errorf("unknown input type: %s", device.InputType)
 	}
 	
 	switch device.InputBus {
-	case cthulstruct.INPUT_PS2:
-		input.MetaBus = libvirtstruct.INPUT_PS2
-	case cthulstruct.INPUT_USB:
-		input.MetaBus = libvirtstruct.INPUT_USB
-	case cthulstruct.INPUT_VIRTIO:
-		input.MetaBus = libvirtstruct.INPUT_VIRTIO
+	case domain.InputBus_INPUT_BUS_PS2:
+		input.MetaBus = structure.INPUT_PS2
+	case domain.InputBus_INPUT_BUS_USB:
+		input.MetaBus = structure.INPUT_USB
+	case domain.InputBus_INPUT_BUS_VIRTIO:
+		input.MetaBus = structure.INPUT_VIRTIO
 	default:
 		return nil, fmt.Errorf("unknown input bus: %s", device.InputBus)
 	}

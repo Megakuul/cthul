@@ -25,9 +25,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
-	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
-  videostruct "cthul.io/cthul/pkg/wave/video/structure"
+	"cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
+  "cthul.io/cthul/pkg/api/wave/v1/domain"
+  "cthul.io/cthul/pkg/api/wave/v1/video"
 )
 
 // Explanation: A libvirt graphics device represents a host component that provides an interface for the
@@ -35,9 +35,9 @@ import (
 // guest keyboard and mouse.
 
 // generateGraphic generates a libvirt graphics device from the cthul video adapter.
-func (g *Generator) generateGraphic(ctx context.Context, adapter *cthulstruct.VideoAdapter) (*libvirtstruct.Graphics, error) {
-	graphics := &libvirtstruct.Graphics{
-		Listen: &libvirtstruct.GraphicsListen{},
+func (g *Generator) generateGraphic(ctx context.Context, adapter *domain.VideoAdapter) (*structure.Graphics, error) {
+	graphics := &structure.Graphics{
+		Listen: &structure.GraphicsListen{},
 	}
 
 	graphicDevice, err := g.video.Lookup(ctx, adapter.DeviceId)
@@ -46,9 +46,9 @@ func (g *Generator) generateGraphic(ctx context.Context, adapter *cthulstruct.Vi
 	}
 
 	switch graphicDevice.Type {
-	case videostruct.VIDEO_SPICE:
-		graphics.MetaType = libvirtstruct.GRAPHICS_SPICE
-		graphics.Listen.MetaType = libvirtstruct.GRAPHICS_LISTEN_SOCKET
+	case video.Video_VIDEO_SPICE:
+		graphics.MetaType = structure.GRAPHICS_SPICE
+		graphics.Listen.MetaType = structure.GRAPHICS_LISTEN_SOCKET
     path := filepath.Join(g.waveRoot, graphicDevice.Path)
     if !strings.HasPrefix(filepath.Clean(path), g.waveRoot) {
       return nil, fmt.Errorf("video device uses a socket path that escapes the run root '%s'", g.waveRoot)

@@ -25,8 +25,8 @@ import (
   "path/filepath"
   "strings"
 
-	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
-	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
+	"cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
+  "cthul.io/cthul/pkg/api/wave/v1/domain"
 )
 
 // Explanation: A libvirt serial device is used to emulate a real serial device. The serial device does just
@@ -36,11 +36,11 @@ import (
 // sending every chunk via separate PIO instruction.
 
 // generateSerial generates a libvirt serial device from the cthul serial device.
-func (g *Generator) generateSerial(ctx context.Context, device *cthulstruct.SerialDevice) (*libvirtstruct.Serial, error) {
-	serial := &libvirtstruct.Serial{
-		MetaType: libvirtstruct.SERIAL_UNIX,
-		Source:   &libvirtstruct.SerialSource{},
-		Target: &libvirtstruct.SerialTarget{
+func (g *Generator) generateSerial(ctx context.Context, device *domain.SerialDevice) (*structure.Serial, error) {
+	serial := &structure.Serial{
+		MetaType: structure.SERIAL_UNIX,
+		Source:   &structure.SerialSource{},
+		Target: &structure.SerialTarget{
 			MetaPort: device.Port,
 		},
 	}
@@ -51,8 +51,8 @@ func (g *Generator) generateSerial(ctx context.Context, device *cthulstruct.Seri
 	}
 
 	// Source (on host)
-	serial.MetaType = libvirtstruct.SERIAL_UNIX
-	serial.Source.MetaMode = libvirtstruct.SERIAL_SOURCE_BIND
+	serial.MetaType = structure.SERIAL_UNIX
+	serial.Source.MetaMode = structure.SERIAL_SOURCE_BIND
 	path := filepath.Join(g.waveRoot, serialDevice.Path)
 	if !strings.HasPrefix(filepath.Clean(path), g.waveRoot) {
 		return nil, fmt.Errorf("serial device uses a socket path that escapes the run root '%s'", g.waveRoot)
@@ -61,10 +61,10 @@ func (g *Generator) generateSerial(ctx context.Context, device *cthulstruct.Seri
 
 	// Target (on guest)
 	switch device.SerialBus {
-	case cthulstruct.SERIAL_ISA:
-		serial.Target.MetaType = libvirtstruct.SERIAL_BUS_ISA
-	case cthulstruct.SERIAL_VIRTIO:
-		serial.Target.MetaType = libvirtstruct.SERIAL_BUS_VIRTIO
+	case domain.SerialBus_SERIAL_BUS_ISA:
+		serial.Target.MetaType = structure.SERIAL_BUS_ISA
+	case domain.SerialBus_SERIAL_BUS_VIRTIO:
+		serial.Target.MetaType = structure.SERIAL_BUS_VIRTIO
 	default:
 		return nil, fmt.Errorf("unknown serial bus type: %s", device.SerialBus)
 	}

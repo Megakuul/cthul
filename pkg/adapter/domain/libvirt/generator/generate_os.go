@@ -22,8 +22,8 @@ package generator
 import (
 	"fmt"
 
-	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
-	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
+	"cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
+  "cthul.io/cthul/pkg/api/wave/v1/domain"
 )
 
 // Explanation: A libvirt os tag represents configuration options about the emulated cpu, mainboard and firmware
@@ -41,12 +41,12 @@ import (
 // Loader, template and nvram files are provided by granit devices that are loaded as blockdevs on the host.
 
 // generateOS generates the libvirt operating system configuration from system and firmware information.
-func (l *Generator) generateOS(system *cthulstruct.SystemConfig, firmware *cthulstruct.FirmwareConfig) (*libvirtstruct.OS, error) {
-	os := &libvirtstruct.OS{
-		Type: &libvirtstruct.OSType{
+func (l *Generator) generateOS(system *domain.SystemConfig, firmware *domain.FirmwareConfig) (*structure.OS, error) {
+	os := &structure.OS{
+		Type: &structure.OSType{
 			Data: "hvm",
 		},
-		Loader: &libvirtstruct.OSLoader{
+		Loader: &structure.OSLoader{
 			MetaReadonly: true,
 			MetaSecure: firmware.SecureBoot,
 		},
@@ -78,22 +78,22 @@ func (l *Generator) generateOS(system *cthulstruct.SystemConfig, firmware *cthul
 
 	// Architecture
 	switch system.Architecture {
-	case cthulstruct.ARCH_AMD64:
-		os.Type.Arch = libvirtstruct.OS_ARCH_X86_64
-	case cthulstruct.ARCH_AARCH64:
-		os.Type.Arch = libvirtstruct.OS_ARCH_AARCH64
+	case domain.Arch_ARCH_AMD64:
+		os.Type.Arch = structure.OS_ARCH_X86_64
+	case domain.Arch_ARCH_AARCH64:
+		os.Type.Arch = structure.OS_ARCH_AARCH64
 	default:
 		return nil, fmt.Errorf("unknown system architecture: %s", system.Architecture)
 	}
 
 	// Chipset
 	switch system.Chipset {
-	case cthulstruct.CHIPSET_I440FX:
-		os.Type.Machine = libvirtstruct.OS_CHIPSET_I440FX
-	case cthulstruct.CHIPSET_Q35:
-		os.Type.Machine = libvirtstruct.OS_CHIPSET_Q35
-	case cthulstruct.CHIPSET_VIRT:
-		os.Type.Machine = libvirtstruct.OS_CHIPSET_VIRT
+	case domain.Chipset_CHIPSET_I440FX:
+		os.Type.Machine = structure.OS_CHIPSET_I440FX
+	case domain.Chipset_CHIPSET_Q35:
+		os.Type.Machine = structure.OS_CHIPSET_Q35
+	case domain.Chipset_CHIPSET_VIRT:
+		os.Type.Machine = structure.OS_CHIPSET_VIRT
 	default:
 		return nil, fmt.Errorf("unknown system chipset: %s", system.Chipset)
 	}
@@ -102,17 +102,17 @@ func (l *Generator) generateOS(system *cthulstruct.SystemConfig, firmware *cthul
 	os.Loader.Data = loaderDevice.Path
 	
 	switch firmware.Firmware {
-	case cthulstruct.FIRMWARE_OVMF:
-		os.Loader.MetaType = libvirtstruct.OS_LOADER_OVMF
-		os.Nvram = &libvirtstruct.OSNvram{
-			MetaType: libvirtstruct.OS_NVRAM_FILE,
+	case domain.Firmware_FIRMWARE_OVMF:
+		os.Loader.MetaType = structure.OS_LOADER_OVMF
+		os.Nvram = &structure.OSNvram{
+			MetaType: structure.OS_NVRAM_FILE,
 			MetaTemplate: templateDevice.Path,
 			Source: nvramDevice.Path,
 		}
-	case cthulstruct.FIRMWARE_SEABIOS:
-		os.Loader.MetaType = libvirtstruct.OS_LOADER_SEABIOS
-		os.Nvrams = &libvirtstruct.OSNvram{
-			MetaType: libvirtstruct.OS_NVRAM_FILE,
+	case domain.Firmware_FIRMWARE_SEABIOS:
+		os.Loader.MetaType = structure.OS_LOADER_SEABIOS
+		os.Nvrams = &structure.OSNvram{
+			MetaType: structure.OS_NVRAM_FILE,
 			MetaTemplate: templateDevice.Path,
 			Source: nvramDevice.Path,
 		}

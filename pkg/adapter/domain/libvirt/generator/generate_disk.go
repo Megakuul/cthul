@@ -23,9 +23,9 @@ import (
 	"context"
 	"fmt"
 
-	libvirtstruct "cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
-	cthulstruct "cthul.io/cthul/pkg/adapter/domain/structure"
-  diskstruct "cthul.io/cthul/pkg/granit/disk/structure"
+	"cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
+	"cthul.io/cthul/pkg/api/wave/v1/domain"
+  diskstruct "cthul.io/cthul/pkg/api/granit/v1/disk"
 )
 
 // Explanation: A libvirt disk device represents a device which is provided to the guest os via a custom
@@ -39,41 +39,41 @@ import (
 // For the host driver this feels like reading/writing to a regular source (e.g. a block device).
 
 // generateDisk generates a libvirt disk device from the cthul storage device.
-func (g *Generator) generateDisk(ctx context.Context, device *cthulstruct.StorageDevice) (*libvirtstruct.Disk, error) {
-	disk := &libvirtstruct.Disk{
-		Source: &libvirtstruct.DiskSource{},
-		Driver: &libvirtstruct.DiskDriver{MetaName: libvirtstruct.DISK_DRIVER_QEMU},
-		Target: &libvirtstruct.DiskTarget{},
-		Boot: &libvirtstruct.Boot{MetaOrder: device.BootPriority},
+func (g *Generator) generateDisk(ctx context.Context, device *domain.StorageDevice) (*structure.Disk, error) {
+	disk := &structure.Disk{
+		Source: &structure.DiskSource{},
+		Driver: &structure.DiskDriver{MetaName: structure.DISK_DRIVER_QEMU},
+		Target: &structure.DiskTarget{},
+		Boot:   &structure.Boot{MetaOrder: device.BootPriority},
 	}
 
 	storageDevice, err := g.disk.Lookup(ctx, device.DeviceId)
-	if err!=nil {
+	if err != nil {
 		return nil, err
 	}
 
 	// Metadata
 	switch device.StorageType {
-	case cthulstruct.STORAGE_DISK:
-		disk.MetaDevice = libvirtstruct.DISK_DEVICE_DISK
-	case cthulstruct.STORAGE_CDROM:
-		disk.MetaDevice = libvirtstruct.DISK_DEVICE_CDROM
+	case domain.StorageType_STORAGE_TYPE_DISK:
+		disk.MetaDevice = structure.DISK_DEVICE_DISK
+	case domain.StorageType_STORAGE_TYPE_CDROM:
+		disk.MetaDevice = structure.DISK_DEVICE_CDROM
 	default:
 		return nil, fmt.Errorf("unknown storage type: %s", device.StorageType)
 	}
 
 	if storageDevice.Readonly {
-		disk.Readonly = &libvirtstruct.DiskReadonly{}
+		disk.Readonly = &structure.DiskReadonly{}
 	}
 
 	// Target (on guest)
 	switch device.StorageBus {
-	case cthulstruct.STORAGE_IDE:
-		disk.Target.MetaBus = libvirtstruct.DISK_BUS_IDE
-	case cthulstruct.STORAGE_SATA:
-		disk.Target.MetaBus = libvirtstruct.DISK_BUS_SATA
-	case cthulstruct.STORAGE_VIRTIO:
-		disk.Target.MetaBus = libvirtstruct.DISK_BUS_VIRTIO
+	case domain.StorageBus_STORAGE_BUS_IDE:
+		disk.Target.MetaBus = structure.DISK_BUS_IDE
+	case domain.StorageBus_STORAGE_BUS_SATA:
+		disk.Target.MetaBus = structure.DISK_BUS_SATA
+	case domain.StorageBus_STORAGE_BUS_VIRTIO:
+		disk.Target.MetaBus = structure.DISK_BUS_VIRTIO
 	default:
 		return nil, fmt.Errorf("unknown storage bus: %s", device.StorageBus)
 	}
@@ -81,9 +81,9 @@ func (g *Generator) generateDisk(ctx context.Context, device *cthulstruct.Storag
 	// Driver (transfering data between guest and host)
 	switch storageDevice.Format {
 	case diskstruct.DISK_RAW:
-		disk.Driver.MetaType = libvirtstruct.DISK_STORAGE_RAW
+		disk.Driver.MetaType = structure.DISK_STORAGE_RAW
 	case diskstruct.DISK_QCOW2:
-		disk.Driver.MetaType = libvirtstruct.DISK_STORAGE_QCOW2
+		disk.Driver.MetaType = structure.DISK_STORAGE_QCOW2
 	default:
 		return nil, fmt.Errorf("unsupported device format: %s", storageDevice.Format)
 	}
@@ -91,13 +91,13 @@ func (g *Generator) generateDisk(ctx context.Context, device *cthulstruct.Storag
 	// Source (on host)
 	switch storageDevice.Type {
 	case diskstruct.DISK_BLOCK:
-		disk.MetaType = libvirtstruct.DISK_BLOCK
-		disk.Source = &libvirtstruct.DiskSource{
+		disk.MetaType = structure.DISK_BLOCK
+		disk.Source = &structure.DiskSource{
 			MetaDev: storageDevice.Path,
 		}
 	case diskstruct.DISK_FILE:
-		disk.MetaType = libvirtstruct.DISK_FILE
-		disk.Source = &libvirtstruct.DiskSource{
+		disk.MetaType = structure.DISK_FILE
+		disk.Source = &structure.DiskSource{
 			MetaFile: storageDevice.Path,
 		}
 	default:
