@@ -45,8 +45,8 @@ type Operator struct {
 	// (cycle essentially finds out what device must be synced by this node).
 	updateCycleTTL int64
 
-	// pathCycleTTL defines the ttl of the cycle that prepares the unix socket path for the video device.
-	pathCycleTTL int64
+	// syncCycleTTL defines the ttl of the cycle that prepares the unix socket path for the video device.
+	syncCycleTTL int64
 }
 
 type Option func(*Operator)
@@ -59,7 +59,7 @@ func New(logger *slog.Logger, client db.Client, opts ...Option) *Operator {
     runRoot: "/run/cthul/wave/",
 		nodeId:        "undefined",
     updateCycleTTL: 30,
-    pathCycleTTL: 30,
+    syncCycleTTL: 30,
 	}
 
 	for _, opt := range opts {
@@ -94,11 +94,11 @@ func WithUpdateCylceTTL(ttl int64) Option {
 	}
 }
 
-// WithPathCycleTTL defines a custom cycle interval for the device path syncer.
+// WithSyncCycleTTL defines a custom cycle interval for the device syncer.
 // Every cycle prepares the path for the device unix socket.
-func WithPathCycleTTL(ttl int64) Option {
+func WithSyncCycleTTL(ttl int64) Option {
 	return func(o *Operator) {
-		o.pathCycleTTL = ttl
+		o.syncCycleTTL = ttl
 	}
 }
 

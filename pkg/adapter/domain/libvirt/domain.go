@@ -64,7 +64,7 @@ func (l *Adapter) Apply(ctx context.Context, id string, domainCfg *domain.Domain
 		return err
 	}
 
-	domain, err := l.generator.Generate(id, domainCfg)
+	domain, err := l.generator.Generate(ctx, id, domainCfg)
 	if err!=nil {
 		return err
 	}

@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file wave/v1/domain/message.proto.
  */
 export const file_wave_v1_domain_message: GenFile = /*@__PURE__*/
-  fileDesc("Chx3YXZlL3YxL2RvbWFpbi9tZXNzYWdlLnByb3RvEg53YXZlLnYxLmRvbWFpbiJkCgZEb21haW4SDwoHcmVxbm9kZRgBIAEoCRIMCgRub2RlGAIgASgJEiwKBmNvbmZpZxgDIAEoCzIcLndhdmUudjEuZG9tYWluLkRvbWFpbkNvbmZpZxINCgVlcnJvchgIIAEoCSIYCgpHZXRSZXF1ZXN0EgoKAmlkGAEgASgJIjUKC0dldFJlc3BvbnNlEiYKBmRvbWFpbhgBIAEoCzIWLndhdmUudjEuZG9tYWluLkRvbWFpbiIZCgtTdGF0UmVxdWVzdBIKCgJpZBgBIAEoCSI6CgxTdGF0UmVzcG9uc2USKgoFc3RhdHMYASABKAsyGy53YXZlLnYxLmRvbWFpbi5Eb21haW5TdGF0cyINCgtMaXN0UmVxdWVzdCI3CgxMaXN0UmVzcG9uc2USJwoHZG9tYWlucxgBIAMoCzIWLndhdmUudjEuZG9tYWluLkRvbWFpbiI9Cg1DcmVhdGVSZXF1ZXN0EiwKBmNvbmZpZxgBIAEoCzIcLndhdmUudjEuZG9tYWluLkRvbWFpbkNvbmZpZyIQCg5DcmVhdGVSZXNwb25zZSI9Cg1VcGRhdGVSZXF1ZXN0EiwKBmNvbmZpZxgBIAEoCzIcLndhdmUudjEuZG9tYWluLkRvbWFpbkNvbmZpZyIQCg5VcGRhdGVSZXNwb25zZSIpCg1BdHRhY2hSZXF1ZXN0EgoKAmlkGAEgASgJEgwKBG5vZGUYAiABKAkiEAoOQXR0YWNoUmVzcG9uc2UiGwoNRGV0YWNoUmVxdWVzdBIKCgJpZBgBIAEoCSIQCg5EZXRhY2hSZXNwb25zZSIbCg1EZWxldGVSZXF1ZXN0EgoKAmlkGAEgASgJIhAKDkRlbGV0ZVJlc3BvbnNlQidaJWN0aHVsLmlvL2N0aHVsL3BrZy9hcGkvd2F2ZS92MS9kb21haW5iBnByb3RvMw", [file_wave_v1_domain_config, file_wave_v1_domain_stat]);
+  fileDesc("Chx3YXZlL3YxL2RvbWFpbi9tZXNzYWdlLnByb3RvEg53YXZlLnYxLmRvbWFpbiJkCgZEb21haW4SDwoHcmVxbm9kZRgBIAEoCRIMCgRub2RlGAIgASgJEiwKBmNvbmZpZxgDIAEoCzIcLndhdmUudjEuZG9tYWluLkRvbWFpbkNvbmZpZxINCgVlcnJvchgIIAEoCSIYCgpHZXRSZXF1ZXN0EgoKAmlkGAEgASgJIjUKC0dldFJlc3BvbnNlEiYKBmRvbWFpbhgBIAEoCzIWLndhdmUudjEuZG9tYWluLkRvbWFpbiIZCgtTdGF0UmVxdWVzdBIKCgJpZBgBIAEoCSI6CgxTdGF0UmVzcG9uc2USKgoFc3RhdHMYASABKAsyGy53YXZlLnYxLmRvbWFpbi5Eb21haW5TdGF0cyINCgtMaXN0UmVxdWVzdCI3CgxMaXN0UmVzcG9uc2USJwoHZG9tYWlucxgBIAMoCzIWLndhdmUudjEuZG9tYWluLkRvbWFpbiI9Cg1DcmVhdGVSZXF1ZXN0EiwKBmNvbmZpZxgBIAEoCzIcLndhdmUudjEuZG9tYWluLkRvbWFpbkNvbmZpZyIcCg5DcmVhdGVSZXNwb25zZRIKCgJpZBgBIAEoCSJJCg1VcGRhdGVSZXF1ZXN0EgoKAmlkGAEgASgJEiwKBmNvbmZpZxgCIAEoCzIcLndhdmUudjEuZG9tYWluLkRvbWFpbkNvbmZpZyIQCg5VcGRhdGVSZXNwb25zZSIpCg1BdHRhY2hSZXF1ZXN0EgoKAmlkGAEgASgJEgwKBG5vZGUYAiABKAkiEAoOQXR0YWNoUmVzcG9uc2UiGwoNRGV0YWNoUmVxdWVzdBIKCgJpZBgBIAEoCSIQCg5EZXRhY2hSZXNwb25zZSIbCg1EZWxldGVSZXF1ZXN0EgoKAmlkGAEgASgJIhAKDkRlbGV0ZVJlc3BvbnNlQidaJWN0aHVsLmlvL2N0aHVsL3BrZy9hcGkvd2F2ZS92MS9kb21haW5iBnByb3RvMw", [file_wave_v1_domain_config, file_wave_v1_domain_stat]);
 
 /**
  * @generated from message wave.v1.domain.Domain
@@ -169,6 +169,10 @@ export const CreateRequestSchema: GenMessage<CreateRequest> = /*@__PURE__*/
  * @generated from message wave.v1.domain.CreateResponse
  */
 export type CreateResponse = Message<"wave.v1.domain.CreateResponse"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
 };
 
 /**
@@ -183,7 +187,12 @@ export const CreateResponseSchema: GenMessage<CreateResponse> = /*@__PURE__*/
  */
 export type UpdateRequest = Message<"wave.v1.domain.UpdateRequest"> & {
   /**
-   * @generated from field: wave.v1.domain.DomainConfig config = 1;
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: wave.v1.domain.DomainConfig config = 2;
    */
   config?: DomainConfig;
 };

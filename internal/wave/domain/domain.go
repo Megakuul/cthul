@@ -24,7 +24,7 @@ import (
 	"context"
 	"sync"
 
-	domadapter "cthul.io/cthul/pkg/adapter/domain"
+	"cthul.io/cthul/pkg/adapter/domain"
 	"cthul.io/cthul/pkg/db"
 	"cthul.io/cthul/pkg/syncer"
 )
@@ -34,7 +34,7 @@ type Operator struct {
   rootCtx context.Context
   rootCtxCancel context.CancelFunc
 
-	adapter domadapter.Adapter
+	adapter domain.Adapter
 	client db.Client
   logger *slog.Logger
   syncer *syncer.Syncer
@@ -45,17 +45,12 @@ type Operator struct {
 	// updateCycleTTL specifies the ttl of the cycle that updates the domain syncers
 	// (cycle essentially finds out what domains must be synced by this node).
 	updateCycleTTL int64
+  // syncCycleTTL specifies the ttl of teh cylce that manually syncs the domain config.
+  syncCycleTTL int64
 	
   // localCycleTTL specifies the ttl of the cycle that manually resyncs the local domains.
   // This includes caching local domains and removing orphaned ones. 
   localCycleTTL int64
-
-  // stateCycleTTL specifies the ttl of the cycle that manually syncs the domain state.
-  stateCycleTTL int64
-
-  // configCycleTTL specifies the ttl of teh cylce that manually syncs the domain config.
-  configCycleTTL int64
-
 	// localDomains is a buffer holding all domains installed on the local machine.
 	// Map is used to avoid many libvirt list requests.
 	localDomains map[string]string
@@ -67,7 +62,7 @@ type Operator struct {
 
 type Option func(*Operator)
 
-func New(logger *slog.Logger, client db.Client, adapter domadapter.Adapter, opts ...Option) *Operator {
+func New(logger *slog.Logger, client db.Client, adapter domain.Adapter, opts ...Option) *Operator {
   rootCtx, rootCtxCancel := context.WithCancel(context.Background())
 	operator := &Operator{
     rootCtx: rootCtx,
@@ -79,8 +74,7 @@ func New(logger *slog.Logger, client db.Client, adapter domadapter.Adapter, opts
 		nodeId: "undefined",
 		updateCycleTTL: 10,
     localCycleTTL: 60,
-    stateCycleTTL: 30,
-    configCycleTTL: 30,
+    syncCycleTTL: 30,
 		localDomains: map[string]string{},
 		localDomainsLock: sync.RWMutex{},
     operationWg: sync.WaitGroup{},
@@ -111,25 +105,19 @@ func WithUpdateCylceTTL(ttl int64) Option {
 	}
 }
 
+// WithSyncCycleTTL defines a custom cycle interval for manually syncing the domain config.
+func WithSyncCycleTTL(ttl int64) Option {
+	return func(o *Operator) {
+		o.syncCycleTTL = ttl
+	}
+}
+
+
 // WithLocalCycle defines a custom local cycle interval.
 // The cycle is responsible for synchronizing the local domains (e.g. caching or removing orphaned)
 func WithLocalCycle(ttl int64) Option {
 	return func(o *Operator) {
     o.localCycleTTL = ttl
-	}
-}
-
-// WithStateCycleTTL defines a custom cycle interval for manually syncing the domain state (up, down, paused, etc.)
-func WithStateCycleTTL(ttl int64) Option {
-	return func(o *Operator) {
-		o.stateCycleTTL = ttl
-	}
-}
-
-// WithConfigCycleTTL defines a custom cycle interval for manually syncing the domain config.
-func WithConfigCycleTTL(ttl int64) Option {
-	return func(o *Operator) {
-		o.configCycleTTL = ttl
 	}
 }
 

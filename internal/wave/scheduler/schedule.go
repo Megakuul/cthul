@@ -27,7 +27,7 @@ import (
 	"time"
 
   "cthul.io/cthul/pkg/api/wave/v1/domain"
-	nodestruct "cthul.io/cthul/pkg/wave/node/structure"
+  "cthul.io/cthul/pkg/api/wave/v1/node"
 )
 
 // startSchedulerCycle starts a scheduler cycle. This cycle executes periodically based next schedule stored
@@ -122,7 +122,7 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 			
 			domain.Reqnode = targetNodeId			
 			domains[domainId] = domain
-			nodes[targetNodeId] = *targetNode
+			nodes[targetNodeId] = targetNode
 		}
 	}
 }
@@ -132,21 +132,21 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 func (s *Scheduler) findNode(
 	domain *domain.Domain,
 	domains map[string]*domain.Domain,
-	nodes map[string]nodestruct.Node,
-) (string, *nodestruct.Node, error) {
+	nodes map[string]*node.Node,
+) (string, *node.Node, error) {
 
-	eligibleNodes := map[string]nodestruct.Node{}
-	for nodeId, node := range nodes {
-		if node.Error != nil {
+	eligibleNodes := map[string]*node.Node{}
+	for id, nod := range nodes {
+		if nod.Error != "" {
 			continue
 		}
-		if node.State != nodestruct.NODE_HEALTHY {
+    if nod.Config.State != node.NodeState_NODE_STATE_HEALTHY {
 			continue
 		}
-		if !checkAffinity(domain.Config.Affinity, node.Affinity) {
+		if !checkAffinity(domain.Config.Affinity, nod.Config.Affinity) {
 			continue
 		}
-		eligibleNodes[nodeId] = node
+		eligibleNodes[id] = nod
 	}
 	if len(eligibleNodes) < 1 {
 		return "", nil, fmt.Errorf("no healthy cluster node with matching affinity tags available")
@@ -165,9 +165,9 @@ func (s *Scheduler) findNode(
 	// This is done to prevent moving a domain to a node that has currently not sufficient capacity.
 	// For example if a high load cluster node failsover, instead of moving all domains at once to another
 	// available node, every cycle just moves the amount of nodes the currently fit within the current capacity.
-	availableNodes := map[string]nodestruct.Node{}
+	availableNodes := map[string]*node.Node{}
 	for nodeId, node := range nodes {
-		if node.AvailableCpu > assumedCpuUsage && node.AvailableMemory > assumedMemUsage {
+		if node.Config.AvailableCpu > assumedCpuUsage && node.Config.AvailableMemory > assumedMemUsage {
 			availableNodes[nodeId] = node
 		}
 	}
@@ -195,8 +195,8 @@ func (s *Scheduler) findNode(
 	// This finds the node that best fits the capacity of the domain in question.
 	chosenNodeId, chosenRating := "", 0.0
 	for nodeId, node := range availableNodes {
-		availableCpu := node.AllocatedCpu
-		availableMem := node.AllocatedMemory
+		availableCpu := node.Config.AllocatedCpu
+		availableMem := node.Config.AllocatedMemory
 		for _, dom := range domains {
 			if dom.Reqnode == nodeId {
 				availableCpu -= float64(dom.Config.ResourceConfig.Vcpus)
@@ -216,9 +216,9 @@ func (s *Scheduler) findNode(
 	}
 
 	chosenNode := availableNodes[chosenNodeId]
-	chosenNode.AvailableCpu -= assumedCpuUsage
-	chosenNode.AvailableMemory -= assumedMemUsage
-	return chosenNodeId, &chosenNode, nil
+	chosenNode.Config.AvailableCpu -= assumedCpuUsage
+	chosenNode.Config.AvailableMemory -= assumedMemUsage
+	return chosenNodeId, chosenNode, nil
 }
 
 

@@ -25,15 +25,17 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"google.golang.org/protobuf/proto"
 )
 
 func (o *Operator) synchronize() {
   o.syncer.Add("/WAVE/VIDEO/REQNODE", o.updateCycleTTL, func(ctx context.Context, k, reqnode string) error {
     uuid := strings.TrimPrefix(k, "/WAVE/VIDEO/REQNODE/")
-    pathKey := fmt.Sprintf("/WAVE/VIDEO/PATH/%s", uuid)
+    configKey := fmt.Sprintf("/WAVE/VIDEO/CONFIG/%s", uuid)
     if reqnode == o.nodeId {
-      o.syncer.Add(pathKey, o.pathCycleTTL, func(ctx context.Context, k, path string) error {
-        err := o.ensurePath(o.waveRunRoot, path)
+      o.syncer.Add(configKey, o.syncCycleTTL, func(ctx context.Context, k, v string) error {
+        err := o.applyConfig(v)
         if err!=nil {
           return err
         }
@@ -44,18 +46,25 @@ func (o *Operator) synchronize() {
         return nil
       })
     } else {
-      o.syncer.Remove(pathKey, false)
+      o.syncer.Remove(configKey, false)
     }
     return nil
   })
 }
 
-func (o *Operator) ensurePath(base, path string) error {
-  cleanPath := filepath.Join(base, path)  
-  if !strings.HasPrefix(cleanPath, base) {
-    return fmt.Errorf("device socket path is not allowed to escape the run root ('%s' => '%s')", base, cleanPath)
+func (o *Operator) applyConfig(rawConfig string) error {
+  // TODO: add video api
+  config := &video.VideoConfig{}
+  err := proto.Unmarshal([]byte(rawConfig), config)
+  if err!=nil {
+		return fmt.Errorf("failed to parse config: %w", err)
   }
-  err := os.MkdirAll(filepath.Dir(cleanPath), 0600)
+
+  cleanPath := filepath.Join(o.runRoot, config.Path)  
+  if !strings.HasPrefix(cleanPath, o.runRoot) {
+    return fmt.Errorf("device socket path is not allowed to escape the run root ('%s' => '%s')", o.runRoot, cleanPath)
+  }
+  err = os.MkdirAll(filepath.Dir(cleanPath), 0600)
   if err!=nil {
     return err
   }

@@ -34,9 +34,9 @@ type Adapter interface {
 	GetStats(context.Context, string) (*domain.DomainStats, error)
 	// Apply updates the domain to the specified state. Updates that can be hotplugged are hotplugged, other
 	// updates are applied at next reboot. Operation is idempotent.
-	Apply(context.Context, string, domain.DomainConfig) error
+	Apply(context.Context, string, *domain.DomainConfig) error
 	// Destroy removes a domain from the local machine. Operation is idempotent.
-	Destroy(context.Context, string, domain.DomainConfig) error
+	Destroy(context.Context, string, *domain.DomainConfig) error
 	// Start starts the domain or resumes it if it was paused.
 	Start(context.Context, string) error
 	// Reboot reboots the domain if in running state.

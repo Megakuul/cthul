@@ -158,13 +158,17 @@ func (c *Controller) Lookup(ctx context.Context, id string) (*domainstruct.Domai
 	if err != nil {
 		return nil, fmt.Errorf("fetching domain node: %w", err)
 	}
-	domConfig, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/DOMAIN/CONFIG/%s", id))
+	rawConfig, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/DOMAIN/CONFIG/%s", id))
 	if err != nil {
 		return nil, fmt.Errorf("fetching domain configs: %w", err)
 	}
 
+  if rawConfig == "" {
+    return nil, fmt.Errorf("domain not found")
+  }
+
 	config := &domainstruct.DomainConfig{}
-	err = proto.Unmarshal([]byte(domConfig), config)
+	err = proto.Unmarshal([]byte(rawConfig), config)
 	if err != nil {
 		return nil, fmt.Errorf("parsing node config: %w", err)
 	}

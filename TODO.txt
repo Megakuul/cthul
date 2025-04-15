@@ -7,6 +7,9 @@
 - refactor wave domain controller + operator to only use serialized config (proto) x
 - refactor libvirtctrlr to use serialized config instead of the struct defined x
 - refactor the scheduler to do the same x
+- refactor the operator of node and domain to do the same x
+- implement video + serial device api definition
+- refactor operator + controller on video + serial dev
 - define grpc api granit, proton, + wave components that are not domain (+ update libvirtctrlr for them aswell)
 - do the last 3 steps for proton and granit
 - create startup code + perform initial wave tests

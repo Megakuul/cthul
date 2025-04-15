@@ -43,11 +43,12 @@ message CreateRequest {
 }
 
 message CreateResponse {
-
+  string id = 1; 
 }
 
 message UpdateRequest {
-  DomainConfig config = 1;
+  string id = 1; 
+  DomainConfig config = 2;
 }
 
 message UpdateResponse {

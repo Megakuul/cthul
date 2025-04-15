@@ -21,28 +21,28 @@ package node
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 
+	"cthul.io/cthul/pkg/api/wave/v1/node"
 	"cthul.io/cthul/pkg/db"
-	"cthul.io/cthul/pkg/wave/node/structure"
+	"google.golang.org/protobuf/proto"
 )
 
 // NodeMismatchErr indicates that the action cannot be executed on this node.
 type NodeMismatchErr struct {
-  Node string
-  Message string
+	Node    string
+	Message string
 }
 
 func (n *NodeMismatchErr) Error() string {
-  return n.Message
+	return n.Message
 }
 
 // Controller provides an interface for wave node related operations.
 type Controller struct {
-  node string
+	node   string
 	client db.Client
 }
 
@@ -50,7 +50,7 @@ type ControllerOption func(*Controller)
 
 func NewController(node string, client db.Client, opts ...ControllerOption) *Controller {
 	controller := &Controller{
-    node: node,
+		node:   node,
 		client: client,
 	}
 
@@ -61,114 +61,79 @@ func NewController(node string, client db.Client, opts ...ControllerOption) *Con
 	return controller
 }
 
-// affinity provides the node affinity tags structure stored in the database.
-type affinity []string
-
-// resources provides the node resource structure stored in the database.
-type resources struct {
-	AllocatedCpu float64 `json:"allocated_cpu"`
-	AvailableCpu float64 `json:"available_cpu"`
-	AllocatedMemory int64 `json:"allocated_memory"`
-	AvailableMemory int64 `json:"available_memory"`
-}
-
 // List returns a map containing node uuids and associated metadata from the database.
-func (n *Controller) List(ctx context.Context) (map[string]structure.Node, error) {
-	nodes := map[string]structure.Node{}
-	
-	nodeStates, err := n.client.GetRange(ctx, "/WAVE/NODE/STATE/")
-	if err!=nil {
-		return nil, fmt.Errorf("fetching node state: %w", err)
+func (n *Controller) List(ctx context.Context) (map[string]*node.Node, error) {
+	nodes := map[string]*node.Node{}
+
+	configs, err := n.client.GetRange(ctx, "/WAVE/NODE/CONFIG/")
+	if err != nil {
+		return nil, fmt.Errorf("fetching node config: %w", err)
 	}
-	nodeAffinities, err := n.client.GetRange(ctx, "/WAVE/NODE/AFFINITY/")
-	if err!=nil {
-		return nil, fmt.Errorf("fetching node affinity tags: %w", err)
-	}
-	nodeResources, err := n.client.GetRange(ctx, "/WAVE/NODE/RESOURCES/")
-	if err!=nil {
-		return nil, fmt.Errorf("fetching node resources: %w", err)
-	}
-	
-	for key, state := range nodeStates {
+
+	for key, rawConfig := range configs {
 		var nodeErr error
-		uuid := strings.TrimPrefix(key, "/WAVE/NODE/STATE/")
-		
-		affinity := &affinity{}
-		err := json.Unmarshal([]byte(nodeAffinities[fmt.Sprint("/WAVE/NODE/AFFINITY/", uuid)]), affinity)
-		if err!=nil {
-			nodeErr = errors.Join(nodeErr, fmt.Errorf("parsing node affinity tags: %w", err))
+		id := strings.TrimPrefix(key, "/WAVE/NODE/CONFIG/")
+
+		config := &node.NodeConfig{}
+		err := proto.Unmarshal([]byte(rawConfig), config)
+		if err != nil {
+			nodeErr = errors.Join(nodeErr, fmt.Errorf("parsing node config %w", err))
 		}
-		
-		resources := &resources{}
-		err = json.Unmarshal([]byte(nodeResources[fmt.Sprint("/WAVE/NODE/RESOURCES/", uuid)]), resources)
-		if err!=nil {
-			nodeErr = errors.Join(nodeErr, fmt.Errorf("parsing node resources: %w", err))
+
+		node := &node.Node{
+			Config: config,
 		}
-		
-		nodes[uuid] = structure.Node{
-			Affinity: *affinity,
-			State: structure.NODE_STATE(state),
-			AllocatedCpu: resources.AllocatedCpu,
-			AvailableCpu: resources.AvailableCpu,
-			AllocatedMemory: resources.AllocatedMemory,
-			AvailableMemory: resources.AvailableMemory,
-			Error: nodeErr,
+		if nodeErr != nil {
+			node.Error = nodeErr.Error()
 		}
+		nodes[id] = node
 	}
 	return nodes, nil
 }
 
+// Lookup finds the specified node and returns its associated metadata from the database.
+func (n *Controller) Lookup(ctx context.Context, id string) (*node.Node, error) {
+	rawConfig, err := n.client.Get(ctx, fmt.Sprintf("/WAVE/NODE/CONFIG/%s", id))
+	if err != nil {
+		return nil, fmt.Errorf("fetching node config: %w", err)
+	}
+
+  if rawConfig == "" {
+    return nil, fmt.Errorf("node not found")
+  }
+
+	config := &node.NodeConfig{}
+	err = proto.Unmarshal([]byte(rawConfig), config)
+	if err != nil {
+    return nil, fmt.Errorf("failed to parse node config %w", err)
+	}
+
+  return &node.Node{
+    Config: config,
+  }, nil
+}
+
 // Register registers / announces node information to the cluster by adding it to the database.
 // The registration expires after ttl and must be renewed in order to ensure the node is part of the cluster.
-func (n *Controller) Register(ctx context.Context, id string, node structure.Node, ttl int64) error {
-	_, err := n.client.Set(ctx, fmt.Sprintf("/WAVE/NODE/STATE/%s", id), string(node.State), ttl)
-	if err!=nil {
-		return err
-	}
-
-	rawTags, err := json.Marshal(affinity(node.Affinity))
-	if err!=nil {
-		return fmt.Errorf("cannot serialize affinity tags: %w", err)
-	}
-	_, err = n.client.Set(ctx, fmt.Sprintf("/WAVE/NODE/AFFINITY/%s", id), string(rawTags), ttl)
-	if err!=nil {
-		return err
-	}
-
-	rawResources, err := json.Marshal(&resources{
-		AllocatedCpu: node.AllocatedCpu,
-		AvailableCpu: node.AvailableCpu,
-		AllocatedMemory: node.AllocatedMemory,
-		AvailableMemory: node.AvailableMemory,
-	})
-	if err!=nil {
-		return fmt.Errorf("cannot serialize resources: %w", err)
-	}
-	_, err = n.client.Set(ctx, fmt.Sprintf("/WAVE/NODE/RESOURCES/%s", id), string(rawResources), ttl)
-	if err!=nil {
+func (n *Controller) Register(ctx context.Context, id string, node *node.Node, ttl int64) error {
+  rawConfig, err := proto.Marshal(node.Config)
+  if err!=nil {
+    return fmt.Errorf("failed to serialize config: %w", err)
+  }
+	_, err = n.client.Set(ctx, fmt.Sprintf("/WAVE/NODE/CONFIG/%s", id), string(rawConfig), ttl)
+	if err != nil {
 		return err
 	}
 
 	return nil
 }
 
-
 // Unregister removes an existing node registration entry.
 func (n *Controller) Unregister(ctx context.Context, id string) error {
-	err := n.client.Delete(ctx, fmt.Sprintf("/WAVE/NODE/STATE/%s", id))
-	if err!=nil {
+	err := n.client.Delete(ctx, fmt.Sprintf("/WAVE/NODE/CONFIG/%s", id))
+	if err != nil {
 		return err
 	}
 
-	err = n.client.Delete(ctx, fmt.Sprintf("/WAVE/NODE/AFFINITY/%s", id))
-	if err!=nil {
-		return err
-	}
-
-	err = n.client.Delete(ctx, fmt.Sprintf("/WAVE/NODE/RESOURCES/%s", id))
-	if err!=nil {
-		return err
-	}
-	
 	return nil
 }

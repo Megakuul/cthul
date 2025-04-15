@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"cthul.io/cthul/pkg/wave/node"
-	"cthul.io/cthul/pkg/wave/node/structure"
+  nodestruct "cthul.io/cthul/pkg/api/wave/v1/node"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
@@ -35,7 +35,7 @@ import (
 // associated state and allows other wave components like the scheduler to discover it.
 // On every cycle the node state & resources are measured and reevaluated.
 func (n *Operator) register() {
-	nodeController := node.NewController(n.client)
+	nodeController := node.NewController(n.nodeId, n.client)
 	
 	for {
 		ctx, cancel := context.WithTimeout(n.workCtx, time.Second*time.Duration(n.cycleTTL))
@@ -46,7 +46,7 @@ func (n *Operator) register() {
 		if err!=nil {
 			n.logger.Error(fmt.Sprintf("cannot report node state: %s", err.Error()))
 		} else {
-			err = nodeController.Register(ctx, n.nodeId, *node, n.cycleTTL*2)
+			err = nodeController.Register(ctx, n.nodeId, node, n.cycleTTL*2)
 			if err != nil {
 				n.logger.Error(fmt.Sprintf("failed to register node: %s", err.Error()))
 			}
@@ -65,16 +65,18 @@ func (n *Operator) register() {
 	}
 }
 
-// acquireNodeInfo acquires an informational node structure by reading local machine specs (cpu, mem, etc)
+// acquireNodeInfo acquires an informational node by reading local machine specs (cpu, mem, etc)
 // and further attributes statically defined on the operator.
-func (n *Operator) acquireNodeInfo(ctx context.Context) (*structure.Node, error) {
-	node := structure.Node{
-		Affinity: n.affinity,
-		State: structure.NODE_HEALTHY,
+func (n *Operator) acquireNodeInfo(ctx context.Context) (*nodestruct.Node, error) {
+	node := nodestruct.Node{
+    Config: &nodestruct.NodeConfig{
+      Affinity: n.affinity,
+      State: nodestruct.NodeState_NODE_STATE_HEALTHY,
+    },
 	}
 
 	if n.maintenance {
-		node.State = structure.NODE_MAINTENANCE
+    node.Config.State = nodestruct.NodeState_NODE_STATE_MAINTENANCE
 	}
 
 	cpuCores, err := cpu.InfoWithContext(ctx)
@@ -86,23 +88,23 @@ func (n *Operator) acquireNodeInfo(ctx context.Context) (*structure.Node, error)
 		totalCpuCores += core.Cores
 	}
 	// total cpu cores * factor (e.g. 10 * 0.8 = 8 cores)
-	node.AllocatedCpu = float64(totalCpuCores) * n.cpuFactor
+	node.Config.AllocatedCpu = float64(totalCpuCores) * n.cpuFactor
 
 	cpuLoad, err := cpu.PercentWithContext(ctx, 0, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to measure cpu load")
 	}
 	// cpu factor - cpu load * total cpu cores (e.g. (0.8 - 0.4) * 10 = 4 cores)
-	node.AvailableCpu = (n.cpuFactor * 100 - cpuLoad[0]) / 100 * float64(totalCpuCores)
+	node.Config.AvailableCpu = (n.cpuFactor * 100 - cpuLoad[0]) / 100 * float64(totalCpuCores)
 
 	memoryUsage, err := mem.VirtualMemoryWithContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to acquire virtual memory information")
 	}
 	// total mem bytes * memfactor (e.g. 4096 * 0.8 = 3276 bytes)
-	node.AllocatedMemory = int64(float64(memoryUsage.Total) * n.memoryFactor)
+	node.Config.AllocatedMemory = int64(float64(memoryUsage.Total) * n.memoryFactor)
 	// factored mem bytes * used mem bytes (e.g. 3276 - 2000 = 1276 bytes)
-	node.AvailableMemory = node.AllocatedMemory - int64(memoryUsage.Used)
+	node.Config.AvailableMemory = node.Config.AllocatedMemory - int64(memoryUsage.Used)
 
 	return &node, nil
 }
