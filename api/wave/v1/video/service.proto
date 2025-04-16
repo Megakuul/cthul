@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package wave.v1.video;
+
+option go_package = "cthul.io/cthul/pkg/api/wave/v1/video";
+
+import "wave/v1/video/message.proto";
+
+service VideoService {
+  rpc Get(GetRequest) returns (GetResponse) {}
+  rpc List(ListRequest) returns (ListResponse) {}
+  rpc Create(CreateRequest) returns (CreateResponse) {}
+  rpc Update(UpdateRequest) returns (UpdateResponse) {}
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {}
+}
