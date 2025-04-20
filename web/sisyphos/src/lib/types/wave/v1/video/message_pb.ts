@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file wave/v1/video/message.proto.
  */
 export const file_wave_v1_video_message: GenFile = /*@__PURE__*/
-  fileDesc("Cht3YXZlL3YxL3ZpZGVvL21lc3NhZ2UucHJvdG8SDXdhdmUudjEudmlkZW8iYQoFVmlkZW8SDwoHcmVxbm9kZRgBIAEoCRIMCgRub2RlGAIgASgJEioKBmNvbmZpZxgDIAEoCzIaLndhdmUudjEudmlkZW8uVmlkZW9Db25maWcSDQoFZXJyb3IYCCABKAkiGAoKR2V0UmVxdWVzdBIKCgJpZBgBIAEoCSIyCgtHZXRSZXNwb25zZRIjCgV2aWRlbxgBIAEoCzIULndhdmUudjEudmlkZW8uVmlkZW8iDQoLTGlzdFJlcXVlc3QiNAoMTGlzdFJlc3BvbnNlEiQKBnZpZGVvcxgBIAMoCzIULndhdmUudjEudmlkZW8uVmlkZW8iOwoNQ3JlYXRlUmVxdWVzdBIqCgZjb25maWcYASABKAsyGi53YXZlLnYxLnZpZGVvLlZpZGVvQ29uZmlnIhwKDkNyZWF0ZVJlc3BvbnNlEgoKAmlkGAEgASgJIkcKDVVwZGF0ZVJlcXVlc3QSCgoCaWQYASABKAkSKgoGY29uZmlnGAIgASgLMhoud2F2ZS52MS52aWRlby5WaWRlb0NvbmZpZyIQCg5VcGRhdGVSZXNwb25zZSIbCg1EZWxldGVSZXF1ZXN0EgoKAmlkGAEgASgJIhAKDkRlbGV0ZVJlc3BvbnNlQiZaJGN0aHVsLmlvL2N0aHVsL3BrZy9hcGkvd2F2ZS92MS92aWRlb2IGcHJvdG8z", [file_wave_v1_video_config]);
+  fileDesc("Cht3YXZlL3YxL3ZpZGVvL21lc3NhZ2UucHJvdG8SDXdhdmUudjEudmlkZW8iYQoFVmlkZW8SDwoHcmVxbm9kZRgBIAEoCRIMCgRub2RlGAIgASgJEioKBmNvbmZpZxgDIAEoCzIaLndhdmUudjEudmlkZW8uVmlkZW9Db25maWcSDQoFZXJyb3IYCCABKAkiGAoKR2V0UmVxdWVzdBIKCgJpZBgBIAEoCSIyCgtHZXRSZXNwb25zZRIjCgV2aWRlbxgBIAEoCzIULndhdmUudjEudmlkZW8uVmlkZW8iHwoOQ29ubmVjdFJlcXVlc3QSDQoFaW5wdXQYASABKAwiIQoPQ29ubmVjdFJlc3BvbnNlEg4KBm91dHB1dBgBIAEoDCINCgtMaXN0UmVxdWVzdCI0CgxMaXN0UmVzcG9uc2USJAoGdmlkZW9zGAEgAygLMhQud2F2ZS52MS52aWRlby5WaWRlbyI7Cg1DcmVhdGVSZXF1ZXN0EioKBmNvbmZpZxgBIAEoCzIaLndhdmUudjEudmlkZW8uVmlkZW9Db25maWciHAoOQ3JlYXRlUmVzcG9uc2USCgoCaWQYASABKAkiRwoNVXBkYXRlUmVxdWVzdBIKCgJpZBgBIAEoCRIqCgZjb25maWcYAiABKAsyGi53YXZlLnYxLnZpZGVvLlZpZGVvQ29uZmlnIhAKDlVwZGF0ZVJlc3BvbnNlIhsKDURlbGV0ZVJlcXVlc3QSCgoCaWQYASABKAkiEAoORGVsZXRlUmVzcG9uc2VCJlokY3RodWwuaW8vY3RodWwvcGtnL2FwaS93YXZlL3YxL3ZpZGVvYgZwcm90bzM", [file_wave_v1_video_config]);
 
 /**
  * @generated from message wave.v1.video.Video
@@ -83,6 +83,40 @@ export const GetResponseSchema: GenMessage<GetResponse> = /*@__PURE__*/
   messageDesc(file_wave_v1_video_message, 2);
 
 /**
+ * @generated from message wave.v1.video.ConnectRequest
+ */
+export type ConnectRequest = Message<"wave.v1.video.ConnectRequest"> & {
+  /**
+   * @generated from field: bytes input = 1;
+   */
+  input: Uint8Array;
+};
+
+/**
+ * Describes the message wave.v1.video.ConnectRequest.
+ * Use `create(ConnectRequestSchema)` to create a new message.
+ */
+export const ConnectRequestSchema: GenMessage<ConnectRequest> = /*@__PURE__*/
+  messageDesc(file_wave_v1_video_message, 3);
+
+/**
+ * @generated from message wave.v1.video.ConnectResponse
+ */
+export type ConnectResponse = Message<"wave.v1.video.ConnectResponse"> & {
+  /**
+   * @generated from field: bytes output = 1;
+   */
+  output: Uint8Array;
+};
+
+/**
+ * Describes the message wave.v1.video.ConnectResponse.
+ * Use `create(ConnectResponseSchema)` to create a new message.
+ */
+export const ConnectResponseSchema: GenMessage<ConnectResponse> = /*@__PURE__*/
+  messageDesc(file_wave_v1_video_message, 4);
+
+/**
  * @generated from message wave.v1.video.ListRequest
  */
 export type ListRequest = Message<"wave.v1.video.ListRequest"> & {
@@ -93,7 +127,7 @@ export type ListRequest = Message<"wave.v1.video.ListRequest"> & {
  * Use `create(ListRequestSchema)` to create a new message.
  */
 export const ListRequestSchema: GenMessage<ListRequest> = /*@__PURE__*/
-  messageDesc(file_wave_v1_video_message, 3);
+  messageDesc(file_wave_v1_video_message, 5);
 
 /**
  * @generated from message wave.v1.video.ListResponse
@@ -110,7 +144,7 @@ export type ListResponse = Message<"wave.v1.video.ListResponse"> & {
  * Use `create(ListResponseSchema)` to create a new message.
  */
 export const ListResponseSchema: GenMessage<ListResponse> = /*@__PURE__*/
-  messageDesc(file_wave_v1_video_message, 4);
+  messageDesc(file_wave_v1_video_message, 6);
 
 /**
  * @generated from message wave.v1.video.CreateRequest
@@ -127,7 +161,7 @@ export type CreateRequest = Message<"wave.v1.video.CreateRequest"> & {
  * Use `create(CreateRequestSchema)` to create a new message.
  */
 export const CreateRequestSchema: GenMessage<CreateRequest> = /*@__PURE__*/
-  messageDesc(file_wave_v1_video_message, 5);
+  messageDesc(file_wave_v1_video_message, 7);
 
 /**
  * @generated from message wave.v1.video.CreateResponse
@@ -144,7 +178,7 @@ export type CreateResponse = Message<"wave.v1.video.CreateResponse"> & {
  * Use `create(CreateResponseSchema)` to create a new message.
  */
 export const CreateResponseSchema: GenMessage<CreateResponse> = /*@__PURE__*/
-  messageDesc(file_wave_v1_video_message, 6);
+  messageDesc(file_wave_v1_video_message, 8);
 
 /**
  * @generated from message wave.v1.video.UpdateRequest
@@ -166,7 +200,7 @@ export type UpdateRequest = Message<"wave.v1.video.UpdateRequest"> & {
  * Use `create(UpdateRequestSchema)` to create a new message.
  */
 export const UpdateRequestSchema: GenMessage<UpdateRequest> = /*@__PURE__*/
-  messageDesc(file_wave_v1_video_message, 7);
+  messageDesc(file_wave_v1_video_message, 9);
 
 /**
  * @generated from message wave.v1.video.UpdateResponse
@@ -179,7 +213,7 @@ export type UpdateResponse = Message<"wave.v1.video.UpdateResponse"> & {
  * Use `create(UpdateResponseSchema)` to create a new message.
  */
 export const UpdateResponseSchema: GenMessage<UpdateResponse> = /*@__PURE__*/
-  messageDesc(file_wave_v1_video_message, 8);
+  messageDesc(file_wave_v1_video_message, 10);
 
 /**
  * @generated from message wave.v1.video.DeleteRequest
@@ -196,7 +230,7 @@ export type DeleteRequest = Message<"wave.v1.video.DeleteRequest"> & {
  * Use `create(DeleteRequestSchema)` to create a new message.
  */
 export const DeleteRequestSchema: GenMessage<DeleteRequest> = /*@__PURE__*/
-  messageDesc(file_wave_v1_video_message, 9);
+  messageDesc(file_wave_v1_video_message, 11);
 
 /**
  * @generated from message wave.v1.video.DeleteResponse
@@ -209,5 +243,5 @@ export type DeleteResponse = Message<"wave.v1.video.DeleteResponse"> & {
  * Use `create(DeleteResponseSchema)` to create a new message.
  */
 export const DeleteResponseSchema: GenMessage<DeleteResponse> = /*@__PURE__*/
-  messageDesc(file_wave_v1_video_message, 10);
+  messageDesc(file_wave_v1_video_message, 12);
 

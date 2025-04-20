@@ -25,15 +25,18 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"cthul.io/cthul/pkg/api/wave/v1/serial"
+	"google.golang.org/protobuf/proto"
 )
 
 func (o *Operator) synchronize() {
   o.syncer.Add("/WAVE/SERIAL/REQNODE", o.updateCycleTTL, func(ctx context.Context, k, reqnode string) error {
     uuid := strings.TrimPrefix(k, "/WAVE/SERIAL/REQNODE/")
-    pathKey := fmt.Sprintf("/WAVE/SERIAL/PATH/%s", uuid)
+    configKey := fmt.Sprintf("/WAVE/SERIAL/CONFIG/%s", uuid)
     if reqnode == o.nodeId {
-      o.syncer.Add(pathKey, o.pathCycleTTL, func(ctx context.Context, k, path string) error {
-        err := o.ensurePath(o.runRoot, path)
+      o.syncer.Add(configKey, o.syncCycleTTL, func(ctx context.Context, k, v string) error {
+        err := o.applyConfig(v)
         if err!=nil {
           return err
         }
@@ -44,18 +47,24 @@ func (o *Operator) synchronize() {
         return nil
       })
     } else {
-      o.syncer.Remove(pathKey, false)
+      o.syncer.Remove(configKey, false)
     }
     return nil
   })
 }
 
-func (o *Operator) ensurePath(base, path string) error {
-  cleanPath := filepath.Join(base, path)  
-  if !strings.HasPrefix(cleanPath, base) {
-    return fmt.Errorf("device socket path is not allowed to escape the run root ('%s' => '%s')", base, cleanPath)
+func (o *Operator) applyConfig(rawConfig string) error {
+  config := &serial.SerialConfig{}
+  err := proto.Unmarshal([]byte(rawConfig), config)
+  if err!=nil {
+		return fmt.Errorf("failed to parse config: %w", err)
   }
-  err := os.MkdirAll(filepath.Dir(cleanPath), 0600)
+
+  cleanPath := filepath.Join(o.runRoot, config.Path)  
+  if !strings.HasPrefix(cleanPath, o.runRoot) {
+    return fmt.Errorf("device socket path is not allowed to escape the run root ('%s' => '%s')", o.runRoot, cleanPath)
+  }
+  err = os.MkdirAll(filepath.Dir(cleanPath), 0600)
   if err!=nil {
     return err
   }

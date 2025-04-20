@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package wave.v1.node;
+
+option go_package = "cthul.io/cthul/pkg/api/wave/v1/node";
+
+enum NodeState {
+  NODE_STATE_HEALTHY = 0;
+  NODE_STATE_DEGRADED = 1;
+  NODE_STATE_MAINTENANCE = 2;
+}
+
+message NodeConfig {
+  repeated string affinity = 1;
+  NodeState state = 2;
+  double allocated_cpu = 3;
+  double available_cpu = 4;
+  int64 allocated_memory = 5;
+  int64 available_memory = 6;
+}

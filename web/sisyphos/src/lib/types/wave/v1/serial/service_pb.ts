@@ -4,14 +4,14 @@
 
 import type { GenFile, GenService } from "@bufbuild/protobuf/codegenv1";
 import { fileDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
-import type { CreateRequestSchema, CreateResponseSchema, DeleteRequestSchema, DeleteResponseSchema, GetRequestSchema, GetResponseSchema, ListRequestSchema, ListResponseSchema, UpdateRequestSchema, UpdateResponseSchema } from "./message_pb";
+import type { ConnectRequestSchema, ConnectResponseSchema, CreateRequestSchema, CreateResponseSchema, DeleteRequestSchema, DeleteResponseSchema, GetRequestSchema, GetResponseSchema, ListRequestSchema, ListResponseSchema, UpdateRequestSchema, UpdateResponseSchema } from "./message_pb";
 import { file_wave_v1_serial_message } from "./message_pb";
 
 /**
  * Describes the file wave/v1/serial/service.proto.
  */
 export const file_wave_v1_serial_service: GenFile = /*@__PURE__*/
-  fileDesc("Chx3YXZlL3YxL3NlcmlhbC9zZXJ2aWNlLnByb3RvEg53YXZlLnYxLnNlcmlhbDL3AgoNU2VyaWFsU2VydmljZRJACgNHZXQSGi53YXZlLnYxLnNlcmlhbC5HZXRSZXF1ZXN0Ghsud2F2ZS52MS5zZXJpYWwuR2V0UmVzcG9uc2UiABJDCgRMaXN0Ehsud2F2ZS52MS5zZXJpYWwuTGlzdFJlcXVlc3QaHC53YXZlLnYxLnNlcmlhbC5MaXN0UmVzcG9uc2UiABJJCgZDcmVhdGUSHS53YXZlLnYxLnNlcmlhbC5DcmVhdGVSZXF1ZXN0Gh4ud2F2ZS52MS5zZXJpYWwuQ3JlYXRlUmVzcG9uc2UiABJJCgZVcGRhdGUSHS53YXZlLnYxLnNlcmlhbC5VcGRhdGVSZXF1ZXN0Gh4ud2F2ZS52MS5zZXJpYWwuVXBkYXRlUmVzcG9uc2UiABJJCgZEZWxldGUSHS53YXZlLnYxLnNlcmlhbC5EZWxldGVSZXF1ZXN0Gh4ud2F2ZS52MS5zZXJpYWwuRGVsZXRlUmVzcG9uc2UiAEInWiVjdGh1bC5pby9jdGh1bC9wa2cvYXBpL3dhdmUvdjEvc2VyaWFsYgZwcm90bzM", [file_wave_v1_serial_message]);
+  fileDesc("Chx3YXZlL3YxL3NlcmlhbC9zZXJ2aWNlLnByb3RvEg53YXZlLnYxLnNlcmlhbDLJAwoNU2VyaWFsU2VydmljZRJACgNHZXQSGi53YXZlLnYxLnNlcmlhbC5HZXRSZXF1ZXN0Ghsud2F2ZS52MS5zZXJpYWwuR2V0UmVzcG9uc2UiABJQCgdDb25uZWN0Eh4ud2F2ZS52MS5zZXJpYWwuQ29ubmVjdFJlcXVlc3QaHy53YXZlLnYxLnNlcmlhbC5Db25uZWN0UmVzcG9uc2UiACgBMAESQwoETGlzdBIbLndhdmUudjEuc2VyaWFsLkxpc3RSZXF1ZXN0Ghwud2F2ZS52MS5zZXJpYWwuTGlzdFJlc3BvbnNlIgASSQoGQ3JlYXRlEh0ud2F2ZS52MS5zZXJpYWwuQ3JlYXRlUmVxdWVzdBoeLndhdmUudjEuc2VyaWFsLkNyZWF0ZVJlc3BvbnNlIgASSQoGVXBkYXRlEh0ud2F2ZS52MS5zZXJpYWwuVXBkYXRlUmVxdWVzdBoeLndhdmUudjEuc2VyaWFsLlVwZGF0ZVJlc3BvbnNlIgASSQoGRGVsZXRlEh0ud2F2ZS52MS5zZXJpYWwuRGVsZXRlUmVxdWVzdBoeLndhdmUudjEuc2VyaWFsLkRlbGV0ZVJlc3BvbnNlIgBCJ1olY3RodWwuaW8vY3RodWwvcGtnL2FwaS93YXZlL3YxL3NlcmlhbGIGcHJvdG8z", [file_wave_v1_serial_message]);
 
 /**
  * @generated from service wave.v1.serial.SerialService
@@ -24,6 +24,14 @@ export const SerialService: GenService<{
     methodKind: "unary";
     input: typeof GetRequestSchema;
     output: typeof GetResponseSchema;
+  },
+  /**
+   * @generated from rpc wave.v1.serial.SerialService.Connect
+   */
+  connect: {
+    methodKind: "bidi_streaming";
+    input: typeof ConnectRequestSchema;
+    output: typeof ConnectResponseSchema;
   },
   /**
    * @generated from rpc wave.v1.serial.SerialService.List

@@ -35,6 +35,8 @@ const (
 const (
 	// VideoServiceGetProcedure is the fully-qualified name of the VideoService's Get RPC.
 	VideoServiceGetProcedure = "/wave.v1.video.VideoService/Get"
+	// VideoServiceConnectProcedure is the fully-qualified name of the VideoService's Connect RPC.
+	VideoServiceConnectProcedure = "/wave.v1.video.VideoService/Connect"
 	// VideoServiceListProcedure is the fully-qualified name of the VideoService's List RPC.
 	VideoServiceListProcedure = "/wave.v1.video.VideoService/List"
 	// VideoServiceCreateProcedure is the fully-qualified name of the VideoService's Create RPC.
@@ -47,17 +49,19 @@ const (
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	videoServiceServiceDescriptor      = video.File_wave_v1_video_service_proto.Services().ByName("VideoService")
-	videoServiceGetMethodDescriptor    = videoServiceServiceDescriptor.Methods().ByName("Get")
-	videoServiceListMethodDescriptor   = videoServiceServiceDescriptor.Methods().ByName("List")
-	videoServiceCreateMethodDescriptor = videoServiceServiceDescriptor.Methods().ByName("Create")
-	videoServiceUpdateMethodDescriptor = videoServiceServiceDescriptor.Methods().ByName("Update")
-	videoServiceDeleteMethodDescriptor = videoServiceServiceDescriptor.Methods().ByName("Delete")
+	videoServiceServiceDescriptor       = video.File_wave_v1_video_service_proto.Services().ByName("VideoService")
+	videoServiceGetMethodDescriptor     = videoServiceServiceDescriptor.Methods().ByName("Get")
+	videoServiceConnectMethodDescriptor = videoServiceServiceDescriptor.Methods().ByName("Connect")
+	videoServiceListMethodDescriptor    = videoServiceServiceDescriptor.Methods().ByName("List")
+	videoServiceCreateMethodDescriptor  = videoServiceServiceDescriptor.Methods().ByName("Create")
+	videoServiceUpdateMethodDescriptor  = videoServiceServiceDescriptor.Methods().ByName("Update")
+	videoServiceDeleteMethodDescriptor  = videoServiceServiceDescriptor.Methods().ByName("Delete")
 )
 
 // VideoServiceClient is a client for the wave.v1.video.VideoService service.
 type VideoServiceClient interface {
 	Get(context.Context, *connect.Request[video.GetRequest]) (*connect.Response[video.GetResponse], error)
+	Connect(context.Context) *connect.BidiStreamForClient[video.ConnectRequest, video.ConnectResponse]
 	List(context.Context, *connect.Request[video.ListRequest]) (*connect.Response[video.ListResponse], error)
 	Create(context.Context, *connect.Request[video.CreateRequest]) (*connect.Response[video.CreateResponse], error)
 	Update(context.Context, *connect.Request[video.UpdateRequest]) (*connect.Response[video.UpdateResponse], error)
@@ -78,6 +82,12 @@ func NewVideoServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			httpClient,
 			baseURL+VideoServiceGetProcedure,
 			connect.WithSchema(videoServiceGetMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		connect: connect.NewClient[video.ConnectRequest, video.ConnectResponse](
+			httpClient,
+			baseURL+VideoServiceConnectProcedure,
+			connect.WithSchema(videoServiceConnectMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 		list: connect.NewClient[video.ListRequest, video.ListResponse](
@@ -109,16 +119,22 @@ func NewVideoServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 
 // videoServiceClient implements VideoServiceClient.
 type videoServiceClient struct {
-	get    *connect.Client[video.GetRequest, video.GetResponse]
-	list   *connect.Client[video.ListRequest, video.ListResponse]
-	create *connect.Client[video.CreateRequest, video.CreateResponse]
-	update *connect.Client[video.UpdateRequest, video.UpdateResponse]
-	delete *connect.Client[video.DeleteRequest, video.DeleteResponse]
+	get     *connect.Client[video.GetRequest, video.GetResponse]
+	connect *connect.Client[video.ConnectRequest, video.ConnectResponse]
+	list    *connect.Client[video.ListRequest, video.ListResponse]
+	create  *connect.Client[video.CreateRequest, video.CreateResponse]
+	update  *connect.Client[video.UpdateRequest, video.UpdateResponse]
+	delete  *connect.Client[video.DeleteRequest, video.DeleteResponse]
 }
 
 // Get calls wave.v1.video.VideoService.Get.
 func (c *videoServiceClient) Get(ctx context.Context, req *connect.Request[video.GetRequest]) (*connect.Response[video.GetResponse], error) {
 	return c.get.CallUnary(ctx, req)
+}
+
+// Connect calls wave.v1.video.VideoService.Connect.
+func (c *videoServiceClient) Connect(ctx context.Context) *connect.BidiStreamForClient[video.ConnectRequest, video.ConnectResponse] {
+	return c.connect.CallBidiStream(ctx)
 }
 
 // List calls wave.v1.video.VideoService.List.
@@ -144,6 +160,7 @@ func (c *videoServiceClient) Delete(ctx context.Context, req *connect.Request[vi
 // VideoServiceHandler is an implementation of the wave.v1.video.VideoService service.
 type VideoServiceHandler interface {
 	Get(context.Context, *connect.Request[video.GetRequest]) (*connect.Response[video.GetResponse], error)
+	Connect(context.Context, *connect.BidiStream[video.ConnectRequest, video.ConnectResponse]) error
 	List(context.Context, *connect.Request[video.ListRequest]) (*connect.Response[video.ListResponse], error)
 	Create(context.Context, *connect.Request[video.CreateRequest]) (*connect.Response[video.CreateResponse], error)
 	Update(context.Context, *connect.Request[video.UpdateRequest]) (*connect.Response[video.UpdateResponse], error)
@@ -160,6 +177,12 @@ func NewVideoServiceHandler(svc VideoServiceHandler, opts ...connect.HandlerOpti
 		VideoServiceGetProcedure,
 		svc.Get,
 		connect.WithSchema(videoServiceGetMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	videoServiceConnectHandler := connect.NewBidiStreamHandler(
+		VideoServiceConnectProcedure,
+		svc.Connect,
+		connect.WithSchema(videoServiceConnectMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
 	videoServiceListHandler := connect.NewUnaryHandler(
@@ -190,6 +213,8 @@ func NewVideoServiceHandler(svc VideoServiceHandler, opts ...connect.HandlerOpti
 		switch r.URL.Path {
 		case VideoServiceGetProcedure:
 			videoServiceGetHandler.ServeHTTP(w, r)
+		case VideoServiceConnectProcedure:
+			videoServiceConnectHandler.ServeHTTP(w, r)
 		case VideoServiceListProcedure:
 			videoServiceListHandler.ServeHTTP(w, r)
 		case VideoServiceCreateProcedure:
@@ -209,6 +234,10 @@ type UnimplementedVideoServiceHandler struct{}
 
 func (UnimplementedVideoServiceHandler) Get(context.Context, *connect.Request[video.GetRequest]) (*connect.Response[video.GetResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("wave.v1.video.VideoService.Get is not implemented"))
+}
+
+func (UnimplementedVideoServiceHandler) Connect(context.Context, *connect.BidiStream[video.ConnectRequest, video.ConnectResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("wave.v1.video.VideoService.Connect is not implemented"))
 }
 
 func (UnimplementedVideoServiceHandler) List(context.Context, *connect.Request[video.ListRequest]) (*connect.Response[video.ListResponse], error) {

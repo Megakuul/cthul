@@ -4,14 +4,14 @@
 
 import type { GenFile, GenService } from "@bufbuild/protobuf/codegenv1";
 import { fileDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
-import type { CreateRequestSchema, CreateResponseSchema, DeleteRequestSchema, DeleteResponseSchema, GetRequestSchema, GetResponseSchema, ListRequestSchema, ListResponseSchema, UpdateRequestSchema, UpdateResponseSchema } from "./message_pb";
+import type { ConnectRequestSchema, ConnectResponseSchema, CreateRequestSchema, CreateResponseSchema, DeleteRequestSchema, DeleteResponseSchema, GetRequestSchema, GetResponseSchema, ListRequestSchema, ListResponseSchema, UpdateRequestSchema, UpdateResponseSchema } from "./message_pb";
 import { file_wave_v1_video_message } from "./message_pb";
 
 /**
  * Describes the file wave/v1/video/service.proto.
  */
 export const file_wave_v1_video_service: GenFile = /*@__PURE__*/
-  fileDesc("Cht3YXZlL3YxL3ZpZGVvL3NlcnZpY2UucHJvdG8SDXdhdmUudjEudmlkZW8y7AIKDFZpZGVvU2VydmljZRI+CgNHZXQSGS53YXZlLnYxLnZpZGVvLkdldFJlcXVlc3QaGi53YXZlLnYxLnZpZGVvLkdldFJlc3BvbnNlIgASQQoETGlzdBIaLndhdmUudjEudmlkZW8uTGlzdFJlcXVlc3QaGy53YXZlLnYxLnZpZGVvLkxpc3RSZXNwb25zZSIAEkcKBkNyZWF0ZRIcLndhdmUudjEudmlkZW8uQ3JlYXRlUmVxdWVzdBodLndhdmUudjEudmlkZW8uQ3JlYXRlUmVzcG9uc2UiABJHCgZVcGRhdGUSHC53YXZlLnYxLnZpZGVvLlVwZGF0ZVJlcXVlc3QaHS53YXZlLnYxLnZpZGVvLlVwZGF0ZVJlc3BvbnNlIgASRwoGRGVsZXRlEhwud2F2ZS52MS52aWRlby5EZWxldGVSZXF1ZXN0Gh0ud2F2ZS52MS52aWRlby5EZWxldGVSZXNwb25zZSIAQiZaJGN0aHVsLmlvL2N0aHVsL3BrZy9hcGkvd2F2ZS92MS92aWRlb2IGcHJvdG8z", [file_wave_v1_video_message]);
+  fileDesc("Cht3YXZlL3YxL3ZpZGVvL3NlcnZpY2UucHJvdG8SDXdhdmUudjEudmlkZW8yvAMKDFZpZGVvU2VydmljZRI+CgNHZXQSGS53YXZlLnYxLnZpZGVvLkdldFJlcXVlc3QaGi53YXZlLnYxLnZpZGVvLkdldFJlc3BvbnNlIgASTgoHQ29ubmVjdBIdLndhdmUudjEudmlkZW8uQ29ubmVjdFJlcXVlc3QaHi53YXZlLnYxLnZpZGVvLkNvbm5lY3RSZXNwb25zZSIAKAEwARJBCgRMaXN0Ehoud2F2ZS52MS52aWRlby5MaXN0UmVxdWVzdBobLndhdmUudjEudmlkZW8uTGlzdFJlc3BvbnNlIgASRwoGQ3JlYXRlEhwud2F2ZS52MS52aWRlby5DcmVhdGVSZXF1ZXN0Gh0ud2F2ZS52MS52aWRlby5DcmVhdGVSZXNwb25zZSIAEkcKBlVwZGF0ZRIcLndhdmUudjEudmlkZW8uVXBkYXRlUmVxdWVzdBodLndhdmUudjEudmlkZW8uVXBkYXRlUmVzcG9uc2UiABJHCgZEZWxldGUSHC53YXZlLnYxLnZpZGVvLkRlbGV0ZVJlcXVlc3QaHS53YXZlLnYxLnZpZGVvLkRlbGV0ZVJlc3BvbnNlIgBCJlokY3RodWwuaW8vY3RodWwvcGtnL2FwaS93YXZlL3YxL3ZpZGVvYgZwcm90bzM", [file_wave_v1_video_message]);
 
 /**
  * @generated from service wave.v1.video.VideoService
@@ -24,6 +24,14 @@ export const VideoService: GenService<{
     methodKind: "unary";
     input: typeof GetRequestSchema;
     output: typeof GetResponseSchema;
+  },
+  /**
+   * @generated from rpc wave.v1.video.VideoService.Connect
+   */
+  connect: {
+    methodKind: "bidi_streaming";
+    input: typeof ConnectRequestSchema;
+    output: typeof ConnectResponseSchema;
   },
   /**
    * @generated from rpc wave.v1.video.VideoService.List

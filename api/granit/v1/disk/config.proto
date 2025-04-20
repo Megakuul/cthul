@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package granit.v1.video;
+
+option go_package = "cthul.io/cthul/pkg/api/granit/v1/disk";
+
+enum DiskFormat {
+  DISK_FORMAT_RAW = 0;
+  DISK_FORMAT_QCOW2 = 1;
+}
+
+message DiskConfig {
+  DiskFormat format = 1;
+  int64 size = 2;
+  int64 replicas = 3;
+}

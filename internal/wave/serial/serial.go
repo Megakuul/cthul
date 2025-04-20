@@ -21,7 +21,7 @@ package serial
 
 import (
 	"context"
-  "log/slog"
+	"log/slog"
 
 	"cthul.io/cthul/pkg/db"
 	"cthul.io/cthul/pkg/syncer"
@@ -32,7 +32,7 @@ import (
 // ensuring the environment allows bootstrap of the serial server endpoint (e.g. mkdirall() the socket path).
 type Operator struct {
 	client db.Client
-  logger *slog.Logger
+	logger *slog.Logger
 	syncer *syncer.Syncer
 
 	// runRoot specifies the base path for runtime files (unix-sockets and stuff).
@@ -45,21 +45,21 @@ type Operator struct {
 	// (cycle essentially finds out what device must be synced by this node).
 	updateCycleTTL int64
 
-	// pathCycleTTL defines the ttl of the cycle that prepares the unix socket path for the serial device.
-	pathCycleTTL int64
+	// syncCycleTTL defines the ttl of the cycle that prepares the unix socket path for the serial device.
+	syncCycleTTL int64
 }
 
 type Option func(*Operator)
 
 func New(logger *slog.Logger, client db.Client, opts ...Option) *Operator {
 	operator := &Operator{
-		client:        client,
-		logger:        logger.WithGroup("serial-operator"),
-		syncer:        syncer.New(logger.WithGroup("serial-operator"), client),
-    runRoot: "/run/cthul/wave/serial/",
-		nodeId:        "undefined",
-    updateCycleTTL: 30,
-    pathCycleTTL: 30,
+		client:         client,
+		logger:         logger.WithGroup("serial-operator"),
+		syncer:         syncer.New(logger.WithGroup("serial-operator"), client),
+		runRoot:        "/run/cthul/wave/",
+		nodeId:         "undefined",
+		updateCycleTTL: 30,
+		syncCycleTTL:   30,
 	}
 
 	for _, opt := range opts {
@@ -68,7 +68,6 @@ func New(logger *slog.Logger, client db.Client, opts ...Option) *Operator {
 
 	return operator
 }
-
 
 // WithRunRoot defines a custom root path for runtime files (sockets, etc.).
 func WithRunRoot(path string) Option {
@@ -94,19 +93,19 @@ func WithUpdateCylceTTL(ttl int64) Option {
 	}
 }
 
-// WithPathCycleTTL defines a custom cycle interval for the device path syncer.
-// Every cycle prepares the path for the device unix socket.
-func WithPathCycleTTL(ttl int64) Option {
+// WithSyncCycleTTL defines a custom cycle interval for the device syncer.
+// Every cycle prepares u.a. the path for the device unix socket.
+func WithSyncCycleTTL(ttl int64) Option {
 	return func(o *Operator) {
-		o.pathCycleTTL = ttl
+		o.syncCycleTTL = ttl
 	}
 }
 
 func (o *Operator) ServeAndDetach() {
-  o.synchronize()
+	o.synchronize()
 }
 
 func (o *Operator) Terminate(ctx context.Context) error {
-  o.syncer.Shutdown()
-  return nil
+	o.syncer.Shutdown()
+	return nil
 }

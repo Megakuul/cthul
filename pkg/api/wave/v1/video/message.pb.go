@@ -185,6 +185,100 @@ func (x *GetResponse) GetVideo() *Video {
 	return nil
 }
 
+type ConnectRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Input []byte `protobuf:"bytes,1,opt,name=input,proto3" json:"input,omitempty"`
+}
+
+func (x *ConnectRequest) Reset() {
+	*x = ConnectRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_wave_v1_video_message_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ConnectRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConnectRequest) ProtoMessage() {}
+
+func (x *ConnectRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_wave_v1_video_message_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConnectRequest.ProtoReflect.Descriptor instead.
+func (*ConnectRequest) Descriptor() ([]byte, []int) {
+	return file_wave_v1_video_message_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ConnectRequest) GetInput() []byte {
+	if x != nil {
+		return x.Input
+	}
+	return nil
+}
+
+type ConnectResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Output []byte `protobuf:"bytes,1,opt,name=output,proto3" json:"output,omitempty"`
+}
+
+func (x *ConnectResponse) Reset() {
+	*x = ConnectResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_wave_v1_video_message_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ConnectResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConnectResponse) ProtoMessage() {}
+
+func (x *ConnectResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_wave_v1_video_message_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConnectResponse.ProtoReflect.Descriptor instead.
+func (*ConnectResponse) Descriptor() ([]byte, []int) {
+	return file_wave_v1_video_message_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ConnectResponse) GetOutput() []byte {
+	if x != nil {
+		return x.Output
+	}
+	return nil
+}
+
 type ListRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -194,7 +288,7 @@ type ListRequest struct {
 func (x *ListRequest) Reset() {
 	*x = ListRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_wave_v1_video_message_proto_msgTypes[3]
+		mi := &file_wave_v1_video_message_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -207,7 +301,7 @@ func (x *ListRequest) String() string {
 func (*ListRequest) ProtoMessage() {}
 
 func (x *ListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wave_v1_video_message_proto_msgTypes[3]
+	mi := &file_wave_v1_video_message_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -220,7 +314,7 @@ func (x *ListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRequest.ProtoReflect.Descriptor instead.
 func (*ListRequest) Descriptor() ([]byte, []int) {
-	return file_wave_v1_video_message_proto_rawDescGZIP(), []int{3}
+	return file_wave_v1_video_message_proto_rawDescGZIP(), []int{5}
 }
 
 type ListResponse struct {
@@ -234,7 +328,7 @@ type ListResponse struct {
 func (x *ListResponse) Reset() {
 	*x = ListResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_wave_v1_video_message_proto_msgTypes[4]
+		mi := &file_wave_v1_video_message_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -247,7 +341,7 @@ func (x *ListResponse) String() string {
 func (*ListResponse) ProtoMessage() {}
 
 func (x *ListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wave_v1_video_message_proto_msgTypes[4]
+	mi := &file_wave_v1_video_message_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -260,7 +354,7 @@ func (x *ListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListResponse.ProtoReflect.Descriptor instead.
 func (*ListResponse) Descriptor() ([]byte, []int) {
-	return file_wave_v1_video_message_proto_rawDescGZIP(), []int{4}
+	return file_wave_v1_video_message_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ListResponse) GetVideos() []*Video {
@@ -281,7 +375,7 @@ type CreateRequest struct {
 func (x *CreateRequest) Reset() {
 	*x = CreateRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_wave_v1_video_message_proto_msgTypes[5]
+		mi := &file_wave_v1_video_message_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -294,7 +388,7 @@ func (x *CreateRequest) String() string {
 func (*CreateRequest) ProtoMessage() {}
 
 func (x *CreateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wave_v1_video_message_proto_msgTypes[5]
+	mi := &file_wave_v1_video_message_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -307,7 +401,7 @@ func (x *CreateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateRequest.ProtoReflect.Descriptor instead.
 func (*CreateRequest) Descriptor() ([]byte, []int) {
-	return file_wave_v1_video_message_proto_rawDescGZIP(), []int{5}
+	return file_wave_v1_video_message_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CreateRequest) GetConfig() *VideoConfig {
@@ -328,7 +422,7 @@ type CreateResponse struct {
 func (x *CreateResponse) Reset() {
 	*x = CreateResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_wave_v1_video_message_proto_msgTypes[6]
+		mi := &file_wave_v1_video_message_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -341,7 +435,7 @@ func (x *CreateResponse) String() string {
 func (*CreateResponse) ProtoMessage() {}
 
 func (x *CreateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wave_v1_video_message_proto_msgTypes[6]
+	mi := &file_wave_v1_video_message_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -354,7 +448,7 @@ func (x *CreateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateResponse.ProtoReflect.Descriptor instead.
 func (*CreateResponse) Descriptor() ([]byte, []int) {
-	return file_wave_v1_video_message_proto_rawDescGZIP(), []int{6}
+	return file_wave_v1_video_message_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *CreateResponse) GetId() string {
@@ -376,7 +470,7 @@ type UpdateRequest struct {
 func (x *UpdateRequest) Reset() {
 	*x = UpdateRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_wave_v1_video_message_proto_msgTypes[7]
+		mi := &file_wave_v1_video_message_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -389,7 +483,7 @@ func (x *UpdateRequest) String() string {
 func (*UpdateRequest) ProtoMessage() {}
 
 func (x *UpdateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wave_v1_video_message_proto_msgTypes[7]
+	mi := &file_wave_v1_video_message_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -402,7 +496,7 @@ func (x *UpdateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateRequest.ProtoReflect.Descriptor instead.
 func (*UpdateRequest) Descriptor() ([]byte, []int) {
-	return file_wave_v1_video_message_proto_rawDescGZIP(), []int{7}
+	return file_wave_v1_video_message_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *UpdateRequest) GetId() string {
@@ -428,7 +522,7 @@ type UpdateResponse struct {
 func (x *UpdateResponse) Reset() {
 	*x = UpdateResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_wave_v1_video_message_proto_msgTypes[8]
+		mi := &file_wave_v1_video_message_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -441,7 +535,7 @@ func (x *UpdateResponse) String() string {
 func (*UpdateResponse) ProtoMessage() {}
 
 func (x *UpdateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wave_v1_video_message_proto_msgTypes[8]
+	mi := &file_wave_v1_video_message_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -454,7 +548,7 @@ func (x *UpdateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateResponse.ProtoReflect.Descriptor instead.
 func (*UpdateResponse) Descriptor() ([]byte, []int) {
-	return file_wave_v1_video_message_proto_rawDescGZIP(), []int{8}
+	return file_wave_v1_video_message_proto_rawDescGZIP(), []int{10}
 }
 
 type DeleteRequest struct {
@@ -468,7 +562,7 @@ type DeleteRequest struct {
 func (x *DeleteRequest) Reset() {
 	*x = DeleteRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_wave_v1_video_message_proto_msgTypes[9]
+		mi := &file_wave_v1_video_message_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -481,7 +575,7 @@ func (x *DeleteRequest) String() string {
 func (*DeleteRequest) ProtoMessage() {}
 
 func (x *DeleteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wave_v1_video_message_proto_msgTypes[9]
+	mi := &file_wave_v1_video_message_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -494,7 +588,7 @@ func (x *DeleteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteRequest.ProtoReflect.Descriptor instead.
 func (*DeleteRequest) Descriptor() ([]byte, []int) {
-	return file_wave_v1_video_message_proto_rawDescGZIP(), []int{9}
+	return file_wave_v1_video_message_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *DeleteRequest) GetId() string {
@@ -513,7 +607,7 @@ type DeleteResponse struct {
 func (x *DeleteResponse) Reset() {
 	*x = DeleteResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_wave_v1_video_message_proto_msgTypes[10]
+		mi := &file_wave_v1_video_message_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -526,7 +620,7 @@ func (x *DeleteResponse) String() string {
 func (*DeleteResponse) ProtoMessage() {}
 
 func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wave_v1_video_message_proto_msgTypes[10]
+	mi := &file_wave_v1_video_message_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -539,7 +633,7 @@ func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteResponse.ProtoReflect.Descriptor instead.
 func (*DeleteResponse) Descriptor() ([]byte, []int) {
-	return file_wave_v1_video_message_proto_rawDescGZIP(), []int{10}
+	return file_wave_v1_video_message_proto_rawDescGZIP(), []int{12}
 }
 
 var File_wave_v1_video_message_proto protoreflect.FileDescriptor
@@ -563,30 +657,36 @@ var file_wave_v1_video_message_proto_rawDesc = []byte{
 	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x2a, 0x0a, 0x05, 0x76, 0x69, 0x64, 0x65, 0x6f, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x14, 0x2e, 0x77, 0x61, 0x76, 0x65, 0x2e, 0x76, 0x31, 0x2e,
 	0x76, 0x69, 0x64, 0x65, 0x6f, 0x2e, 0x56, 0x69, 0x64, 0x65, 0x6f, 0x52, 0x05, 0x76, 0x69, 0x64,
-	0x65, 0x6f, 0x22, 0x0d, 0x0a, 0x0b, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x22, 0x3c, 0x0a, 0x0c, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x12, 0x2c, 0x0a, 0x06, 0x76, 0x69, 0x64, 0x65, 0x6f, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28,
-	0x0b, 0x32, 0x14, 0x2e, 0x77, 0x61, 0x76, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x76, 0x69, 0x64, 0x65,
-	0x6f, 0x2e, 0x56, 0x69, 0x64, 0x65, 0x6f, 0x52, 0x06, 0x76, 0x69, 0x64, 0x65, 0x6f, 0x73, 0x22,
-	0x43, 0x0a, 0x0d, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x12, 0x32, 0x0a, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
-	0x32, 0x1a, 0x2e, 0x77, 0x61, 0x76, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x76, 0x69, 0x64, 0x65, 0x6f,
-	0x2e, 0x56, 0x69, 0x64, 0x65, 0x6f, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x06, 0x63, 0x6f,
-	0x6e, 0x66, 0x69, 0x67, 0x22, 0x20, 0x0a, 0x0e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x22, 0x53, 0x0a, 0x0d, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x32, 0x0a, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69,
-	0x67, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x77, 0x61, 0x76, 0x65, 0x2e, 0x76,
-	0x31, 0x2e, 0x76, 0x69, 0x64, 0x65, 0x6f, 0x2e, 0x56, 0x69, 0x64, 0x65, 0x6f, 0x43, 0x6f, 0x6e,
-	0x66, 0x69, 0x67, 0x52, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x22, 0x10, 0x0a, 0x0e, 0x55,
-	0x70, 0x64, 0x61, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1f, 0x0a,
-	0x0d, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x0e,
-	0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x22, 0x10,
-	0x0a, 0x0e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x42, 0x26, 0x5a, 0x24, 0x63, 0x74, 0x68, 0x75, 0x6c, 0x2e, 0x69, 0x6f, 0x2f, 0x63, 0x74, 0x68,
-	0x75, 0x6c, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x77, 0x61, 0x76, 0x65, 0x2f,
-	0x76, 0x31, 0x2f, 0x76, 0x69, 0x64, 0x65, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x65, 0x6f, 0x22, 0x26, 0x0a, 0x0e, 0x43, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x70, 0x75, 0x74, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0c, 0x52, 0x05, 0x69, 0x6e, 0x70, 0x75, 0x74, 0x22, 0x29, 0x0a, 0x0f, 0x43, 0x6f,
+	0x6e, 0x6e, 0x65, 0x63, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x16, 0x0a,
+	0x06, 0x6f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x06, 0x6f,
+	0x75, 0x74, 0x70, 0x75, 0x74, 0x22, 0x0d, 0x0a, 0x0b, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x22, 0x3c, 0x0a, 0x0c, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x2c, 0x0a, 0x06, 0x76, 0x69, 0x64, 0x65, 0x6f, 0x73, 0x18, 0x01,
+	0x20, 0x03, 0x28, 0x0b, 0x32, 0x14, 0x2e, 0x77, 0x61, 0x76, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x76,
+	0x69, 0x64, 0x65, 0x6f, 0x2e, 0x56, 0x69, 0x64, 0x65, 0x6f, 0x52, 0x06, 0x76, 0x69, 0x64, 0x65,
+	0x6f, 0x73, 0x22, 0x43, 0x0a, 0x0d, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x12, 0x32, 0x0a, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x77, 0x61, 0x76, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x76, 0x69,
+	0x64, 0x65, 0x6f, 0x2e, 0x56, 0x69, 0x64, 0x65, 0x6f, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52,
+	0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x22, 0x20, 0x0a, 0x0e, 0x43, 0x72, 0x65, 0x61, 0x74,
+	0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x22, 0x53, 0x0a, 0x0d, 0x55, 0x70, 0x64,
+	0x61, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x32, 0x0a, 0x06, 0x63, 0x6f,
+	0x6e, 0x66, 0x69, 0x67, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x77, 0x61, 0x76,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x76, 0x69, 0x64, 0x65, 0x6f, 0x2e, 0x56, 0x69, 0x64, 0x65, 0x6f,
+	0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x22, 0x10,
+	0x0a, 0x0e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x1f, 0x0a, 0x0d, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69,
+	0x64, 0x22, 0x10, 0x0a, 0x0e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x42, 0x26, 0x5a, 0x24, 0x63, 0x74, 0x68, 0x75, 0x6c, 0x2e, 0x69, 0x6f, 0x2f,
+	0x63, 0x74, 0x68, 0x75, 0x6c, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x77, 0x61,
+	0x76, 0x65, 0x2f, 0x76, 0x31, 0x2f, 0x76, 0x69, 0x64, 0x65, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x33,
 }
 
 var (
@@ -601,27 +701,29 @@ func file_wave_v1_video_message_proto_rawDescGZIP() []byte {
 	return file_wave_v1_video_message_proto_rawDescData
 }
 
-var file_wave_v1_video_message_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_wave_v1_video_message_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_wave_v1_video_message_proto_goTypes = []any{
-	(*Video)(nil),          // 0: wave.v1.video.Video
-	(*GetRequest)(nil),     // 1: wave.v1.video.GetRequest
-	(*GetResponse)(nil),    // 2: wave.v1.video.GetResponse
-	(*ListRequest)(nil),    // 3: wave.v1.video.ListRequest
-	(*ListResponse)(nil),   // 4: wave.v1.video.ListResponse
-	(*CreateRequest)(nil),  // 5: wave.v1.video.CreateRequest
-	(*CreateResponse)(nil), // 6: wave.v1.video.CreateResponse
-	(*UpdateRequest)(nil),  // 7: wave.v1.video.UpdateRequest
-	(*UpdateResponse)(nil), // 8: wave.v1.video.UpdateResponse
-	(*DeleteRequest)(nil),  // 9: wave.v1.video.DeleteRequest
-	(*DeleteResponse)(nil), // 10: wave.v1.video.DeleteResponse
-	(*VideoConfig)(nil),    // 11: wave.v1.video.VideoConfig
+	(*Video)(nil),           // 0: wave.v1.video.Video
+	(*GetRequest)(nil),      // 1: wave.v1.video.GetRequest
+	(*GetResponse)(nil),     // 2: wave.v1.video.GetResponse
+	(*ConnectRequest)(nil),  // 3: wave.v1.video.ConnectRequest
+	(*ConnectResponse)(nil), // 4: wave.v1.video.ConnectResponse
+	(*ListRequest)(nil),     // 5: wave.v1.video.ListRequest
+	(*ListResponse)(nil),    // 6: wave.v1.video.ListResponse
+	(*CreateRequest)(nil),   // 7: wave.v1.video.CreateRequest
+	(*CreateResponse)(nil),  // 8: wave.v1.video.CreateResponse
+	(*UpdateRequest)(nil),   // 9: wave.v1.video.UpdateRequest
+	(*UpdateResponse)(nil),  // 10: wave.v1.video.UpdateResponse
+	(*DeleteRequest)(nil),   // 11: wave.v1.video.DeleteRequest
+	(*DeleteResponse)(nil),  // 12: wave.v1.video.DeleteResponse
+	(*VideoConfig)(nil),     // 13: wave.v1.video.VideoConfig
 }
 var file_wave_v1_video_message_proto_depIdxs = []int32{
-	11, // 0: wave.v1.video.Video.config:type_name -> wave.v1.video.VideoConfig
+	13, // 0: wave.v1.video.Video.config:type_name -> wave.v1.video.VideoConfig
 	0,  // 1: wave.v1.video.GetResponse.video:type_name -> wave.v1.video.Video
 	0,  // 2: wave.v1.video.ListResponse.videos:type_name -> wave.v1.video.Video
-	11, // 3: wave.v1.video.CreateRequest.config:type_name -> wave.v1.video.VideoConfig
-	11, // 4: wave.v1.video.UpdateRequest.config:type_name -> wave.v1.video.VideoConfig
+	13, // 3: wave.v1.video.CreateRequest.config:type_name -> wave.v1.video.VideoConfig
+	13, // 4: wave.v1.video.UpdateRequest.config:type_name -> wave.v1.video.VideoConfig
 	5,  // [5:5] is the sub-list for method output_type
 	5,  // [5:5] is the sub-list for method input_type
 	5,  // [5:5] is the sub-list for extension type_name
@@ -673,7 +775,7 @@ func file_wave_v1_video_message_proto_init() {
 			}
 		}
 		file_wave_v1_video_message_proto_msgTypes[3].Exporter = func(v any, i int) any {
-			switch v := v.(*ListRequest); i {
+			switch v := v.(*ConnectRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -685,7 +787,7 @@ func file_wave_v1_video_message_proto_init() {
 			}
 		}
 		file_wave_v1_video_message_proto_msgTypes[4].Exporter = func(v any, i int) any {
-			switch v := v.(*ListResponse); i {
+			switch v := v.(*ConnectResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -697,7 +799,7 @@ func file_wave_v1_video_message_proto_init() {
 			}
 		}
 		file_wave_v1_video_message_proto_msgTypes[5].Exporter = func(v any, i int) any {
-			switch v := v.(*CreateRequest); i {
+			switch v := v.(*ListRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -709,7 +811,7 @@ func file_wave_v1_video_message_proto_init() {
 			}
 		}
 		file_wave_v1_video_message_proto_msgTypes[6].Exporter = func(v any, i int) any {
-			switch v := v.(*CreateResponse); i {
+			switch v := v.(*ListResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -721,7 +823,7 @@ func file_wave_v1_video_message_proto_init() {
 			}
 		}
 		file_wave_v1_video_message_proto_msgTypes[7].Exporter = func(v any, i int) any {
-			switch v := v.(*UpdateRequest); i {
+			switch v := v.(*CreateRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -733,7 +835,7 @@ func file_wave_v1_video_message_proto_init() {
 			}
 		}
 		file_wave_v1_video_message_proto_msgTypes[8].Exporter = func(v any, i int) any {
-			switch v := v.(*UpdateResponse); i {
+			switch v := v.(*CreateResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -745,7 +847,7 @@ func file_wave_v1_video_message_proto_init() {
 			}
 		}
 		file_wave_v1_video_message_proto_msgTypes[9].Exporter = func(v any, i int) any {
-			switch v := v.(*DeleteRequest); i {
+			switch v := v.(*UpdateRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -757,6 +859,30 @@ func file_wave_v1_video_message_proto_init() {
 			}
 		}
 		file_wave_v1_video_message_proto_msgTypes[10].Exporter = func(v any, i int) any {
+			switch v := v.(*UpdateResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_wave_v1_video_message_proto_msgTypes[11].Exporter = func(v any, i int) any {
+			switch v := v.(*DeleteRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_wave_v1_video_message_proto_msgTypes[12].Exporter = func(v any, i int) any {
 			switch v := v.(*DeleteResponse); i {
 			case 0:
 				return &v.state
@@ -775,7 +901,7 @@ func file_wave_v1_video_message_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_wave_v1_video_message_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -35,6 +35,8 @@ const (
 const (
 	// SerialServiceGetProcedure is the fully-qualified name of the SerialService's Get RPC.
 	SerialServiceGetProcedure = "/wave.v1.serial.SerialService/Get"
+	// SerialServiceConnectProcedure is the fully-qualified name of the SerialService's Connect RPC.
+	SerialServiceConnectProcedure = "/wave.v1.serial.SerialService/Connect"
 	// SerialServiceListProcedure is the fully-qualified name of the SerialService's List RPC.
 	SerialServiceListProcedure = "/wave.v1.serial.SerialService/List"
 	// SerialServiceCreateProcedure is the fully-qualified name of the SerialService's Create RPC.
@@ -47,17 +49,19 @@ const (
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	serialServiceServiceDescriptor      = serial.File_wave_v1_serial_service_proto.Services().ByName("SerialService")
-	serialServiceGetMethodDescriptor    = serialServiceServiceDescriptor.Methods().ByName("Get")
-	serialServiceListMethodDescriptor   = serialServiceServiceDescriptor.Methods().ByName("List")
-	serialServiceCreateMethodDescriptor = serialServiceServiceDescriptor.Methods().ByName("Create")
-	serialServiceUpdateMethodDescriptor = serialServiceServiceDescriptor.Methods().ByName("Update")
-	serialServiceDeleteMethodDescriptor = serialServiceServiceDescriptor.Methods().ByName("Delete")
+	serialServiceServiceDescriptor       = serial.File_wave_v1_serial_service_proto.Services().ByName("SerialService")
+	serialServiceGetMethodDescriptor     = serialServiceServiceDescriptor.Methods().ByName("Get")
+	serialServiceConnectMethodDescriptor = serialServiceServiceDescriptor.Methods().ByName("Connect")
+	serialServiceListMethodDescriptor    = serialServiceServiceDescriptor.Methods().ByName("List")
+	serialServiceCreateMethodDescriptor  = serialServiceServiceDescriptor.Methods().ByName("Create")
+	serialServiceUpdateMethodDescriptor  = serialServiceServiceDescriptor.Methods().ByName("Update")
+	serialServiceDeleteMethodDescriptor  = serialServiceServiceDescriptor.Methods().ByName("Delete")
 )
 
 // SerialServiceClient is a client for the wave.v1.serial.SerialService service.
 type SerialServiceClient interface {
 	Get(context.Context, *connect.Request[serial.GetRequest]) (*connect.Response[serial.GetResponse], error)
+	Connect(context.Context) *connect.BidiStreamForClient[serial.ConnectRequest, serial.ConnectResponse]
 	List(context.Context, *connect.Request[serial.ListRequest]) (*connect.Response[serial.ListResponse], error)
 	Create(context.Context, *connect.Request[serial.CreateRequest]) (*connect.Response[serial.CreateResponse], error)
 	Update(context.Context, *connect.Request[serial.UpdateRequest]) (*connect.Response[serial.UpdateResponse], error)
@@ -78,6 +82,12 @@ func NewSerialServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			httpClient,
 			baseURL+SerialServiceGetProcedure,
 			connect.WithSchema(serialServiceGetMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		connect: connect.NewClient[serial.ConnectRequest, serial.ConnectResponse](
+			httpClient,
+			baseURL+SerialServiceConnectProcedure,
+			connect.WithSchema(serialServiceConnectMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 		list: connect.NewClient[serial.ListRequest, serial.ListResponse](
@@ -109,16 +119,22 @@ func NewSerialServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 
 // serialServiceClient implements SerialServiceClient.
 type serialServiceClient struct {
-	get    *connect.Client[serial.GetRequest, serial.GetResponse]
-	list   *connect.Client[serial.ListRequest, serial.ListResponse]
-	create *connect.Client[serial.CreateRequest, serial.CreateResponse]
-	update *connect.Client[serial.UpdateRequest, serial.UpdateResponse]
-	delete *connect.Client[serial.DeleteRequest, serial.DeleteResponse]
+	get     *connect.Client[serial.GetRequest, serial.GetResponse]
+	connect *connect.Client[serial.ConnectRequest, serial.ConnectResponse]
+	list    *connect.Client[serial.ListRequest, serial.ListResponse]
+	create  *connect.Client[serial.CreateRequest, serial.CreateResponse]
+	update  *connect.Client[serial.UpdateRequest, serial.UpdateResponse]
+	delete  *connect.Client[serial.DeleteRequest, serial.DeleteResponse]
 }
 
 // Get calls wave.v1.serial.SerialService.Get.
 func (c *serialServiceClient) Get(ctx context.Context, req *connect.Request[serial.GetRequest]) (*connect.Response[serial.GetResponse], error) {
 	return c.get.CallUnary(ctx, req)
+}
+
+// Connect calls wave.v1.serial.SerialService.Connect.
+func (c *serialServiceClient) Connect(ctx context.Context) *connect.BidiStreamForClient[serial.ConnectRequest, serial.ConnectResponse] {
+	return c.connect.CallBidiStream(ctx)
 }
 
 // List calls wave.v1.serial.SerialService.List.
@@ -144,6 +160,7 @@ func (c *serialServiceClient) Delete(ctx context.Context, req *connect.Request[s
 // SerialServiceHandler is an implementation of the wave.v1.serial.SerialService service.
 type SerialServiceHandler interface {
 	Get(context.Context, *connect.Request[serial.GetRequest]) (*connect.Response[serial.GetResponse], error)
+	Connect(context.Context, *connect.BidiStream[serial.ConnectRequest, serial.ConnectResponse]) error
 	List(context.Context, *connect.Request[serial.ListRequest]) (*connect.Response[serial.ListResponse], error)
 	Create(context.Context, *connect.Request[serial.CreateRequest]) (*connect.Response[serial.CreateResponse], error)
 	Update(context.Context, *connect.Request[serial.UpdateRequest]) (*connect.Response[serial.UpdateResponse], error)
@@ -160,6 +177,12 @@ func NewSerialServiceHandler(svc SerialServiceHandler, opts ...connect.HandlerOp
 		SerialServiceGetProcedure,
 		svc.Get,
 		connect.WithSchema(serialServiceGetMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	serialServiceConnectHandler := connect.NewBidiStreamHandler(
+		SerialServiceConnectProcedure,
+		svc.Connect,
+		connect.WithSchema(serialServiceConnectMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
 	serialServiceListHandler := connect.NewUnaryHandler(
@@ -190,6 +213,8 @@ func NewSerialServiceHandler(svc SerialServiceHandler, opts ...connect.HandlerOp
 		switch r.URL.Path {
 		case SerialServiceGetProcedure:
 			serialServiceGetHandler.ServeHTTP(w, r)
+		case SerialServiceConnectProcedure:
+			serialServiceConnectHandler.ServeHTTP(w, r)
 		case SerialServiceListProcedure:
 			serialServiceListHandler.ServeHTTP(w, r)
 		case SerialServiceCreateProcedure:
@@ -209,6 +234,10 @@ type UnimplementedSerialServiceHandler struct{}
 
 func (UnimplementedSerialServiceHandler) Get(context.Context, *connect.Request[serial.GetRequest]) (*connect.Response[serial.GetResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("wave.v1.serial.SerialService.Get is not implemented"))
+}
+
+func (UnimplementedSerialServiceHandler) Connect(context.Context, *connect.BidiStream[serial.ConnectRequest, serial.ConnectResponse]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("wave.v1.serial.SerialService.Connect is not implemented"))
 }
 
 func (UnimplementedSerialServiceHandler) List(context.Context, *connect.Request[serial.ListRequest]) (*connect.Response[serial.ListResponse], error) {

@@ -21,7 +21,7 @@ package video
 
 import (
 	"context"
-  "log/slog"
+	"log/slog"
 
 	"cthul.io/cthul/pkg/db"
 	"cthul.io/cthul/pkg/syncer"
@@ -32,7 +32,7 @@ import (
 // ensuring the environment allows bootstrap of the video server endpoint (e.g. mkdirall() the socket path).
 type Operator struct {
 	client db.Client
-  logger *slog.Logger
+	logger *slog.Logger
 	syncer *syncer.Syncer
 
 	// runRoot specifies the base path for runtime files (unix-sockets and stuff).
@@ -53,13 +53,13 @@ type Option func(*Operator)
 
 func New(logger *slog.Logger, client db.Client, opts ...Option) *Operator {
 	operator := &Operator{
-		client:        client,
-		logger:        logger.WithGroup("video-operator"),
-		syncer:        syncer.New(logger.WithGroup("video-operator"), client),
-    runRoot: "/run/cthul/wave/",
-		nodeId:        "undefined",
-    updateCycleTTL: 30,
-    syncCycleTTL: 30,
+		client:         client,
+		logger:         logger.WithGroup("video-operator"),
+		syncer:         syncer.New(logger.WithGroup("video-operator"), client),
+		runRoot:        "/run/cthul/wave/",
+		nodeId:         "undefined",
+		updateCycleTTL: 30,
+		syncCycleTTL:   30,
 	}
 
 	for _, opt := range opts {
@@ -68,7 +68,6 @@ func New(logger *slog.Logger, client db.Client, opts ...Option) *Operator {
 
 	return operator
 }
-
 
 // WithRunRoot defines a custom root path for runtime files (sockets, etc.).
 func WithRunRoot(path string) Option {
@@ -95,7 +94,7 @@ func WithUpdateCylceTTL(ttl int64) Option {
 }
 
 // WithSyncCycleTTL defines a custom cycle interval for the device syncer.
-// Every cycle prepares the path for the device unix socket.
+// Every cycle prepares u.a. the path for the device unix socket.
 func WithSyncCycleTTL(ttl int64) Option {
 	return func(o *Operator) {
 		o.syncCycleTTL = ttl
@@ -103,10 +102,10 @@ func WithSyncCycleTTL(ttl int64) Option {
 }
 
 func (o *Operator) ServeAndDetach() {
-  o.synchronize()
+	o.synchronize()
 }
 
 func (o *Operator) Terminate(ctx context.Context) error {
-  o.syncer.Shutdown()
-  return nil
+	o.syncer.Shutdown()
+	return nil
 }

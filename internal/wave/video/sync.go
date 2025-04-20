@@ -26,6 +26,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"cthul.io/cthul/pkg/api/wave/v1/video"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -53,7 +54,6 @@ func (o *Operator) synchronize() {
 }
 
 func (o *Operator) applyConfig(rawConfig string) error {
-  // TODO: add video api
   config := &video.VideoConfig{}
   err := proto.Unmarshal([]byte(rawConfig), config)
   if err!=nil {

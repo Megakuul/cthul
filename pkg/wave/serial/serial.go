@@ -28,10 +28,10 @@ import (
 	"strings"
 	"time"
 
+	"cthul.io/cthul/pkg/api/wave/v1/serial"
 	"cthul.io/cthul/pkg/db"
-	"cthul.io/cthul/pkg/wave/serial/structure"
-	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/proto"
 )
 
 // NodeMismatchErr indicates that the action cannot be executed on this node.
@@ -76,8 +76,8 @@ func WithRunRoot(path string) Option {
 }
 
 // List returns a map containing serial device uuids and associated metadata from the database.
-func (c *Controller) List(ctx context.Context) (map[string]structure.Serial, error) {
-	serials := map[string]structure.Serial{}
+func (c *Controller) List(ctx context.Context) (map[string]*serial.Serial, error) {
+	serials := map[string]*serial.Serial{}
 
 	reqnodes, err := c.client.GetRange(ctx, "/WAVE/SERIAL/REQNODE/")
 	if err != nil {
@@ -87,49 +87,38 @@ func (c *Controller) List(ctx context.Context) (map[string]structure.Serial, err
 	if err != nil {
 		return nil, fmt.Errorf("fetching serial device node: %w", err)
 	}
-	paths, err := c.client.GetRange(ctx, "/WAVE/SERIAL/PATH/")
+	configs, err := c.client.GetRange(ctx, "/WAVE/SERIAL/CONFIG/")
 	if err != nil {
-		return nil, fmt.Errorf("fetching serial device path: %w", err)
+		return nil, fmt.Errorf("fetching serial device type: %w", err)
 	}
 
-	for key, path := range paths {
-		uuid := strings.TrimPrefix(key, "/WAVE/SERIAL/PATH/")
-		reqnode := reqnodes[fmt.Sprint("/WAVE/SERIAL/REQNODE/", uuid)]
-		node := nodes[fmt.Sprint("/WAVE/SERIAL/NODE/", uuid)]
+	for key, rawConfig := range configs {
+		var serialErr error
+		id := strings.TrimPrefix(key, "/WAVE/SERIAL/CONFIG/")
+		reqnode := reqnodes[fmt.Sprint("/WAVE/SERIAL/REQNODE/", id)]
+		node := nodes[fmt.Sprint("/WAVE/SERIAL/NODE/", id)]
 
-		serials[uuid] = structure.Serial{
-			Reqnode: reqnode,
-			Node:    node,
-			Path:    path,
+		config := &serial.SerialConfig{}
+		err = proto.Unmarshal([]byte(rawConfig), config)
+		if err != nil {
+			serialErr = errors.Join(serialErr, fmt.Errorf("parsing device config: %w", err))
 		}
+
+    serial := &serial.Serial{
+			Reqnode:         reqnode,
+			Node:            node,
+			Config:          config,
+		}
+    if serialErr != nil {
+      serial.Error = serialErr.Error()
+    }
+		serials[id] = serial
 	}
 	return serials, nil
 }
 
-// Create creates a serial device with the specified configuration and default metadata values.
-// If the creation fails, the function tries to remove already created resources from the database.
-func (c *Controller) Create(ctx context.Context, path string) (string, error) {
-	id := uuid.New().String()
-  err := c.SetPath(ctx, id, path)
-	if err != nil {
-		return "", errors.Join(err, c.Delete(ctx, id))
-	}
-	return id, nil
-}
-
-func (c *Controller) SetPath(ctx context.Context, id, path string) error {
-	if path == "" {
-		return fmt.Errorf("path must be non-empty because it is the device core-property")
-	}
-	_, err := c.client.Set(ctx, fmt.Sprintf("/WAVE/SERIAL/PATH/%s", id), path, 0)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // Connect creates a bidirectional communication bridge to the serial device socket.
-// Runs until the context is cancelled.
+// Input and output is not manipulated, the format depends on the device type. Runs until the context is cancelled.
 func (c *Controller) Connect(ctx context.Context, id string, reader chan<-[]byte, writer <-chan []byte) error {
   node, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/SERIAL/NODE/%s", id))
   if err!=nil {
@@ -138,12 +127,17 @@ func (c *Controller) Connect(ctx context.Context, id string, reader chan<-[]byte
   if node != c.node {
     return &NodeMismatchErr{Message: "device must be on the same node as the controller", Node: c.node}
   }
-  path, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/SERIAL/PATH/%s", id))
+  rawConfig, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/SERIAL/CONFIG/%s", id))
   if err!=nil {
     return err
   }
+  config := &serial.SerialConfig{}
+  err = proto.Unmarshal([]byte(rawConfig), config)
+  if err!=nil {
+    return fmt.Errorf("parsing device config: %w", err)
+  }
 
-  path = filepath.Join(c.runRoot, path)
+  path := filepath.Clean(filepath.Join(c.runRoot, config.Path))
   if !strings.HasPrefix(path, c.runRoot) {
     return fmt.Errorf("device socket path escapes the run root '%s'", c.runRoot)
   }
@@ -204,7 +198,7 @@ func (c *Controller) Connect(ctx context.Context, id string, reader chan<-[]byte
 }
 
 // Lookup searches for the device by id and returns its configuration.
-func (c *Controller) Lookup(ctx context.Context, id string) (*structure.Serial, error) {
+func (c *Controller) Lookup(ctx context.Context, id string) (*serial.Serial, error) {
 	reqnode, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/SERIAL/REQNODE/%s", id))
 	if err != nil {
 		return nil, fmt.Errorf("fetching serial device reqnode: %w", err)
@@ -213,19 +207,26 @@ func (c *Controller) Lookup(ctx context.Context, id string) (*structure.Serial, 
 	if err != nil {
 		return nil, fmt.Errorf("fetching serial device node: %w", err)
 	}
-	path, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/SERIAL/PATH/%s", id))
+	rawConfig, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/SERIAL/CONFIG/%s", id))
 	if err != nil {
-		return nil, fmt.Errorf("fetching serial device path: %w", err)
+		return nil, fmt.Errorf("fetching serial device config: %w", err)
 	}
 
-	if path == "" {
+	if rawConfig == "" {
 		return nil, fmt.Errorf("device not found")
 	}
 
-	return &structure.Serial{
+  config := &serial.SerialConfig{}
+  err = proto.Unmarshal([]byte(rawConfig), config)
+  if err!=nil {
+    return nil, fmt.Errorf("parsing device config: %w", err)
+  }
+
+	return &serial.Serial{
 		Reqnode: reqnode,
 		Node:    node,
-		Path:    path,
+    Config: config,
+    Error: "",
 	}, nil
 }
 
@@ -306,7 +307,7 @@ func (c *Controller) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/SERIAL/PATH/%s", id))
+	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/SERIAL/CONFIG/%s", id))
 	if err != nil {
 		return err
 	}

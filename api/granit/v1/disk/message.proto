@@ -1,15 +1,15 @@
 syntax = "proto3";
 
-package wave.v1.video;
+package granit.v1.disk;
 
-option go_package = "cthul.io/cthul/pkg/api/wave/v1/video";
+option go_package = "cthul.io/cthul/pkg/api/granit/v1/disk";
 
-import "wave/v1/video/config.proto";
+import "granit/v1/disk/config.proto";
 
-message Video {
+message Disk {
   string reqnode = 1;
   string node = 2;
-  VideoConfig config = 3; // core prop
+  DiskConfig config = 3; // core prop
   string error = 8;
 }
 
@@ -18,26 +18,18 @@ message GetRequest {
 }
 
 message GetResponse {
-  Video video = 1;
-}
-
-message ConnectRequest {
-  bytes input = 1;
-}
-
-message ConnectResponse {
-  bytes output = 1; 
+  Disk disk = 1;
 }
 
 message ListRequest {
 }
 
 message ListResponse {
-  repeated Video videos = 1;
+  repeated Disk disks = 1;
 }
 
 message CreateRequest {
-  VideoConfig config = 1;
+  DiskConfig config = 1;
 }
 
 message CreateResponse {
@@ -46,7 +38,7 @@ message CreateResponse {
 
 message UpdateRequest {
   string id = 1; 
-  VideoConfig config = 2;
+  DiskConfig config = 2;
 }
 
 message UpdateResponse {

@@ -28,10 +28,10 @@ import (
 	"strings"
 	"time"
 
+	"cthul.io/cthul/pkg/api/wave/v1/video"
 	"cthul.io/cthul/pkg/db"
-	"cthul.io/cthul/pkg/wave/video/structure"
-	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/proto"
 )
 
 // NodeMismatchErr indicates that the action cannot be executed on this node.
@@ -76,8 +76,8 @@ func WithRunRoot(path string) Option {
 }
 
 // List returns a map containing video device uuids and associated metadata from the database.
-func (c *Controller) List(ctx context.Context) (map[string]structure.Video, error) {
-	videos := map[string]structure.Video{}
+func (c *Controller) List(ctx context.Context) (map[string]*video.Video, error) {
+	videos := map[string]*video.Video{}
 
 	reqnodes, err := c.client.GetRange(ctx, "/WAVE/VIDEO/REQNODE/")
 	if err != nil {
@@ -87,63 +87,34 @@ func (c *Controller) List(ctx context.Context) (map[string]structure.Video, erro
 	if err != nil {
 		return nil, fmt.Errorf("fetching video device node: %w", err)
 	}
-	paths, err := c.client.GetRange(ctx, "/WAVE/VIDEO/PATH/")
-	if err != nil {
-		return nil, fmt.Errorf("fetching video device path: %w", err)
-	}
-	types, err := c.client.GetRange(ctx, "/WAVE/VIDEO/TYPE/")
+	configs, err := c.client.GetRange(ctx, "/WAVE/VIDEO/CONFIG/")
 	if err != nil {
 		return nil, fmt.Errorf("fetching video device type: %w", err)
 	}
 
-	for key, path := range paths {
-		uuid := strings.TrimPrefix(key, "/WAVE/VIDEO/PATH/")
-		reqnode := reqnodes[fmt.Sprint("/WAVE/VIDEO/REQNODE/", uuid)]
-		node := nodes[fmt.Sprint("/WAVE/VIDEO/NODE/", uuid)]
-		typ := types[fmt.Sprint("/WAVE/VIDEO/TYPE/", uuid)]
+	for key, rawConfig := range configs {
+		var videoErr error
+		id := strings.TrimPrefix(key, "/WAVE/VIDEO/CONFIG/")
+		reqnode := reqnodes[fmt.Sprint("/WAVE/VIDEO/REQNODE/", id)]
+		node := nodes[fmt.Sprint("/WAVE/VIDEO/NODE/", id)]
 
-		videos[uuid] = structure.Video{
-			Reqnode: reqnode,
-			Node:    node,
-			Type:    structure.VIDEO_TYPE(typ),
-			Path:    path,
+		config := &video.VideoConfig{}
+		err = proto.Unmarshal([]byte(rawConfig), config)
+		if err != nil {
+			videoErr = errors.Join(videoErr, fmt.Errorf("parsing device config: %w", err))
 		}
+
+    video := &video.Video{
+			Reqnode:         reqnode,
+			Node:            node,
+			Config:          config,
+		}
+    if videoErr != nil {
+      video.Error = videoErr.Error()
+    }
+		videos[id] = video
 	}
 	return videos, nil
-}
-
-// Create creates a video device with the specified configuration and default metadata values.
-// If the creation fails, the function tries to remove already created resources from the database.
-func (c *Controller) Create(ctx context.Context, typ structure.VIDEO_TYPE, path string) (string, error) {
-	id := uuid.New().String()
-	err := c.SetType(ctx, id, typ)
-	if err != nil {
-		return "", errors.Join(err, c.Delete(ctx, id))
-	}
-	err = c.SetPath(ctx, id, path)
-	if err != nil {
-		return "", errors.Join(err, c.Delete(ctx, id))
-	}
-	return id, nil
-}
-
-func (c *Controller) SetType(ctx context.Context, id string, typ structure.VIDEO_TYPE) error {
-	_, err := c.client.Set(ctx, fmt.Sprintf("/WAVE/VIDEO/TYPE/%s", id), string(typ), 0)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *Controller) SetPath(ctx context.Context, id, path string) error {
-	if path == "" {
-		return fmt.Errorf("path must be non-empty because it is the device core-property")
-	}
-	_, err := c.client.Set(ctx, fmt.Sprintf("/WAVE/VIDEO/PATH/%s", id), path, 0)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // Connect creates a bidirectional communication bridge to the video device socket.
@@ -156,12 +127,17 @@ func (c *Controller) Connect(ctx context.Context, id string, reader chan<-[]byte
   if node != c.node {
     return &NodeMismatchErr{Message: "device must be on the same node as the controller", Node: c.node}
   }
-  path, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/VIDEO/PATH/%s", id))
+  rawConfig, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/VIDEO/CONFIG/%s", id))
   if err!=nil {
     return err
   }
+  config := &video.VideoConfig{}
+  err = proto.Unmarshal([]byte(rawConfig), config)
+  if err!=nil {
+    return fmt.Errorf("parsing device config: %w", err)
+  }
 
-  path = filepath.Join(c.runRoot, path)
+  path := filepath.Clean(filepath.Join(c.runRoot, config.Path))
   if !strings.HasPrefix(path, c.runRoot) {
     return fmt.Errorf("device socket path escapes the run root '%s'", c.runRoot)
   }
@@ -222,7 +198,7 @@ func (c *Controller) Connect(ctx context.Context, id string, reader chan<-[]byte
 }
 
 // Lookup searches for the device by id and returns its configuration.
-func (c *Controller) Lookup(ctx context.Context, id string) (*structure.Video, error) {
+func (c *Controller) Lookup(ctx context.Context, id string) (*video.Video, error) {
 	reqnode, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/VIDEO/REQNODE/%s", id))
 	if err != nil {
 		return nil, fmt.Errorf("fetching video device reqnode: %w", err)
@@ -231,24 +207,26 @@ func (c *Controller) Lookup(ctx context.Context, id string) (*structure.Video, e
 	if err != nil {
 		return nil, fmt.Errorf("fetching video device node: %w", err)
 	}
-	typ, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/VIDEO/TYPE/%s", id))
+	rawConfig, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/VIDEO/CONFIG/%s", id))
 	if err != nil {
-		return nil, fmt.Errorf("fetching video device type: %w", err)
-	}
-	path, err := c.client.Get(ctx, fmt.Sprintf("/WAVE/VIDEO/PATH/%s", id))
-	if err != nil {
-		return nil, fmt.Errorf("fetching video device path: %w", err)
+		return nil, fmt.Errorf("fetching video device config: %w", err)
 	}
 
-	if path == "" {
+	if rawConfig == "" {
 		return nil, fmt.Errorf("device not found")
 	}
 
-	return &structure.Video{
+  config := &video.VideoConfig{}
+  err = proto.Unmarshal([]byte(rawConfig), config)
+  if err!=nil {
+    return nil, fmt.Errorf("parsing device config: %w", err)
+  }
+
+	return &video.Video{
 		Reqnode: reqnode,
 		Node:    node,
-		Type:    structure.VIDEO_TYPE(typ),
-		Path:    path,
+    Config: config,
+    Error: "",
 	}, nil
 }
 
@@ -329,11 +307,7 @@ func (c *Controller) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/VIDEO/TYPE/%s", id))
-	if err != nil {
-		return err
-	}
-	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/VIDEO/PATH/%s", id))
+	err = c.client.Delete(ctx, fmt.Sprintf("/WAVE/VIDEO/CONFIG/%s", id))
 	if err != nil {
 		return err
 	}

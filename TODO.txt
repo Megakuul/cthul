@@ -9,7 +9,7 @@
 - refactor the scheduler to do the same x
 - refactor the operator of node and domain to do the same x
 - implement video + serial device api definition x
-- refactor operator + controller on video + serial dev
+- refactor operator + controller on video + serial dev x
 - define grpc api granit, proton, + wave components that are not domain (+ update libvirtctrlr for them aswell)
 - do the last 3 steps for proton and granit
 - create startup code + perform initial wave tests

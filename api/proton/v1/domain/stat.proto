@@ -1,0 +1,117 @@
+syntax = "proto3";
+
+package wave.v1.domain;
+
+option go_package = "cthul.io/cthul/pkg/api/wave/v1/domain";
+  
+enum DomainPowerState {
+  DOMAIN_NOSTATE = 0;
+  DOMAIN_RUNNING = 1;
+  DOMAIN_BLOCKED = 2;
+  DOMAIN_PAUSED = 3;
+  DOMAIN_SHUTDOWN = 4;
+  DOMAIN_SHUTOFF = 5;
+  DOMAIN_CRASHED = 6;
+  DOMAIN_PMSUSPENDED = 7;
+}
+
+message VCpuStats {
+  // full vcpu time since machine startup in nanoseconds.
+  int64 cpu_time = 1;
+  // wait time (time vcpu wants to run but is not scheduled) since machine startup in nanoseconds.
+  int64 wait_time = 2;
+  // halt/idle (time the vcpu is disabled or halted) time since machine startup in nanoseconds.
+  int64 halt_time = 3;
+  // delay time (time the vcpu is enqueued) since machine startup in nanoseconds.
+  int64 delay_time = 4;
+}
+
+message CpuStats {
+  int64 timestamp = 1;
+
+  // The total domain cpu time since machine startup in nanoseconds.
+  int64 cpu_time = 2;
+  // The total domain cpu time spent in user space context in nanoseconds.
+  int64 user_time = 3;
+  // The total domain cpu time spent in kernel space context in nanoseconds.
+  int64 kernel_time = 4;
+
+  repeated VCpuStats vcpus = 5;
+}
+
+message MemoryStats {
+  int64 timestamp = 1;
+
+  // total amount of bytes moved from main memory to swap since machine startup.
+  int64 swap_in = 2;
+  // total amount of bytes moved from swap to main memory since machine startup.
+  int64 swap_out = 3;
+  // total amount of handled page fault that loaded pages from memory (e.g. shared libs).
+  int64 minor_faults = 4;
+  // total amount of handled page fault that loaded pages from diskio
+  int64 major_faults = 5;
+  // total amount of successful hugetable allocations since machine startup.
+  int64 hugepage_allocations = 6;
+  // total amount of failed hugetable allocations since machine startup.
+  int64 hugepage_failures = 7;
+  // total amount of bytes currently allocated for the domain by the ballon driver.
+  int64 balloned = 8;
+  // total amount of bytes from guestos perspective (may be less then the assigned memory).
+  int64 available = 9;
+  // total amount of bytes the guest os can use if all caches are reclaimed (deflatable memory).
+  int64 usable = 10;
+  // total amount of bytes that are completely unused by the guest os (part of deflatable memory).
+  int64 unused = 11;
+  // resident set size (used main memory) of the domains process on the host os (typically qemu).
+  int64 host_rss = 12;
+}
+
+message InterStats {
+  int64 timestamp = 1;
+
+  // total amount of bytes received since machine startup.
+  int64 recv_bytes = 2;
+  // total number of ethernet packets received since machine startup.
+  int64 recv_pkts = 3;
+  // total number of receive-errors since machine startup.
+  int64 recv_errs = 4;
+  // total number of dropped receive-packets since machine startup.
+  int64 recv_drops = 5;
+  // total amount of bytes sent since machine startup.
+  int64 send_bytes = 6;
+  // total number of ethernet packets sent since machine startup.
+  int64 send_pkts = 7;
+  // total number of send-errors since machine startup.
+  int64 send_errs = 8;
+  // total number of dropped send-packets since machine startup.
+  int64 send_drops = 9;
+}
+
+message DiskStats {
+  int64 timestamp = 1;
+
+  // total number of read requests since machine startup.
+  int64 read_reqs = 2;
+  // total amount of bytes read since machine startup.
+  int64 read_bytes = 3;
+  // total read time since machine startup in nanoseconds.
+  int64 read_time = 4;
+  // total number of write requests since machine startup.
+  int64 write_reqs = 5;
+  // total amount of bytes write since machine startup.
+  int64 write_bytes = 6;
+  // total write time since machine startup in nanoseconds.
+  int64 write_time = 7;
+  // total number of flush requests since machine startup.
+  int64 flush_reqs = 8;
+  // total flush time since machine startup in nanoseconds.
+  int64 flush_time = 9;
+}
+
+message DomainStats {
+  DomainPowerState state = 1;
+  CpuStats cpu = 2;
+  MemoryStats memory = 3;
+  repeated InterStats inters = 4;
+  repeated DiskStats disks = 5;
+}

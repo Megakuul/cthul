@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file wave/v1/serial/message.proto.
  */
 export const file_wave_v1_serial_message: GenFile = /*@__PURE__*/
-  fileDesc("Chx3YXZlL3YxL3NlcmlhbC9tZXNzYWdlLnByb3RvEg53YXZlLnYxLnNlcmlhbCJkCgZTZXJpYWwSDwoHcmVxbm9kZRgBIAEoCRIMCgRub2RlGAIgASgJEiwKBmNvbmZpZxgDIAEoCzIcLndhdmUudjEuc2VyaWFsLlNlcmlhbENvbmZpZxINCgVlcnJvchgIIAEoCSIYCgpHZXRSZXF1ZXN0EgoKAmlkGAEgASgJIjUKC0dldFJlc3BvbnNlEiYKBnNlcmlhbBgBIAEoCzIWLndhdmUudjEuc2VyaWFsLlNlcmlhbCINCgtMaXN0UmVxdWVzdCI3CgxMaXN0UmVzcG9uc2USJwoHc2VyaWFscxgBIAMoCzIWLndhdmUudjEuc2VyaWFsLlNlcmlhbCI9Cg1DcmVhdGVSZXF1ZXN0EiwKBmNvbmZpZxgBIAEoCzIcLndhdmUudjEuc2VyaWFsLlNlcmlhbENvbmZpZyIcCg5DcmVhdGVSZXNwb25zZRIKCgJpZBgBIAEoCSJJCg1VcGRhdGVSZXF1ZXN0EgoKAmlkGAEgASgJEiwKBmNvbmZpZxgCIAEoCzIcLndhdmUudjEuc2VyaWFsLlNlcmlhbENvbmZpZyIQCg5VcGRhdGVSZXNwb25zZSIbCg1EZWxldGVSZXF1ZXN0EgoKAmlkGAEgASgJIhAKDkRlbGV0ZVJlc3BvbnNlQidaJWN0aHVsLmlvL2N0aHVsL3BrZy9hcGkvd2F2ZS92MS9zZXJpYWxiBnByb3RvMw", [file_wave_v1_serial_config]);
+  fileDesc("Chx3YXZlL3YxL3NlcmlhbC9tZXNzYWdlLnByb3RvEg53YXZlLnYxLnNlcmlhbCJkCgZTZXJpYWwSDwoHcmVxbm9kZRgBIAEoCRIMCgRub2RlGAIgASgJEiwKBmNvbmZpZxgDIAEoCzIcLndhdmUudjEuc2VyaWFsLlNlcmlhbENvbmZpZxINCgVlcnJvchgIIAEoCSIYCgpHZXRSZXF1ZXN0EgoKAmlkGAEgASgJIjUKC0dldFJlc3BvbnNlEiYKBnNlcmlhbBgBIAEoCzIWLndhdmUudjEuc2VyaWFsLlNlcmlhbCIfCg5Db25uZWN0UmVxdWVzdBINCgVpbnB1dBgBIAEoDCIhCg9Db25uZWN0UmVzcG9uc2USDgoGb3V0cHV0GAEgASgMIg0KC0xpc3RSZXF1ZXN0IjcKDExpc3RSZXNwb25zZRInCgdzZXJpYWxzGAEgAygLMhYud2F2ZS52MS5zZXJpYWwuU2VyaWFsIj0KDUNyZWF0ZVJlcXVlc3QSLAoGY29uZmlnGAEgASgLMhwud2F2ZS52MS5zZXJpYWwuU2VyaWFsQ29uZmlnIhwKDkNyZWF0ZVJlc3BvbnNlEgoKAmlkGAEgASgJIkkKDVVwZGF0ZVJlcXVlc3QSCgoCaWQYASABKAkSLAoGY29uZmlnGAIgASgLMhwud2F2ZS52MS5zZXJpYWwuU2VyaWFsQ29uZmlnIhAKDlVwZGF0ZVJlc3BvbnNlIhsKDURlbGV0ZVJlcXVlc3QSCgoCaWQYASABKAkiEAoORGVsZXRlUmVzcG9uc2VCJ1olY3RodWwuaW8vY3RodWwvcGtnL2FwaS93YXZlL3YxL3NlcmlhbGIGcHJvdG8z", [file_wave_v1_serial_config]);
 
 /**
  * @generated from message wave.v1.serial.Serial
@@ -83,6 +83,40 @@ export const GetResponseSchema: GenMessage<GetResponse> = /*@__PURE__*/
   messageDesc(file_wave_v1_serial_message, 2);
 
 /**
+ * @generated from message wave.v1.serial.ConnectRequest
+ */
+export type ConnectRequest = Message<"wave.v1.serial.ConnectRequest"> & {
+  /**
+   * @generated from field: bytes input = 1;
+   */
+  input: Uint8Array;
+};
+
+/**
+ * Describes the message wave.v1.serial.ConnectRequest.
+ * Use `create(ConnectRequestSchema)` to create a new message.
+ */
+export const ConnectRequestSchema: GenMessage<ConnectRequest> = /*@__PURE__*/
+  messageDesc(file_wave_v1_serial_message, 3);
+
+/**
+ * @generated from message wave.v1.serial.ConnectResponse
+ */
+export type ConnectResponse = Message<"wave.v1.serial.ConnectResponse"> & {
+  /**
+   * @generated from field: bytes output = 1;
+   */
+  output: Uint8Array;
+};
+
+/**
+ * Describes the message wave.v1.serial.ConnectResponse.
+ * Use `create(ConnectResponseSchema)` to create a new message.
+ */
+export const ConnectResponseSchema: GenMessage<ConnectResponse> = /*@__PURE__*/
+  messageDesc(file_wave_v1_serial_message, 4);
+
+/**
  * @generated from message wave.v1.serial.ListRequest
  */
 export type ListRequest = Message<"wave.v1.serial.ListRequest"> & {
@@ -93,7 +127,7 @@ export type ListRequest = Message<"wave.v1.serial.ListRequest"> & {
  * Use `create(ListRequestSchema)` to create a new message.
  */
 export const ListRequestSchema: GenMessage<ListRequest> = /*@__PURE__*/
-  messageDesc(file_wave_v1_serial_message, 3);
+  messageDesc(file_wave_v1_serial_message, 5);
 
 /**
  * @generated from message wave.v1.serial.ListResponse
@@ -110,7 +144,7 @@ export type ListResponse = Message<"wave.v1.serial.ListResponse"> & {
  * Use `create(ListResponseSchema)` to create a new message.
  */
 export const ListResponseSchema: GenMessage<ListResponse> = /*@__PURE__*/
-  messageDesc(file_wave_v1_serial_message, 4);
+  messageDesc(file_wave_v1_serial_message, 6);
 
 /**
  * @generated from message wave.v1.serial.CreateRequest
@@ -127,7 +161,7 @@ export type CreateRequest = Message<"wave.v1.serial.CreateRequest"> & {
  * Use `create(CreateRequestSchema)` to create a new message.
  */
 export const CreateRequestSchema: GenMessage<CreateRequest> = /*@__PURE__*/
-  messageDesc(file_wave_v1_serial_message, 5);
+  messageDesc(file_wave_v1_serial_message, 7);
 
 /**
  * @generated from message wave.v1.serial.CreateResponse
@@ -144,7 +178,7 @@ export type CreateResponse = Message<"wave.v1.serial.CreateResponse"> & {
  * Use `create(CreateResponseSchema)` to create a new message.
  */
 export const CreateResponseSchema: GenMessage<CreateResponse> = /*@__PURE__*/
-  messageDesc(file_wave_v1_serial_message, 6);
+  messageDesc(file_wave_v1_serial_message, 8);
 
 /**
  * @generated from message wave.v1.serial.UpdateRequest
@@ -166,7 +200,7 @@ export type UpdateRequest = Message<"wave.v1.serial.UpdateRequest"> & {
  * Use `create(UpdateRequestSchema)` to create a new message.
  */
 export const UpdateRequestSchema: GenMessage<UpdateRequest> = /*@__PURE__*/
-  messageDesc(file_wave_v1_serial_message, 7);
+  messageDesc(file_wave_v1_serial_message, 9);
 
 /**
  * @generated from message wave.v1.serial.UpdateResponse
@@ -179,7 +213,7 @@ export type UpdateResponse = Message<"wave.v1.serial.UpdateResponse"> & {
  * Use `create(UpdateResponseSchema)` to create a new message.
  */
 export const UpdateResponseSchema: GenMessage<UpdateResponse> = /*@__PURE__*/
-  messageDesc(file_wave_v1_serial_message, 8);
+  messageDesc(file_wave_v1_serial_message, 10);
 
 /**
  * @generated from message wave.v1.serial.DeleteRequest
@@ -196,7 +230,7 @@ export type DeleteRequest = Message<"wave.v1.serial.DeleteRequest"> & {
  * Use `create(DeleteRequestSchema)` to create a new message.
  */
 export const DeleteRequestSchema: GenMessage<DeleteRequest> = /*@__PURE__*/
-  messageDesc(file_wave_v1_serial_message, 9);
+  messageDesc(file_wave_v1_serial_message, 11);
 
 /**
  * @generated from message wave.v1.serial.DeleteResponse
@@ -209,5 +243,5 @@ export type DeleteResponse = Message<"wave.v1.serial.DeleteResponse"> & {
  * Use `create(DeleteResponseSchema)` to create a new message.
  */
 export const DeleteResponseSchema: GenMessage<DeleteResponse> = /*@__PURE__*/
-  messageDesc(file_wave_v1_serial_message, 10);
+  messageDesc(file_wave_v1_serial_message, 12);
 

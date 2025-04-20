@@ -21,7 +21,6 @@ package domain
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -95,14 +94,14 @@ func (c *Controller) List(ctx context.Context) (map[string]*domainstruct.Domain,
 
 	for key, rawConfig := range configs {
 		var domainErr error
-		id := strings.TrimPrefix(key, "/WAVE/DOMAIN/NODE/")
+		id := strings.TrimPrefix(key, "/WAVE/DOMAIN/CONFIG/")
 		reqnode := reqnodes[fmt.Sprint("/WAVE/DOMAIN/REQNODE/", id)]
 		node := nodes[fmt.Sprint("/WAVE/DOMAIN/NODE/", id)]
 
 		config := &domainstruct.DomainConfig{}
-		err = json.Unmarshal([]byte(rawConfig), config)
+		err = proto.Unmarshal([]byte(rawConfig), config)
 		if err != nil {
-			domainErr = errors.Join(domainErr, fmt.Errorf("parsing node config: %w", err))
+			domainErr = errors.Join(domainErr, fmt.Errorf("parsing domain config: %w", err))
 		}
 
     domain := &domainstruct.Domain{
@@ -170,7 +169,7 @@ func (c *Controller) Lookup(ctx context.Context, id string) (*domainstruct.Domai
 	config := &domainstruct.DomainConfig{}
 	err = proto.Unmarshal([]byte(rawConfig), config)
 	if err != nil {
-		return nil, fmt.Errorf("parsing node config: %w", err)
+		return nil, fmt.Errorf("parsing domain config: %w", err)
 	}
 
 	return &domainstruct.Domain{
