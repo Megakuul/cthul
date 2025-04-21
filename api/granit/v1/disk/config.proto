@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package granit.v1.video;
+package granit.v1.disk;
 
 option go_package = "cthul.io/cthul/pkg/api/granit/v1/disk";
 

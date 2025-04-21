@@ -64,7 +64,7 @@ func (o *Operator) synchronize() {
 		id := strings.TrimPrefix(k, "/WAVE/DOMAIN/REQNODE/")
 		configKey := fmt.Sprintf("/WAVE/DOMAIN/CONFIG/%s", id)
 		if reqnode == o.nodeId {
-			o.syncer.Add(configKey, o.configCycleTTL, func(ctx context.Context, k, v string) error {
+			o.syncer.Add(configKey, o.syncCycleTTL, func(ctx context.Context, k, v string) error {
         err := o.applyConfig(ctx, id, v)
         if err!=nil {
           return err

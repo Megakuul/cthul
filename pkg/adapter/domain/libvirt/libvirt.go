@@ -42,7 +42,7 @@ type Adapter struct {
 type Option func(*Adapter)
 
 func New(generator *generator.Generator, hotplugger *hotplug.Hotplugger, opts ...Option) *Adapter {
-	controller := &Adapter{
+	adapter := &Adapter{
 		initLock: sync.Mutex{},
 		client: nil,
 		generator: generator,
@@ -50,10 +50,10 @@ func New(generator *generator.Generator, hotplugger *hotplug.Hotplugger, opts ..
 	}
 
 	for _, opt := range opts {
-		opt(controller)
+		opt(adapter)
 	}
 
-	return controller
+	return adapter
 }
 
 // initClient creates the underlying libvirt connection client if not already initialized.

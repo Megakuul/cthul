@@ -16,3 +16,4 @@
 - Move the NodeMismatchErr anywhere more useful (in a util or something, just that its not seperate for every controller)
 - Implement granit + proton operators (disk / interface)
 - Check if granit must store device FORMAT on database (should that not be rather important in the config and not to the underlying granit)
+- implement flow (collect systemd-journal-gatewayd + metrics)

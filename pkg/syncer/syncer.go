@@ -20,9 +20,10 @@
 package syncer
 
 import (
-  "log/slog"
 	"context"
 	"fmt"
+	"log/slog"
+	"path"
 	"sync"
 	"time"
 
@@ -104,9 +105,9 @@ func (s *Syncer) Add(prefix string, interval int64, fn func(context.Context, str
 				for k, state := range result {
 					err = fn(ctx, k, state)
 					if err != nil {
-						s.logger.Error(fmt.Sprintf("cannot apply state to '%s': %s", k, err.Error()))
+						s.logger.Error(fmt.Sprintf("cannot apply state: %s", err.Error()), slog.String("id", path.Base(k)))
 					} else {
-						s.logger.Debug(fmt.Sprintf("successfully applied state '%s'", k))
+						s.logger.Debug("successfully applied state", slog.String("id", path.Base(k)))
 					}
 				}
 			}
@@ -126,14 +127,14 @@ func (s *Syncer) Add(prefix string, interval int64, fn func(context.Context, str
 		defer funcWg.Done()
 		err := s.client.WatchRange(funcCtx, prefix, func(k, state string, err error) {
 			if err != nil {
-				s.logger.Error(fmt.Sprintf("failed to load key '%s': %s", k, err.Error()))
+				s.logger.Error(fmt.Sprintf("failed to load key '%s': %s", prefix, err.Error()))
 				return
 			}
 			err = fn(funcCtx, k, state)
 			if err != nil {
-				s.logger.Error(fmt.Sprintf("cannot apply state to '%s': %s", k, err.Error()))
+				s.logger.Error(fmt.Sprintf("cannot apply state: %s", err.Error()), slog.String("id", path.Base(k)))
 			} else {
-				s.logger.Debug(fmt.Sprintf("successfully applied state '%s'", k))
+				s.logger.Debug("successfully applied state", slog.String("id", path.Base(k)))
 			}
 		})
 		if err != nil {

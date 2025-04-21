@@ -17,6 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+// domain adapter provides an abstraction layer for virtual machines.
+// it is primarily used by wave to provision and control virtual machines 'domains'.
 package domain
 
 import (
@@ -25,8 +27,6 @@ import (
   "cthul.io/cthul/pkg/api/wave/v1/domain"
 )
 
-// Adapter provides the direct domain abstraction layer.
-// It ensures that the underlying domain (vm) system can be replaced without much effort (even if not planned).
 type Adapter interface {
 	// List returns a map with uuids & name of all domains on the host.
 	List(context.Context) (map[string]string, error)

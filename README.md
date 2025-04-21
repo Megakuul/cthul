@@ -3,6 +3,14 @@
 Work in progress - The stuff below is irrelevant, just notes so my sievebrain doesn't forget to document it.
 
 
+Components:
+- wave -> domain manager
+- granit -> storage manager
+- proton -> network manager
+- rune -> trust + authentication manager (iam)
+- sisyphos -> webinterface
+- flow -> log + metric collector/distributor
+
 ### Cthul api
 ---
 
