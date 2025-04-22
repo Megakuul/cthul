@@ -17,7 +17,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package serial
+package disk
 
 import (
 	"context"
@@ -25,36 +25,67 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
-	"cthul.io/cthul/pkg/api/wave/v1/serial"
+	"cthul.io/cthul/pkg/api/granit/v1/disk"
 	"google.golang.org/protobuf/proto"
 )
 
 func (o *Operator) synchronize() {
-  o.syncer.Add("/WAVE/SERIAL/REQNODE/", o.updateCycleTTL, func(ctx context.Context, k, reqnode string) error {
-    id := strings.TrimPrefix(k, "/WAVE/SERIAL/REQNODE/")
-    configKey := fmt.Sprintf("/WAVE/SERIAL/CONFIG/%s", id)
-    if reqnode == o.nodeId {
+  attached := map[string]bool{}
+  attachedLock := sync.RWMutex{}
+
+  o.syncer.Add("/GRANIT/DISK/CLUSTERNODES/", o.updateCycleTTL, func(ctx context.Context, k, nodes string) error {
+    id := strings.TrimPrefix(k, "/GRANIT/DISK/CLUSTERNODES/")
+    attachedLock.RLock()
+    defer attachedLock.RUnlock()
+    if attached[id] {
+      return nil
+    }
+
+    configKey := fmt.Sprintf("/GRANIT/DISK/CONFIG/%s", id)
+    if nodes[o.nodeId] {
+      o.syncer.Remove(configKey, true)
       o.syncer.Add(configKey, o.syncCycleTTL, func(ctx context.Context, k, v string) error {
+        // drbdadm up r0 
+        // drbdadm secondary r0 o.nodeId
+      })
+    } else {
+      o.syncer.Remove(configKey, false)
+      // umount /dev/drbdxy
+      // umount /dev/loopdev
+      // rm -rf /device.img
+    }
+  })
+  
+  o.syncer.Add("/GRANIT/DISK/REQNODE/", o.updateCycleTTL, func(ctx context.Context, k, reqnode string) error {
+    id := strings.TrimPrefix(k, "/GRANIT/DISK/REQNODE/")
+    configKey := fmt.Sprintf("/GRANIT/DISK/CONFIG/%s", id)
+    if reqnode == o.nodeId {
+      o.syncer.Remove(configKey, true)
+      o.syncer.Add(configKey, o.syncCycleTTL, func(ctx context.Context, k, v string) error {
+        // drbdadm up r0
+        // drbdadm primary r0 o.nodeid
         err := o.applyConfig(v)
         if err!=nil {
           return err
         }
-        _, err = o.client.Set(ctx, fmt.Sprintf("/WAVE/SERIAL/NODE/%s", id), reqnode, 0)
+        _, err = o.client.Set(ctx, fmt.Sprintf("/GRANIT/DISK/NODE/%s", id), reqnode, 0)
         if err!=nil {
           return err
         }
         return nil
       })
     } else {
-      o.syncer.Remove(configKey, false)
+      o.syncer.Remove(configKey, true)
+      // drbdadm secondary r0 o.nodeId
     }
     return nil
   })
 }
 
 func (o *Operator) applyConfig(rawConfig string) error {
-  config := &serial.SerialConfig{}
+  config := &disk.DiskConfig{}
   err := proto.Unmarshal([]byte(rawConfig), config)
   if err!=nil {
 		return fmt.Errorf("failed to parse config: %w", err)

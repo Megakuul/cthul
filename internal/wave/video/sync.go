@@ -31,16 +31,16 @@ import (
 )
 
 func (o *Operator) synchronize() {
-  o.syncer.Add("/WAVE/VIDEO/REQNODE", o.updateCycleTTL, func(ctx context.Context, k, reqnode string) error {
-    uuid := strings.TrimPrefix(k, "/WAVE/VIDEO/REQNODE/")
-    configKey := fmt.Sprintf("/WAVE/VIDEO/CONFIG/%s", uuid)
+  o.syncer.Add("/WAVE/VIDEO/REQNODE/", o.updateCycleTTL, func(ctx context.Context, k, reqnode string) error {
+    id := strings.TrimPrefix(k, "/WAVE/VIDEO/REQNODE/")
+    configKey := fmt.Sprintf("/WAVE/VIDEO/CONFIG/%s", id)
     if reqnode == o.nodeId {
       o.syncer.Add(configKey, o.syncCycleTTL, func(ctx context.Context, k, v string) error {
         err := o.applyConfig(v)
         if err!=nil {
           return err
         }
-        _, err = o.client.Set(ctx, fmt.Sprintf("/WAVE/VIDEO/NODE/%s", uuid), reqnode, 0)
+        _, err = o.client.Set(ctx, fmt.Sprintf("/WAVE/VIDEO/NODE/%s", id), reqnode, 0)
         if err!=nil {
           return err
         }
