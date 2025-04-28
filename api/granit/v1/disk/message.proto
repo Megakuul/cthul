@@ -5,11 +5,13 @@ package granit.v1.disk;
 option go_package = "cthul.io/cthul/pkg/api/granit/v1/disk";
 
 import "granit/v1/disk/config.proto";
+import "granit/v1/disk/cluster.proto";
 
 message Disk {
   string reqnode = 1;
   string node = 2;
-  DiskConfig config = 3; // core prop
+  DiskCluster cluster = 3;
+  DiskConfig config = 4; // core prop
   string error = 8;
 }
 
