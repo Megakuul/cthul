@@ -8,14 +8,19 @@
   import Cthul from "$lib/components/Cthul.svelte";
 </script>
 
+
 <center
   style="background-color: {Palette().bgSecondary()};"
   class="relative h-48 overflow-hidden"
 >
+  <div style="background-image: url({chainHorizontalScattered});"
+    class="absolute -top-16 bg-repeat w-full h-22 opacity-60 animate-pulse">
+  </div>
+
   <Cthul
     eyeClass="animate-breath"
     bodyClass="brightness-20 group-hover:brightness-80 transition-all duration-1000"
-    class="peer group cursor-pointer h-full w-max mt-20 hover:mt-10 hover:scale-125 transition-all duration-1000"
+    class="peer group cursor-pointer h-full w-max mt-20 hover:mt-12 hover:scale-125 transition-all duration-1000"
   ></Cthul>
 
   <div

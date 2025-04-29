@@ -26,9 +26,9 @@ export function SetPalette(newPalette) {
 
 export function NewDefaultPalette() {
   return {
-    bgPrimary: () => { return "#F5F7F8" },
+    bgPrimary: () => { return "#222831" },
     bgSecondary: () => { return "#000000" },
-    fgPrimary: () => { return "#F5F7F8" },
+    fgPrimary: () => { return "#222831" },
     fgSecondary: () => { return "#F9F7F7" },
     fgRune: () => { return "#5E4A11"},
     fgWave: () => { return "#0D65A4" },
@@ -41,7 +41,7 @@ export function NewDefaultPalette() {
 
 export function NewRunePalette() {
   return {
-    bgPrimary: () => { return "#F5F7F8" },
+    bgPrimary: () => { return "#222831" },
     bgSecondary: () => { return "#000000" },
     fgPrimary: () => { return "#5E4A11" },
     fgSecondary: () => { return "#826411" },
@@ -56,7 +56,7 @@ export function NewRunePalette() {
 
 export function NewWavePalette() {
   return {
-    bgPrimary: () => { return "#F5F7F8" },
+    bgPrimary: () => { return "#222831" },
     bgSecondary: () => { return "#000000" },
     fgPrimary: () => { return "#0D65A4" },
     fgSecondary: () => { return "#0c7ac9" },
@@ -71,7 +71,7 @@ export function NewWavePalette() {
 
 export function NewGranitPalette() {
   return {
-    bgPrimary: () => { return "#F5F7F8" },
+    bgPrimary: () => { return "#222831" },
     bgSecondary: () => { return "#000000" },
     fgPrimary: () => { return "#042F0B" },
     fgSecondary: () => { return "#045411" },
@@ -86,7 +86,7 @@ export function NewGranitPalette() {
 
 export function NewProtonPalette() {
   return {
-    bgPrimary: () => { return "#F5F7F8" },
+    bgPrimary: () => { return "#222831" },
     bgSecondary: () => { return "#000000" },
     fgPrimary: () => { return "#57056C" },
     fgSecondary: () => { return "#6f068a" },

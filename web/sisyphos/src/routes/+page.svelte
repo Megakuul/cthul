@@ -13,6 +13,7 @@
     NewProtonPalette,
     NewDefaultPalette,
   } from "$lib/color/color.svelte";
+    import Rune from "$lib/components/Rune.svelte";
 
   /** @type {"rune" | "wave" | "granit" | "proton" | undefined} */
   let selected = $state(undefined);
@@ -78,23 +79,10 @@
     }
   });
 
-  /** @param {"rune" | "wave" | "granit" | "proton" | undefined} newState */
-  function select(newState) {
-    if (selected === newState) {
-      newState = undefined;
-    }
-    selected = newState;
-  }
 </script>
 
 <div class="flex flex-row justify-around p-4">
-  <button
-    id="rune"
-    class:selected={selected === "rune"}
-    onclick={() => select("rune")}
-  >
-    <img alt="rune" src={rune} />
-  </button>
+  <Rune></Rune>
   <button
     id="wave"
     class:selected={selected === "wave"}
@@ -137,7 +125,6 @@
     transition: all ease 0.25s;
   }
 
-  #rune:hover,
   #rune.selected {
     filter: drop-shadow(6px 6px 10px #5e4a11);
   }
@@ -147,7 +134,6 @@
     transition: all ease 0.25s;
   }
 
-  #wave:hover,
   #wave.selected {
     filter: drop-shadow(6px 6px 10px #0d65a4);
   }
@@ -157,7 +143,6 @@
     transition: all ease 0.25s;
   }
 
-  #granit:hover,
   #granit.selected {
     filter: drop-shadow(6px 6px 10px #042f0b);
   }
@@ -167,7 +152,6 @@
     transition: all ease 0.25s;
   }
 
-  #proton:hover,
   #proton.selected {
     filter: drop-shadow(6px 6px 10px #57056c);
   }

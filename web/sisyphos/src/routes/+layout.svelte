@@ -7,7 +7,7 @@
 </script>
 
 <center
-  style="color: {Palette().fgPrimary()}; background-color: {Palette().bgPrimary()};"
+  style="color: {Palette().fgPrimary()}; background-image: linear-gradient(to bottom, #0F2027, #203A43, #2C5364);"
   class="h-full min-h-screen box-border transition-all duration-700"
 >
   {@render children()}
