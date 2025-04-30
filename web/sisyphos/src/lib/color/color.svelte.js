@@ -37,3 +37,17 @@ export function NewSandstormPalette() {
     fgError: () => { return "#A31D1D" },
   }
 }
+
+export function NewSlatePalette() {
+  return {
+    bgPrimary: () => { return "#1e2124" },
+    fgPrimary: () => { return "#7289da" },
+    bgCthul: () => { return "#000000" },
+    fgRune: () => { return "#5E4A11"},
+    fgWave: () => { return "#0D65A4" },
+    fgGranit: () => { return "#042F0B"},
+    fgProton: () => { return "#57056C"},
+    fgSuccess: () => { return "#255F38" },
+    fgError: () => { return "#A31D1D" },
+  }
+}
