@@ -10,7 +10,7 @@
 
 
 <center
-  style="background-color: {Palette().bgSecondary()};"
+  style="background-color: {Palette().bgCthul()};"
   class="relative h-48 overflow-hidden"
 >
   <div style="background-image: url({chainHorizontalScattered});"

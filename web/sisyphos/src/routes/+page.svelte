@@ -1,19 +1,9 @@
 <script>
-  import { Palette } from "$lib/color/color.svelte";
   import rune from "$lib/assets/rune.svg";
   import wave from "$lib/assets/wave.svg";
   import granit from "$lib/assets/granit.svg";
   import proton from "$lib/assets/proton.svg";
-
-  import {
-    SetPalette,
-    NewRunePalette,
-    NewWavePalette,
-    NewGranitPalette,
-    NewProtonPalette,
-    NewDefaultPalette,
-  } from "$lib/color/color.svelte";
-    import Rune from "$lib/components/Rune.svelte";
+  import Card from "./Card.svelte";
 
   /** @type {"rune" | "wave" | "granit" | "proton" | undefined} */
   let selected = $state(undefined);
@@ -30,11 +20,9 @@
   $effect(() => {
     switch (selected) {
       case "rune":
-        SetPalette(NewRunePalette());
         services = [];
         break;
       case "wave":
-        SetPalette(NewWavePalette());
         services = [
           {
             title: "Domain",
@@ -54,7 +42,6 @@
         ];
         break;
       case "granit":
-        SetPalette(NewGranitPalette());
         services = [
           {
             title: "Disk",
@@ -64,7 +51,6 @@
         ];
         break;
       case "proton":
-        SetPalette(NewProtonPalette());
         services = [
           {
             title: "Inter",
@@ -75,35 +61,16 @@
         break;
       default:
         services = undefined;
-        SetPalette(NewDefaultPalette());
     }
   });
 
 </script>
 
-<div class="flex flex-row justify-around p-4">
-  <Rune></Rune>
-  <button
-    id="wave"
-    class:selected={selected === "wave"}
-    onclick={() => select("wave")}
-  >
-    <img alt="wave" src={wave} />
-  </button>
-  <button
-    id="granit"
-    class:selected={selected === "granit"}
-    onclick={() => select("granit")}
-  >
-    <img alt="granit" src={granit} />
-  </button>
-  <button
-    id="proton"
-    class:selected={selected === "proton"}
-    onclick={() => select("proton")}
-  >
-    <img alt="proton" src={proton} />
-  </button>
+<div class="flex flex-row justify-around gap-6 p-4">
+  <Card icon={wave} name="wave" bind:selected={selected}></Card>
+  <Card icon={granit} name="granit" bind:selected={selected}></Card>
+  <Card icon={proton} name="proton" bind:selected={selected}></Card>
+  <Card icon={rune} name="rune" bind:selected={selected}></Card>
 </div>
 
 {#if services}
@@ -118,41 +85,3 @@
 {:else}
   <div>Here is some general content</div>
 {/if}
-
-<style>
-  #rune {
-    cursor: pointer;
-    transition: all ease 0.25s;
-  }
-
-  #rune.selected {
-    filter: drop-shadow(6px 6px 10px #5e4a11);
-  }
-
-  #wave {
-    cursor: pointer;
-    transition: all ease 0.25s;
-  }
-
-  #wave.selected {
-    filter: drop-shadow(6px 6px 10px #0d65a4);
-  }
-
-  #granit {
-    cursor: pointer;
-    transition: all ease 0.25s;
-  }
-
-  #granit.selected {
-    filter: drop-shadow(6px 6px 10px #042f0b);
-  }
-
-  #proton {
-    cursor: pointer;
-    transition: all ease 0.25s;
-  }
-
-  #proton.selected {
-    filter: drop-shadow(6px 6px 10px #57056c);
-  }
-</style>
