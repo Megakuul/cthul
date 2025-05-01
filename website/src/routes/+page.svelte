@@ -1,6 +1,5 @@
 <script>
-    import CthulIcon from "$lib/components/CthulIcon.svelte";
-
+  import Stone from "$lib/components/Stone.svelte";
 </script>
 
 
@@ -15,14 +14,14 @@
 </svelte:head>
 
 
-<h1 class="text-4xl sm:text-7xl lg:text-9xl text-nowrap my-20 py-2 font-bold ">
+<h1 class="text-4xl sm:text-7xl lg:text-9xl text-nowrap mt-20 py-2 font-bold ">
   <span class="text-transparent bg-clip-text bg-gradient-to-br from-[#b10a79] to-[#83105dce] fade-short">Cthul</span>
   <span class="text-transparent bg-clip-text bg-gradient-to-br from-stone-800 to-stone-950 fade-long">Project</span>
 </h1>
 
-<CthulIcon class="w-3/4 lg:w-1/2 cursor-pointer" />
+<Stone class="w-3/4 lg:w-1/2"></Stone>
 
-<section class="flex flex-col items-center w-full my-20">
+<section class="flex flex-col items-center w-full mb-20">
   <div class="flex flex-col w-full sm:w-8/12 lg:w-6/12 rounded-none sm:rounded-lg text-xs sm:text-base p-6 bg-stone-800 text-stone-400  overflow-hidden text-nowrap">
     <p class="flex flex-row items-start">
       <span class="mr-2 font-bold">{">"}</span>

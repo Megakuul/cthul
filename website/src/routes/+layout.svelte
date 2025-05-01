@@ -1,7 +1,12 @@
 <script>
   import "../app.css"
+  import Footer from "./Footer.svelte";
+
+  let { children } = $props();
 </script>
 
 <main class="overflow-hidden flex flex-col items-center">
-  <slot></slot>
+  {@render children()}
 </main>
+
+<Footer></Footer>

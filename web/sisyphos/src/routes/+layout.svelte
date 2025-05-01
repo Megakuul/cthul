@@ -2,7 +2,6 @@
   import "../app.css";
   import { Palette } from "$lib/color/color.svelte"
   import Footer from "./Footer.svelte";
-    import { Gimmick } from "$lib/gimmick/gimmick.svelte";
 
   let { children } = $props();
 </script>
@@ -14,6 +13,4 @@
   {@render children()}
 </center>
 
-{#if Gimmick()}
-  <Footer></Footer>
-{/if}
+<Footer></Footer>
