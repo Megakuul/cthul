@@ -1,7 +1,7 @@
 <script>
   import { Palette } from "$lib/color/color.svelte";
-  import chainVerticalScattered from "$lib/assets/chain-v-scattered.svg";
-  import { Gimmick } from "$lib/gimmick/gimmick.svelte";
+  import stone from "$lib/assets/stone.ogg";
+  import { Play } from "$lib/sound/sound.svelte";
 
   let {
     icon,
@@ -13,6 +13,7 @@
 <button aria-label="{name}" class:selected={selected === name} style="background-color: {Palette().bgCthul()}; --main-bg: {Palette().bgPrimary()};"
   class="w-full relative select-none rounded-4xl cursor-pointer overflow-hidden shadow-inner shadow-slate-100/40"
   onclick={() => {
+    Play(stone)
     if (selected === name) {
       selected = undefined;
     } else {
@@ -20,18 +21,7 @@
     }
   }}
   >
-  <img alt="{name}" src={icon} class="transition-all duration-500" />
-
-  {#if Gimmick()}
-    <div
-      style="background-image: url({chainVerticalScattered});"
-      class="chain absolute top-0 left-1/2 -rotate-45 w-3 opacity-80 scale-[7]"
-    ></div>
-    <div
-      style="background-image: url({chainVerticalScattered});"
-      class="chain absolute top-0 left-1/2 rotate-45 w-3 opacity-80 scale-[7]"
-    ></div>
-  {/if}
+  <img alt="{name}" src={icon} class="transition-all select-none duration-500" />
 </button>
 
 <style>
@@ -40,29 +30,7 @@
   }
 
   button.selected img {
-    filter: drop-shadow(0px 0px 10px rgba(255, 255,255, 0.3)) brightness(120%);
-  }
-
-  .chain {
-    visibility: hidden;
-    height: 100%;
-    background-repeat: no-repeat;
-    background-size: 100% 50%;
-    animation: unleash 2s linear forwards;
-  }
-
-  @keyframes unleash {
-    0% {
-      visibility: visible;
-      background-position: 0 60%;
-    }
-    99% {
-      visibility: visible;
-      background-position: 0 -20%;
-    }
-    100% {
-      visibility: hidden;
-      background-position: 0 0;
-    }
+    scale: 1.05;
+    filter: drop-shadow(0px 0px 40px rgba(255, 255,255, 0.3)) brightness(120%);
   }
 </style>
