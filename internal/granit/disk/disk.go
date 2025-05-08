@@ -22,6 +22,7 @@ package disk
 import (
 	"context"
 	"log/slog"
+	"sync"
 
 	"cthul.io/cthul/pkg/db"
 	"cthul.io/cthul/pkg/syncer"
@@ -44,6 +45,11 @@ type Operator struct {
 
 	// syncCycleTTL defines the ttl of the cycle that prepares the unix socket path for the disk device.
 	syncCycleTTL int64
+
+  rootCtx context.Context
+  rootCtxCancel context.CancelFunc
+
+  operationWg sync.WaitGroup
 }
 
 type Option func(*Operator)

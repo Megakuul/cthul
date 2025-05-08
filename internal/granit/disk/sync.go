@@ -27,49 +27,72 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"cthul.io/cthul/pkg/api/granit/v1/disk"
 	"google.golang.org/protobuf/proto"
 )
 
 func (o *Operator) synchronize() {
-	primaryChan := make(chan bool)
-	configChan := make(chan string)
+	primaryMap, primaryMapLock := map[string]bool{}, sync.RWMutex{}
+	configMap, configMapLock  := map[string]string{}, sync.RWMutex{}
+	syncChan := make(chan string)
 
 	o.operationWg.Add(1)
 	go func() {
 		defer o.operationWg.Done()
-		primary := false
-		config := ""
 		for {
+			device := ""
 			select {
 			case <-o.rootCtx.Done():
 				return
-			case primary = <-primaryChan:
-			case config = <-configChan:
+			case id := <-syncChan:
+				device = id
 			}
 
-      if config == "" {
-			  o.pruneDevice(ctx, id)
-        continue 
-      }
+      ctx, cancel := context.WithTimeout(o.rootCtx, time.Duration(o.syncCycleTTL))
+      defer cancel()
+
+      configMapLock.RLock()
+			config, ok := configMap[device]
+      configMapLock.RUnlock()
+			if !ok {
+				o.logger.Debug("aborting triggered sync: device is not configured for this node",
+					"device", device, "node", o.nodeId,
+				)
+				continue
+			}
+      primaryMapLock.RLock()
+			primary, ok := primaryMap[device]
+      primaryMapLock.RUnlock()
+			if !ok {
+				o.logger.Debug("aborting triggered sync: device is not configured for this node",
+					"device", device, "node", o.nodeId,
+				)
+        continue
+			}
 
 			if primary {
-        err := o.applyConfig(config, true)
+				err := o.applyConfig(ctx, config, true)
 				if err != nil {
-          // logbliblab
-          continue
+					o.logger.Error(err.Error(), "device", device, "node", o.nodeId)
+					continue
 				}
-				_, err = o.client.Set(ctx, fmt.Sprintf("/GRANIT/DISK/NODE/%s", id), o.nodeId, 0)
+        oldNode, err := o.client.Set(ctx, fmt.Sprintf("/GRANIT/DISK/NODE/%s", device), o.nodeId, 0)
 				if err != nil {
-          // logbliblab
-          continue
+					o.logger.Error(err.Error(), "device", device, "node", o.nodeId)
+					continue
 				}
+        if oldNode != o.nodeId {
+          o.logger.Info("successfully attached device to a new cluster node",
+            "device", device, "node", o.nodeId,
+          )
+        }
 			} else {
-        err := o.applyConfig(config, false)
+				err := o.applyConfig(ctx, config, false)
 				if err != nil {
-          // logbliblab
-          continue
+					o.logger.Error(err.Error(), "device", device, "node", o.nodeId)
+					continue
 				}
 			}
 		}
@@ -86,52 +109,52 @@ func (o *Operator) synchronize() {
 		}
 		if _, ok := cluster.Nodes[o.nodeId]; ok {
 			o.syncer.Add(configKey, o.syncCycleTTL, func(ctx context.Context, k, v string) error {
-        configChan <- v
-        return nil
+        configMapLock.Lock()
+        configMap[id] = v
+        configMapLock.Unlock()
+        syncChan <- id
+				return nil
 			})
 		} else {
 			o.syncer.Remove(configKey, true)
-      configChan <- ""
+
+      configMapLock.Lock()
+      delete(configMap, id)
+      configMapLock.Unlock()
+
+      primaryMapLock.Lock()
+      delete(primaryMap, id)
+      primaryMapLock.Unlock()
+
+			o.pruneDevice(ctx, id)
 		}
 		return nil
 	})
 
 	o.syncer.Add("/GRANIT/DISK/REQNODE/", o.updateCycleTTL, func(ctx context.Context, k, reqnode string) error {
-    primaryChan <- reqnode == o.nodeId
+		id := strings.TrimPrefix(k, "/GRANIT/DISK/REQNODE/")
+    primaryMapLock.Lock()
+    primaryMap[id] = reqnode == o.nodeId
+    primaryMapLock.Unlock()
+    syncChan <- id
 		return nil
 	})
 }
 
-func (o *Operator) applyPrimary(rawConfig string) error {
-	// drbdadm up r0
-	// drbdadm primary r0 o.nodeid
-}
-
-func (o *Operator) applySecondary(rawConfig string) error {
-	// drbdadm secondary r0 o.nodeId
-}
-
-func (o *Operator) pruneDevice(ctx context.Context, id, node string) {
-
-	// umount /dev/drbdxy
-	// umount /dev/loopdev
-	// rm -rf /device.img
-}
-
-func (o *Operator) applyConfig(rawConfig string, primary bool) error {
+func (o *Operator) applyConfig(ctx context.Context, rawConfig string, primary bool) error {
 	config := &disk.DiskConfig{}
 	err := proto.Unmarshal([]byte(rawConfig), config)
 	if err != nil {
 		return fmt.Errorf("failed to parse config: %w", err)
 	}
+	// drbdadm up r0
+	// drbdadm primary r0 o.nodeid
+	// drbdadm secondary r0 o.nodeId
+}
 
-	cleanPath := filepath.Join(o.runRoot, config.Path)
-	if !strings.HasPrefix(cleanPath, o.runRoot) {
-		return fmt.Errorf("device socket path is not allowed to escape the run root ('%s' => '%s')", o.runRoot, cleanPath)
-	}
-	err = os.MkdirAll(filepath.Dir(cleanPath), 0600)
-	if err != nil {
-		return err
-	}
-	return os.Chmod(filepath.Dir(cleanPath), 0600)
+func (o *Operator) pruneDevice(ctx context.Context, id string) {
+
+	// umount /dev/drbdxy
+	// umount /dev/loopdev
+	// rm -rf /device.img
 }
