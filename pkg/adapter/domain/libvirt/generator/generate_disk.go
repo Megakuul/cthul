@@ -1,4 +1,3 @@
-/**
  * Cthul System
  *
  * Copyright (C) 2024 Linus Ilian Moser <linus.moser@megakuul.ch>

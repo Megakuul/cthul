@@ -53,7 +53,7 @@ func (g *Generator) generateSerial(ctx context.Context, device *domain.SerialDev
 	// Source (on host)
 	serial.MetaType = structure.SERIAL_UNIX
 	serial.Source.MetaMode = structure.SERIAL_SOURCE_BIND
-	path := filepath.Join(g.waveRoot, serialDevice.Path)
+	path := filepath.Join(g.waveRoot, serialDevice.Config.Path)
 	if !strings.HasPrefix(filepath.Clean(path), g.waveRoot) {
 		return nil, fmt.Errorf("serial device uses a socket path that escapes the run root '%s'", g.waveRoot)
 	}

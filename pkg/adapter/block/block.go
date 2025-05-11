@@ -22,19 +22,25 @@
 package block
 
 import (
+	"context"
+
+	"cthul.io/cthul/pkg/api/granit/v1/disk"
 )
 
 type Adapter interface {
   // PoC
-  Apply()
+  Apply(context.Context, string, disk.DiskConfig, disk.DiskCluster) error
   // drbdadm up <disk>
   // if node!=reqnode -> drbdadm secondary <node>
   // drbdadm primary <reqnode>
-  Destroy()
+  Destroy(context.Context, string) error
   // if localnode==node && localnode!=reqnode -> drbdadm secondary <localnode>
   // drbadm down <disk>
   // umount /dev/drbdxy
   // umount /dev/loopdev
   // rm -rf /device
+  Primary(context.Context, string) error
+
+  Secondary(context.Context, string) error
 }
 
