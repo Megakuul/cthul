@@ -35,7 +35,8 @@ import (
 
 type Adapter struct {
 	executable string
-	storage    string
+	storageBase    string
+  configBase string
 }
 
 type Option func(*Adapter)
@@ -43,7 +44,8 @@ type Option func(*Adapter)
 func New(opts ...Option) *Adapter {
 	adapter := &Adapter{
 		executable: "drbdadm",
-		storage:    "/var/lib/cthul/granit/",
+		storageBase:    "/var/lib/cthul/granit/",
+    configBase: "/etc/drbd.d/",
 	}
 
 	for _, opt := range opts {
@@ -61,14 +63,14 @@ func WithExecutable(path string) Option {
 
 func WithStorage(path string) Option {
 	return func(a *Adapter) {
-		a.storage = path
+		a.storageBase = path
 	}
 }
 
 func (a *Adapter) Apply(ctx context.Context, id string, config *disk.DiskConfig, cluster *disk.DiskCluster) error {
-	path := filepath.Join(a.storage, id)
-	if !strings.HasPrefix(filepath.Clean(path), a.storage) {
-		return fmt.Errorf("device uses a path that escapes the storage root '%s'", a.storage)
+	path := filepath.Join(a.storageBase, id)
+	if !strings.HasPrefix(filepath.Clean(path), a.storageBase) {
+		return fmt.Errorf("device uses a path that escapes the storage root '%s'", a.storageBase)
 	}
 
   requiresInit := false
@@ -196,12 +198,33 @@ func detachLoopDev(path string) error {
   return nil
 }
 
-func Destroy(ctx context.Context, id string) error {
+func (a *Adapter) Destroy(ctx context.Context, id string) error {
+  var dsErr error
+  dsErr = errors.Join(dsErr, exec.CommandContext(ctx, 
+    a.executable, "down", id,
+  ).Run())
 
+  err := os.RemoveAll(filepath.Join(a.configBase, id))
+  if err!=nil {
+    dsErr = errors.Join(dsErr, fmt.Errorf("failed to remove drbd config: %w", err))
+  }
+
+  devPath := fmt.Sprintf("/dev/cthul/granit/%s", id)
+  dsErr = errors.Join(dsErr, detachLoopDev(devPath))
+
+  dsErr = errors.Join(dsErr, os.Remove(devPath))
+
+	diskPath := filepath.Join(a.storageBase, id)
+	if !strings.HasPrefix(filepath.Clean(diskPath), a.storageBase) {
+		return errors.Join(dsErr, fmt.Errorf(
+      "device uses a path that escapes the storage root '%s'", a.storageBase,
+    ))
+	} else {
+    return errors.Join(dsErr, os.Remove(diskPath))
+  }
 }
 
 func Primary(ctx context.Context) error {
-
   err = exec.CommandContext(ctx, 
     a.executable, "up", id,
   ).Run()
