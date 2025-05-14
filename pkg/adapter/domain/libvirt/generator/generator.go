@@ -20,10 +20,15 @@
 package generator
 
 import (
+	"context"
+
 	"cthul.io/cthul/pkg/granit/disk"
 	"cthul.io/cthul/pkg/proton/inter"
 	"cthul.io/cthul/pkg/wave/serial"
 	"cthul.io/cthul/pkg/wave/video"
+
+	"cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
+	"cthul.io/cthul/pkg/api/wave/v1/domain"
 )
 
 // Generator provides operations to generate libvirt xml from cthul domain configurations.
@@ -31,22 +36,22 @@ import (
 // (resolving things like 'GranitBlockDeviceId').
 // It also provides operations to attach and release those required devices.
 type Generator struct {
-  nodeId string
+	nodeId string
 
-	video *video.Controller
-  serial *serial.Controller
-	disk *disk.Controller
-	inter *inter.Controller
+	video  *video.Controller
+	serial *serial.Controller
+	disk   *disk.Controller
+	inter  *inter.Controller
 
-  waveRoot string
-  granitRoot string
-  protonRoot string
+	waveRoot   string
+	granitRoot string
+	protonRoot string
 }
 
 type Option func(*Generator)
 
 func New(
-  nodeId string,
+	nodeId string,
 	videoController *video.Controller,
 	serialController *serial.Controller,
 	diskController *disk.Controller,
@@ -54,14 +59,14 @@ func New(
 	opts ...Option) *Generator {
 
 	generator := &Generator{
-    nodeId: nodeId,
-		video: videoController,
-    serial: serialController,
-    disk: diskController,
-    inter: interController,
-    waveRoot: "/run/cthul/wave",
-    granitRoot: "/run/cthul/granit/",
-    protonRoot: "/run/cthul/proton/",
+		nodeId:     nodeId,
+		video:      videoController,
+		serial:     serialController,
+		disk:       diskController,
+		inter:      interController,
+		waveRoot:   "/run/cthul/wave",
+		granitRoot: "/run/cthul/granit/",
+		protonRoot: "/run/cthul/proton/",
 	}
 
 	for _, opt := range opts {
@@ -71,3 +76,115 @@ func New(
 	return generator
 }
 
+// Attach installs / locks all devices that are required by the domain config.
+func (g *Generator) Attach(ctx context.Context, config *domain.DomainConfig) error {
+	for _, device := range config.VideoAdapters {
+    err := g.video.Attach(ctx, device.DeviceId, g.nodeId, true)
+		if err!=nil {
+			return err
+		}
+	}
+
+	for _, device := range config.SerialDevices {
+    err := g.serial.Attach(ctx, device.DeviceId, g.nodeId, true)
+    if err!=nil {
+      return err
+    }
+	}
+	
+	for _, device := range config.StorageDevices {
+    err := g.disk.Attach(ctx, device.DeviceId, g.nodeId, true)
+    if err!=nil {
+      return err
+    }
+	}
+
+	for _, device := range config.NetworkDevices {
+    err := g.inter.Attach(ctx, device.DeviceId, g.nodeId, true)
+    if err!=nil {
+      return err
+    }
+	}
+	
+  return nil
+}
+
+// Generate transpiles the domain config to a libvirt xml file. Cthul devices are dynamically resolved with
+// the generator attached device controllers. Devices must be attached to the node otherwise lookups will fail.
+func (l *Generator) Generate(ctx context.Context, id string, config *domain.DomainConfig) (*structure.Domain, error) {
+	var err error
+	domain := &structure.Domain{
+		MetaType:    structure.DOMAIN_KVM,
+		UUID:        id,
+		Name:        config.Name,
+		Title:       config.Title,
+		Description: config.Description,
+		VCPU:        l.generateVCPU(config.ResourceConfig),
+		Memory:      l.generateMemory(config.ResourceConfig),
+		Devices:     []interface{}{},
+		Features:    []interface{}{},
+	}
+
+	domain.OS, err = l.generateOS(config.SystemConfig, config.FirmwareConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, videoDevice := range config.VideoDevices {
+		device, err := l.generateVideo(videoDevice)
+		if err != nil {
+			return nil, err
+		}
+		domain.Devices = append(domain.Devices, device)
+	}
+
+	for _, videoAdapter := range config.VideoAdapters {
+		device, err := l.generateGraphic(ctx, videoAdapter)
+		if err != nil {
+			return nil, err
+		}
+		domain.Devices = append(domain.Devices, device)
+	}
+
+	for _, serialDevice := range config.SerialDevices {
+		device, err := l.generateSerial(ctx, serialDevice)
+		if err != nil {
+			return nil, err
+		}
+		domain.Devices = append(domain.Devices, device)
+	}
+
+	for _, serialDevice := range config.SerialDevices {
+		device, err := l.generateSerial(ctx, serialDevice)
+		if err != nil {
+			return nil, err
+		}
+		domain.Devices = append(domain.Devices, device)
+	}
+
+	for _, inputDevice := range config.InputDevices {
+		device, err := l.generateInput(inputDevice)
+		if err != nil {
+			return nil, err
+		}
+		domain.Devices = append(domain.Devices, device)
+	}
+
+	for _, storageDevice := range config.StorageDevices {
+		device, err := l.generateDisk(ctx, storageDevice)
+		if err != nil {
+			return nil, err
+		}
+		domain.Devices = append(domain.Devices, device)
+	}
+
+	for _, networkDevice := range config.NetworkDevices {
+		device, err := l.generateInterface(ctx, networkDevice)
+		if err != nil {
+			return nil, err
+		}
+		domain.Devices = append(domain.Devices, device)
+	}
+
+	return domain, nil
+}

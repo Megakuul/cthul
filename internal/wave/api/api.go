@@ -44,7 +44,7 @@ type Endpoint struct {
 
 type Option func(*Endpoint)
 
-func NewEndpoint(logger *slog.Logger, addr string, cert tls.Certificate, opts ...Option) *Endpoint {
+func New(logger *slog.Logger, addr string, cert tls.Certificate, opts ...Option) *Endpoint {
 	mux := http.NewServeMux()
 	mux.Handle(wavev1connect.NewDomainServiceHandler(&domainService{}))
 	endpoint := &Endpoint{

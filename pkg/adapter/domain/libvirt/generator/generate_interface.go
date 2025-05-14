@@ -24,8 +24,7 @@ import (
 	"fmt"
 
 	"cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
-  "cthul.io/cthul/pkg/api/wave/v1/domain"
-	interstruct "cthul.io/cthul/pkg/proton/inter/structure"
+	"cthul.io/cthul/pkg/api/wave/v1/domain"
 )
 
 // Explanation: A libvirt interface device is a network adapter for the guest os. It intercepts MMIO calls
@@ -36,13 +35,13 @@ import (
 // generateInterface generates a libvirt network interface device from the cthul network device.
 func (g *Generator) generateInterface(ctx context.Context, device *domain.NetworkDevice) (*structure.Interface, error) {
 	inter := &structure.Interface{
-		Model: &structure.InterfaceModel{},
+		Model:  &structure.InterfaceModel{},
 		Source: &structure.InterfaceSource{},
-		Boot: &structure.Boot{MetaOrder: device.BootPriority},
+		Boot:   &structure.Boot{MetaOrder: device.BootPriority},
 	}
 
 	interDevice, err := g.inter.Lookup(ctx, device.DeviceId)
-	if err!=nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -55,13 +54,8 @@ func (g *Generator) generateInterface(ctx context.Context, device *domain.Networ
 		return nil, fmt.Errorf("unknown network bus type: %s", device.NetworkBus)
 	}
 
-	switch interDevice.Type {
-	case interstruct.INTER_BRIDGE:
-		inter.MetaType = structure.INTERFACE_BRIDGE
-		inter.Source.MetaBridge = interDevice.Device
-	default:
-		return nil, fmt.Errorf("unsupported interface type: %s", interDevice.Type)
-	}
-	
+	inter.MetaType = structure.INTERFACE_BRIDGE
+	inter.Source.MetaBridge = interDevice.Config.Device
+
 	return inter, nil
 }

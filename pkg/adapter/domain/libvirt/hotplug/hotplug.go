@@ -30,16 +30,14 @@ import (
 // Simply defining the xml does only change the domains persistent config but does not hotplug updates,
 // the hotplugger takes components that are hotpluggable and updates them with the appropriate libvirt rpc calls.
 type Hotplugger struct {
-	client *libvirt.Libvirt
 }
 
-func New(client *libvirt.Libvirt) *Hotplugger {
+func New() *Hotplugger {
 	return &Hotplugger{
-		client: client,
 	}
 }
 
 
-func (l *Hotplugger) Hotplug(config *libvirtstruct.Domain) error {
+func (l *Hotplugger) Hotplug(libvirt *libvirt.Libvirt, config *libvirtstruct.Domain) error {
 	return fmt.Errorf("not implemented")
 }

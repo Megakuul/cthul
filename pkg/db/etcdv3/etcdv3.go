@@ -28,17 +28,17 @@ import (
 	"go.uber.org/zap"
 )
 
-// EtcdClient provides a Client implementation for etcdv3.
-type EtcdClient struct {
+// Client provides a Client implementation for etcdv3.
+type Client struct {
 	config clientv3.Config
 	client *clientv3.Client
 }
 
-type EtcdClientOption func(*EtcdClient)
+type Option func(*Client)
 
-// NewEtcdClient creates a new etcdv3 client.
-func NewEtcdClient(endpoints []string, opts ...EtcdClientOption) *EtcdClient {
-	etcdClient := &EtcdClient{
+// New creates a new etcdv3 client.
+func New(endpoints []string, opts ...Option) *Client {
+	etcdClient := &Client{
 		config: clientv3.Config{
 			Endpoints: endpoints,
 			TLS: &tls.Config{},
@@ -56,30 +56,30 @@ func NewEtcdClient(endpoints []string, opts ...EtcdClientOption) *EtcdClient {
 }
 
 // WithAuth adds credentials for basic authentication to the client.
-func WithAuth(username, password string) EtcdClientOption {
-	return func (c *EtcdClient) {
+func WithAuth(username, password string) Option {
+	return func (c *Client) {
 		c.config.Username = username
 		c.config.Password = password
 	}
 }
 
 // WithDialTimeout defines a custom dial timeout.
-func WithDialTimeout(timeout time.Duration) EtcdClientOption {
-	return func (c *EtcdClient) {
+func WithDialTimeout(timeout time.Duration) Option {
+	return func (c *Client) {
 		c.config.DialTimeout = timeout
 	}
 }
 
 // WithSkipVerify skips tls public cert verification.
-func WithSkipVerify(skip bool) EtcdClientOption {
-	return func (c *EtcdClient) {
+func WithSkipVerify(skip bool) Option {
+	return func (c *Client) {
 		c.config.TLS.InsecureSkipVerify = skip
 	}
 }
 
 
 // initClient creates the underlying etcdv3 client if not already initialized.
-func (c *EtcdClient) initClient() error {
+func (c *Client) initClient() error {
 	if c.client != nil {
 		return nil
 	}
@@ -93,7 +93,7 @@ func (c *EtcdClient) initClient() error {
 
 // CheckEndpointHealth initially checks if the database endpoint is reachable.
 // This method is used to ensure the database connection works before launching various components.
-func (c *EtcdClient) CheckEndpointHealth(ctx context.Context) error {
+func (c *Client) CheckEndpointHealth(ctx context.Context) error {
 	if err := c.initClient(); err!=nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (c *EtcdClient) CheckEndpointHealth(ctx context.Context) error {
 }
 
 // Get returns a single key. If the key is empty or not existent, an empty string is returned.
-func (c *EtcdClient) Get(ctx context.Context, key string) (string, error) {
+func (c *Client) Get(ctx context.Context, key string) (string, error) {
 	if err := c.initClient(); err!=nil {
 		return "", err
 	}
@@ -119,7 +119,7 @@ func (c *EtcdClient) Get(ctx context.Context, key string) (string, error) {
 }
 
 // GetRange returns a kv map with all keys that match the prefix.
-func (c *EtcdClient) GetRange(ctx context.Context, prefix string) (map[string]string, error) {
+func (c *Client) GetRange(ctx context.Context, prefix string) (map[string]string, error) {
 	if err := c.initClient(); err!=nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func (c *EtcdClient) GetRange(ctx context.Context, prefix string) (map[string]st
 
 
 // Set upserts a kv to the database and returns the previous value. If ttl is set to 0 the kv never expires.
-func (c *EtcdClient) Set(ctx context.Context, key, value string, ttl int64) (string, error) {
+func (c *Client) Set(ctx context.Context, key, value string, ttl int64) (string, error) {
 	if err := c.initClient(); err!=nil {
 		return "", err
 	}
@@ -163,7 +163,7 @@ func (c *EtcdClient) Set(ctx context.Context, key, value string, ttl int64) (str
 }
 
 // Delete deletes one specific kv by key.
-func (c *EtcdClient) Delete(ctx context.Context, key string) error {
+func (c *Client) Delete(ctx context.Context, key string) error {
 	if err := c.initClient(); err!=nil {
 		return err
 	}
@@ -176,7 +176,7 @@ func (c *EtcdClient) Delete(ctx context.Context, key string) error {
 }
 
 // DeleteRange deletes all kvs that match the prefix.
-func (c *EtcdClient) DeleteRange(ctx context.Context, prefix string) error {
+func (c *Client) DeleteRange(ctx context.Context, prefix string) error {
 	if err := c.initClient(); err!=nil {
 		return err
 	}
@@ -191,7 +191,7 @@ func (c *EtcdClient) DeleteRange(ctx context.Context, prefix string) error {
 // Watch starts a blocking listener that reacts to changes on the specified key.
 // The event function is triggered on every event, containing the key, value and an error on failure.
 // Stop the watcher by cancelling the context.
-func (c *EtcdClient) Watch(ctx context.Context, key string, event func(string, string, error)) error {
+func (c *Client) Watch(ctx context.Context, key string, event func(string, string, error)) error {
 	if err := c.initClient(); err!=nil {
 		return err
 	}
@@ -201,7 +201,7 @@ func (c *EtcdClient) Watch(ctx context.Context, key string, event func(string, s
 // WatchRange starts a blocking listener that reacts to changes on keys in the specified prefix.
 // The event function is triggered on every event, containing the key, value and an error on failure.
 // Stop the watcher by cancelling the context.
-func (c *EtcdClient) WatchRange(ctx context.Context, prefix string, event func(string, string, error)) error {
+func (c *Client) WatchRange(ctx context.Context, prefix string, event func(string, string, error)) error {
 	if err := c.initClient(); err!=nil {
 		return err
 	}
@@ -209,7 +209,7 @@ func (c *EtcdClient) WatchRange(ctx context.Context, prefix string, event func(s
 }
 
 // startWatchCycle implements the actual watch cycle.
-func (c *EtcdClient) startWatchCycle(watchChan clientv3.WatchChan, eventFunc func(string, string, error)) error {
+func (c *Client) startWatchCycle(watchChan clientv3.WatchChan, eventFunc func(string, string, error)) error {
 	for {
 		select {
 		case event, ok := <- watchChan:
@@ -227,7 +227,7 @@ func (c *EtcdClient) startWatchCycle(watchChan clientv3.WatchChan, eventFunc fun
 
 // Terminate cleans up the underlying etcd client, terminating all client connections.
 // Connections are terminated forcefully, the context is only provided to match the cthul terminate pattern.
-func (c *EtcdClient) Terminate(ctx context.Context) error {
+func (c *Client) Terminate(ctx context.Context) error {
 	// c.rootCtxCancel()
 	if c.client!=nil {
 		return c.client.Close()

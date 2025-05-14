@@ -23,65 +23,45 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 
 	"cthul.io/cthul/internal/wave/api"
 	"cthul.io/cthul/internal/wave/scheduler"
+	"cthul.io/cthul/pkg/adapter/domain/libvirt"
+	"cthul.io/cthul/pkg/adapter/domain/libvirt/generator"
+	"cthul.io/cthul/pkg/adapter/domain/libvirt/hotplug"
 	"cthul.io/cthul/pkg/db/etcdv3"
-	"cthul.io/cthul/pkg/elect"
+	"cthul.io/cthul/pkg/granit/disk"
 	"cthul.io/cthul/pkg/lifecycle"
-	"cthul.io/cthul/pkg/log/adapter"
-	"cthul.io/cthul/pkg/log/bootstrap"
-	"cthul.io/cthul/pkg/log/runtime"
+	"cthul.io/cthul/pkg/proton/inter"
 	"cthul.io/cthul/pkg/wave/domain"
 	"cthul.io/cthul/pkg/wave/node"
-	"google.golang.org/grpc/grpclog"
+	"cthul.io/cthul/pkg/wave/serial"
+	"cthul.io/cthul/pkg/wave/video"
 )
 
 // Run is the root entrypoint of the service.
 // This function does only fail if a critical error occurs while setting up the system,
 // otherwise it will run until an os level signal (SIGINT/TERM) is received.
 func Run(config *BaseConfig) error {
-	loggerIOLock := &sync.Mutex{}
-	
-	bootLogger := bootstrap.NewBootstrapLogger("wave",
-		bootstrap.WithIOLock(loggerIOLock),
-		bootstrap.WithLevel(config.Logging.Level),
-		bootstrap.WithTrace(config.Logging.Trace),
-	)
-
-	terminationManager := lifecycle.NewTerminationManager(
-		lifecycle.WithLogger(bootLogger),
-	)
-	defer terminationManager.TerminateParallel(
+  logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+    AddSource: true,
+  }))
+	lifecycleManager := lifecycle.NewManager(logger.With("comp", "lifecycle-manager"))
+	defer lifecycleManager.TerminateParallel(
 		time.Second * time.Duration(config.Lifecycle.TerminationTTL),
 	)
 
-	coreLogger := runtime.NewRuntimeLogger("wave",
-		runtime.WithIOLock(loggerIOLock),
-		runtime.WithLevel(config.Logging.Level),
-		runtime.WithTrace(config.Logging.Trace),
-		runtime.WithLogBuffer(config.Logging.Buffer),
-	)
-	coreLogger.ServeAndDetach()
-	terminationManager.AddHook(coreLogger.Terminate)
-
-	grpclog.SetLoggerV2(adapter.NewGrpcLogAdapter("grpc",
-		adapter.WithWarnLog(coreLogger.Warn),
-		adapter.WithErrLog(coreLogger.Err),
-		adapter.WithCritLog(coreLogger.Crit),
-	))
-
-	dbClient := etcdv3.NewEtcdClient([]string{config.Database.Addr},
+	dbClient := etcdv3.New([]string{config.Database.Addr},
 		etcdv3.WithAuth(config.Database.Username, config.Database.Password),
 		etcdv3.WithDialTimeout(time.Second * time.Duration(config.Database.TimeoutTTL)),
 		etcdv3.WithSkipVerify(config.Database.SkipVerify),
 	)
-	terminationManager.AddHook(dbClient.Terminate)
+	lifecycleManager.AddHook(dbClient.Terminate)
 
 	if config.Database.Healthcheck {
 		ctx, cancel := context.WithTimeout(
@@ -94,47 +74,49 @@ func Run(config *BaseConfig) error {
 		cancel()
 	}
 
-  nodeController := node.NewController(dbClient)
-  domainController := domain.NewController(dbClient)
-	scheduler := scheduler.NewScheduler(dbClient,
-    scheduler.WithLogger(coreLogger),
+  nodeController := node.New(config.NodeId, dbClient)
+
+  videoController := video.New(config.NodeId, dbClient)
+  serialController := serial.New(config.NodeId, dbClient)
+  diskController := disk.New(config.NodeId, dbClient)
+  interController := inter.New(config.NodeId, dbClient)
+  domainAdapter := libvirt.New(
+    generator.New(config.NodeId, 
+      videoController, 
+      serialController, 
+      diskController, 
+      interController,
+    ),
+    hotplug.New(),
+  )
+  domainController := domain.New(config.NodeId, dbClient, domainAdapter, domain.WithRunRoot(
+    "/run/cthul/wave/",
+  ))
+	scheduler := scheduler.New(logger.With("comp", "scheduler"), dbClient, 
+    domainController, nodeController,
     scheduler.WithCycleTTL(config.Scheduler.CycleTTL),
     scheduler.WithRescheduleCycles(config.Scheduler.RescheduleCycles),
 	)
 	scheduler.ServeAndDetach()
-	terminationManager.AddHook(scheduler.Terminate)
+	lifecycleManager.AddHook(scheduler.Terminate)
 
 	apiCertificate, err := tls.LoadX509KeyPair(config.Api.CertFile, config.Api.KeyFile)
 	if err!=nil {
 		return err
 	}
-	apiEndpoint := api.NewApiEndpoint(config.Api.Addr, apiCertificate,
-		api.WithApplicationLog(coreLogger),
-		api.WithSystemLog(coreLogger),
+	apiEndpoint := api.New(logger.With("comp", "api"), config.Api.Addr, apiCertificate,
 		api.WithIdleTimeout(time.Second * time.Duration(config.Api.IdleTTL)),
 	)
 	if err := apiEndpoint.ServeAndDetach(); err!=nil {
 		return err
 	}
-	terminationManager.AddHook(apiEndpoint.Terminate)
-
-	electController := elect.NewElectController(dbClient, "/WAVE/LEADER",
-		elect.WithLocalLeader(config.Election.Contest, config.NodeId, config.Election.Cash),
-		elect.WithContestTTL(config.Election.ContestTTL),
-		elect.WithContestHooks(scheduler.SetLeaderState, apiEndpoint.SetLeaderState),
-		elect.WithLogger(coreLogger),
-	)
-	electController.ServeAndDetach()
-	terminationManager.AddHook(electController.Terminate)
-	
+	lifecycleManager.AddHook(apiEndpoint.Terminate)
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 
 	exitSignal := <-signalChan
-	bootLogger.Info("service",
-		fmt.Sprintf("received %s; service is being shutdown...", exitSignal.String()),
-	)
+  logger.Info(fmt.Sprintf("received %s; service is being shutdown...", exitSignal.String()))
 	
 	return nil
 }

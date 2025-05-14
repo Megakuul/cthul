@@ -23,16 +23,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
+	"cthul.io/cthul/pkg/api/granit/v1/disk"
 	"cthul.io/cthul/pkg/db"
-	"cthul.io/cthul/pkg/granit/disk/structure"
-	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/proto"
 )
-
-// TODO: maybe add more functions + implement operator (currently just for testing)
 
 // NodeMismatchErr indicates that the action cannot be executed on this node.
 type NodeMismatchErr struct {
@@ -46,18 +43,16 @@ func (n *NodeMismatchErr) Error() string {
 
 // Controller provides an interface for wave disk device operations.
 type Controller struct {
-	node    string
-	runRoot string
-	client  db.Client
+	node   string
+	client db.Client
 }
 
 type Option func(*Controller)
 
 func New(node string, client db.Client, opts ...Option) *Controller {
 	controller := &Controller{
-		node:    node,
-		runRoot: "/run/cthul/granit/",
-		client:  client,
+		node:   node,
+		client: client,
 	}
 
 	for _, opt := range opts {
@@ -67,17 +62,9 @@ func New(node string, client db.Client, opts ...Option) *Controller {
 	return controller
 }
 
-// WithRunRoot defines a custom root for runtime files (bsd sockets etc.).
-// The controller needs this information to understand where to find those files (usually created by operators).
-func WithRunRoot(path string) Option {
-	return func(c *Controller) {
-		c.runRoot = path
-	}
-}
-
 // List returns a map containing disk device uuids and associated metadata from the database.
-func (c *Controller) List(ctx context.Context) (map[string]structure.Disk, error) {
-	disks := map[string]structure.Disk{}
+func (c *Controller) List(ctx context.Context) (map[string]*disk.Disk, error) {
+	disks := map[string]*disk.Disk{}
 
 	reqnodes, err := c.client.GetRange(ctx, "/GRANIT/DISK/REQNODE/")
 	if err != nil {
@@ -87,85 +74,50 @@ func (c *Controller) List(ctx context.Context) (map[string]structure.Disk, error
 	if err != nil {
 		return nil, fmt.Errorf("fetching disk device node: %w", err)
 	}
-	types, err := c.client.GetRange(ctx, "/GRANIT/DISK/TYPE/")
+	clusters, err := c.client.GetRange(ctx, "/GRANIT/DISK/CLUSTER/")
 	if err != nil {
-		return nil, fmt.Errorf("fetching disk type: %w", err)
+		return nil, fmt.Errorf("fetching disk device cluster: %w", err)
 	}
-	formats, err := c.client.GetRange(ctx, "/GRANIT/DISK/FORMAT/")
+	configs, err := c.client.GetRange(ctx, "/GRANIT/DISK/CONFIG/")
 	if err != nil {
-		return nil, fmt.Errorf("fetching disk format: %w", err)
-	}
-	paths, err := c.client.GetRange(ctx, "/GRANIT/DISK/PATH/")
-	if err != nil {
-		return nil, fmt.Errorf("fetching disk device path: %w", err)
-	}
-	readonlys, err := c.client.GetRange(ctx, "/GRANIT/DISK/READONLY/")
-	if err != nil {
-		return nil, fmt.Errorf("fetching disk readonly status: %w", err)
+		return nil, fmt.Errorf("fetching disk device config: %w", err)
 	}
 
-	for key, path := range paths {
+	for key, rawConfig := range configs {
 		var diskErr error
-		id := strings.TrimPrefix(key, "/GRANIT/DISK/PATH/")
+		id := strings.TrimPrefix(key, "/GRANIT/DISK/CONFIG/")
+		rawCluster := clusters[fmt.Sprint("/GRANIT/DISK/CLUSTER/", id)]
 		reqnode := reqnodes[fmt.Sprint("/GRANIT/DISK/REQNODE/", id)]
 		node := nodes[fmt.Sprint("/GRANIT/DISK/NODE/", id)]
-		typ := types[fmt.Sprint("/GRANIT/DISK/TYPE/", id)]
-		format := formats[fmt.Sprint("/GRANIT/DISK/FORMAT/", id)]
 
-		readonly, err := strconv.ParseBool(readonlys[fmt.Sprint("/GRANIT/DISK/READONLY/", id)])
+		config := &disk.DiskConfig{}
+		err = proto.Unmarshal([]byte(rawConfig), config)
 		if err != nil {
-			diskErr = errors.Join(diskErr, fmt.Errorf("parsing disk readonly state: %w", err))
+			diskErr = errors.Join(diskErr, fmt.Errorf("parsing device config: %w", err))
 		}
 
-		disks[id] = structure.Disk{
-			Reqnode:  reqnode,
-			Node:     node,
-			Type:     structure.DISK_TYPE(typ),
-			Format:   structure.DISK_FORMAT(format),
-			Path:     path,
-			Readonly: readonly,
-			Error:    diskErr,
+		cluster := &disk.DiskCluster{}
+		err = proto.Unmarshal([]byte(rawCluster), cluster)
+		if err != nil {
+			diskErr = errors.Join(diskErr, fmt.Errorf("parsing device cluster: %w", err))
 		}
+
+		disk := &disk.Disk{
+			Reqnode: reqnode,
+			Node:    node,
+			Cluster: cluster,
+			Config:  config,
+		}
+		if diskErr != nil {
+			disk.Error = diskErr.Error()
+		}
+		disks[id] = disk
 	}
 	return disks, nil
 }
 
-// Create creates a disk device with the specified configuration and default metadata values.
-// If the creation fails, the function tries to remove already created resources from the database.
-func (c *Controller) Create(ctx context.Context, path string, typ structure.DISK_TYPE, format structure.DISK_FORMAT, readonly bool) (string, error) {
-	id := uuid.New().String()
-	err := c.SetPath(ctx, id, path)
-	if err != nil {
-		return "", errors.Join(err, c.Delete(ctx, id))
-	}
-  _, err = c.client.Set(ctx, fmt.Sprintf("/GRANIT/DISK/TYPE/%s", id), string(typ), 0)
-  if err!=nil {
-		return "", errors.Join(err, c.Delete(ctx, id))
-  }
-  _, err = c.client.Set(ctx, fmt.Sprintf("/GRANIT/DISK/FORMAT/%s", id), string(format), 0)
-  if err!=nil {
-		return "", errors.Join(err, c.Delete(ctx, id))
-  }
-  _, err = c.client.Set(ctx, fmt.Sprintf("/GRANIT/DISK/READONLY/%s", id), strconv.FormatBool(readonly), 0)
-  if err!=nil {
-		return "", errors.Join(err, c.Delete(ctx, id))
-  }
-	return id, nil
-}
-
-func (c *Controller) SetPath(ctx context.Context, id, path string) error {
-	if path == "" {
-		return fmt.Errorf("path must be non-empty because it is the device core-property")
-	}
-	_, err := c.client.Set(ctx, fmt.Sprintf("/GRANIT/DISK/PATH/%s", id), path, 0)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // Lookup searches for the device by id and returns its configuration.
-func (c *Controller) Lookup(ctx context.Context, id string) (*structure.Disk, error) {
+func (c *Controller) Lookup(ctx context.Context, id string) (*disk.Disk, error) {
 	reqnode, err := c.client.Get(ctx, fmt.Sprintf("/GRANIT/DISK/REQNODE/%s", id))
 	if err != nil {
 		return nil, fmt.Errorf("fetching disk device reqnode: %w", err)
@@ -174,39 +126,37 @@ func (c *Controller) Lookup(ctx context.Context, id string) (*structure.Disk, er
 	if err != nil {
 		return nil, fmt.Errorf("fetching disk device node: %w", err)
 	}
-	typ, err := c.client.Get(ctx, fmt.Sprintf("/GRANIT/DISK/TYPE/%s", id))
+	rawCluster, err := c.client.Get(ctx, fmt.Sprintf("/GRANIT/DISK/CLUSTER/%s", id))
 	if err != nil {
-		return nil, fmt.Errorf("fetching disk type: %w", err)
+		return nil, fmt.Errorf("fetching disk device cluster: %w", err)
 	}
-	format, err := c.client.Get(ctx, fmt.Sprintf("/GRANIT/DISK/FORMAT/%s", id))
+	rawConfig, err := c.client.Get(ctx, fmt.Sprintf("/GRANIT/DISK/CONFIG/%s", id))
 	if err != nil {
-		return nil, fmt.Errorf("fetching disk format: %w", err)
-	}
-	path, err := c.client.Get(ctx, fmt.Sprintf("/GRANIT/DISK/PATH/%s", id))
-	if err != nil {
-		return nil, fmt.Errorf("fetching disk device path: %w", err)
-	}
-	diskReadonly, err := c.client.Get(ctx, fmt.Sprintf("/GRANIT/DISK/READONLY/%s", id))
-	if err != nil {
-		return nil, fmt.Errorf("fetching disk readonly status: %w", err)
+		return nil, fmt.Errorf("fetching disk device config: %w", err)
 	}
 
-	readonly, err := strconv.ParseBool(diskReadonly)
-	if err != nil {
-		return nil, fmt.Errorf("parsing disk readonly state: %w", err)
-	}
-
-	if path == "" {
+	if rawConfig == "" {
 		return nil, fmt.Errorf("device not found")
 	}
 
-	return &structure.Disk{
-		Reqnode:  reqnode,
-		Node:     node,
-		Type:     structure.DISK_TYPE(typ),
-		Format:   structure.DISK_FORMAT(format),
-		Path:     path,
-		Readonly: readonly,
+	cluster := &disk.DiskCluster{}
+	err = proto.Unmarshal([]byte(rawCluster), cluster)
+	if err != nil {
+		return nil, fmt.Errorf("parsing device cluster: %w", err)
+	}
+
+	config := &disk.DiskConfig{}
+	err = proto.Unmarshal([]byte(rawConfig), config)
+	if err != nil {
+		return nil, fmt.Errorf("parsing device config: %w", err)
+	}
+
+	return &disk.Disk{
+		Reqnode: reqnode,
+		Node:    node,
+		Config:  config,
+    Cluster: cluster,
+		Error:   "",
 	}, nil
 }
 
@@ -287,19 +237,11 @@ func (c *Controller) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	err = c.client.Delete(ctx, fmt.Sprintf("/GRANIT/DISK/READONLY/%s", id))
+	err = c.client.Delete(ctx, fmt.Sprintf("/GRANIT/DISK/CLUSTER/%s", id))
 	if err != nil {
 		return err
 	}
-	err = c.client.Delete(ctx, fmt.Sprintf("/GRANIT/DISK/TYPE/%s", id))
-	if err != nil {
-		return err
-	}
-	err = c.client.Delete(ctx, fmt.Sprintf("/GRANIT/DISK/FORMAT/%s", id))
-	if err != nil {
-		return err
-	}
-	err = c.client.Delete(ctx, fmt.Sprintf("/GRANIT/DISK/PATH/%s", id))
+	err = c.client.Delete(ctx, fmt.Sprintf("/GRANIT/DISK/CONFIG/%s", id))
 	if err != nil {
 		return err
 	}

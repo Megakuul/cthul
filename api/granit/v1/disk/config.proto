@@ -11,6 +11,8 @@ enum DiskFormat {
 
 message DiskConfig {
   DiskFormat format = 1;
-  int64 size = 2;
-  int64 replicas = 3;
+  string path = 2;
+  bool readonly = 3;
+  int64 size = 4;
+  int64 replicas = 5;
 }

@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package proton.v1.inter;
+
+option go_package = "cthul.io/cthul/pkg/api/proton/v1/inter";
+
+import "proton/v1/inter/config.proto";
+import "proton/v1/inter/cluster.proto";
+
+message Inter {
+  string reqnode = 1;
+  string node = 2;
+  InterCluster cluster = 3;
+  InterConfig config = 4; // core prop
+  string error = 8;
+}
+
+message GetRequest {
+  string id = 1;
+}
+
+message GetResponse {
+  Inter inter = 1;
+}
+
+message ListRequest {
+}
+
+message ListResponse {
+  repeated Inter inters = 1;
+}
+
+message CreateRequest {
+  InterConfig config = 1;
+}
+
+message CreateResponse {
+  string id = 1; 
+}
+
+message UpdateRequest {
+  string id = 1; 
+  InterConfig config = 2;
+}
+
+message UpdateResponse {
+  
+}
+
+message DeleteRequest {
+  string id = 1;
+}
+
+message DeleteResponse {
+
+}

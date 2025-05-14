@@ -25,13 +25,11 @@ import (
 	"fmt"
 	"strings"
 
+	"cthul.io/cthul/pkg/api/proton/v1/inter"
 	"cthul.io/cthul/pkg/db"
-	"cthul.io/cthul/pkg/proton/inter/structure"
-	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/proto"
 )
-
-// TODO: maybe add more functions + implement operator (currently just for testing)
 
 // NodeMismatchErr indicates that the action cannot be executed on this node.
 type NodeMismatchErr struct {
@@ -43,20 +41,18 @@ func (n *NodeMismatchErr) Error() string {
 	return n.Message
 }
 
-// Controller provides an interface for wave interface device operations.
+// Controller provides an interface for wave inter device operations.
 type Controller struct {
-	node    string
-	runRoot string
-	client  db.Client
+	node   string
+	client db.Client
 }
 
 type Option func(*Controller)
 
 func New(node string, client db.Client, opts ...Option) *Controller {
 	controller := &Controller{
-		node:    node,
-		runRoot: "/run/cthul/proton/",
-		client:  client,
+		node:   node,
+		client: client,
 	}
 
 	for _, opt := range opts {
@@ -66,107 +62,101 @@ func New(node string, client db.Client, opts ...Option) *Controller {
 	return controller
 }
 
-// WithRunRoot defines a custom root for runtime files (bsd sockets etc.).
-// The controller needs this information to understand where to find those files (usually created by operators).
-func WithRunRoot(device string) Option {
-	return func(c *Controller) {
-		c.runRoot = device
-	}
-}
-
-// List returns a map containing interface device uuids and associated metadata from the database.
-func (c *Controller) List(ctx context.Context) (map[string]structure.Inter, error) {
-	inters := map[string]structure.Inter{}
+// List returns a map containing inter device uuids and associated metadata from the database.
+func (c *Controller) List(ctx context.Context) (map[string]*inter.Inter, error) {
+	inters := map[string]*inter.Inter{}
 
 	reqnodes, err := c.client.GetRange(ctx, "/PROTON/INTER/REQNODE/")
 	if err != nil {
-		return nil, fmt.Errorf("fetching interface device reqnode: %w", err)
+		return nil, fmt.Errorf("fetching inter device reqnode: %w", err)
 	}
 	nodes, err := c.client.GetRange(ctx, "/PROTON/INTER/NODE/")
 	if err != nil {
-		return nil, fmt.Errorf("fetching interface device node: %w", err)
+		return nil, fmt.Errorf("fetching inter device node: %w", err)
 	}
-	types, err := c.client.GetRange(ctx, "/PROTON/INTER/TYPE/")
+	clusters, err := c.client.GetRange(ctx, "/PROTON/INTER/CLUSTER/")
 	if err != nil {
-		return nil, fmt.Errorf("fetching interface type: %w", err)
+		return nil, fmt.Errorf("fetching inter device cluster: %w", err)
 	}
-	devices, err := c.client.GetRange(ctx, "/PROTON/INTER/DEVICE/")
+	configs, err := c.client.GetRange(ctx, "/PROTON/INTER/CONFIG/")
 	if err != nil {
-		return nil, fmt.Errorf("fetching interface device device: %w", err)
+		return nil, fmt.Errorf("fetching inter device config: %w", err)
 	}
 
-	for key, device := range devices {
+	for key, rawConfig := range configs {
 		var interErr error
-		id := strings.TrimPrefix(key, "/PROTON/INTER/DEVICE/")
+		id := strings.TrimPrefix(key, "/PROTON/INTER/CONFIG/")
+		rawCluster := clusters[fmt.Sprint("/PROTON/INTER/CLUSTER/", id)]
 		reqnode := reqnodes[fmt.Sprint("/PROTON/INTER/REQNODE/", id)]
 		node := nodes[fmt.Sprint("/PROTON/INTER/NODE/", id)]
-		typ := types[fmt.Sprint("/PROTON/INTER/TYPE/", id)]
 
-		inters[id] = structure.Inter{
-			Reqnode:  reqnode,
-			Node:     node,
-			Type:     structure.INTER_TYPE(typ),
-			Device:     device,
-			Error:    interErr,
+		config := &inter.InterConfig{}
+		err = proto.Unmarshal([]byte(rawConfig), config)
+		if err != nil {
+			interErr = errors.Join(interErr, fmt.Errorf("parsing device config: %w", err))
 		}
+
+		cluster := &inter.InterCluster{}
+		err = proto.Unmarshal([]byte(rawCluster), cluster)
+		if err != nil {
+			interErr = errors.Join(interErr, fmt.Errorf("parsing device cluster: %w", err))
+		}
+
+		inter := &inter.Inter{
+			Reqnode: reqnode,
+			Node:    node,
+			Cluster: cluster,
+			Config:  config,
+		}
+		if interErr != nil {
+			inter.Error = interErr.Error()
+		}
+		inters[id] = inter
 	}
 	return inters, nil
 }
 
-// Create creates a interface device with the specified configuration and default metadata values.
-// If the creation fails, the function tries to remove already created resources from the database.
-func (c *Controller) Create(ctx context.Context, device string, typ structure.INTER_TYPE) (string, error) {
-	id := uuid.New().String()
-	err := c.SetDevice(ctx, id, device)
-	if err != nil {
-		return "", errors.Join(err, c.Delete(ctx, id))
-	}
-  _, err = c.client.Set(ctx, fmt.Sprintf("/PROTON/INTER/TYPE/%s", id), string(typ), 0)
-  if err!=nil {
-		return "", errors.Join(err, c.Delete(ctx, id))
-  }
-	return id, nil
-}
-
-func (c *Controller) SetDevice(ctx context.Context, id, device string) error {
-	if device == "" {
-		return fmt.Errorf("device must be non-empty because it is the device core-property")
-	}
-	_, err := c.client.Set(ctx, fmt.Sprintf("/PROTON/INTER/DEVICE/%s", id), device, 0)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // Lookup searches for the device by id and returns its configuration.
-func (c *Controller) Lookup(ctx context.Context, id string) (*structure.Inter, error) {
+func (c *Controller) Lookup(ctx context.Context, id string) (*inter.Inter, error) {
 	reqnode, err := c.client.Get(ctx, fmt.Sprintf("/PROTON/INTER/REQNODE/%s", id))
 	if err != nil {
-		return nil, fmt.Errorf("fetching interface device reqnode: %w", err)
+		return nil, fmt.Errorf("fetching inter device reqnode: %w", err)
 	}
 	node, err := c.client.Get(ctx, fmt.Sprintf("/PROTON/INTER/NODE/%s", id))
 	if err != nil {
-		return nil, fmt.Errorf("fetching interface device node: %w", err)
+		return nil, fmt.Errorf("fetching inter device node: %w", err)
 	}
-	typ, err := c.client.Get(ctx, fmt.Sprintf("/PROTON/INTER/TYPE/%s", id))
+	rawCluster, err := c.client.Get(ctx, fmt.Sprintf("/PROTON/INTER/CLUSTER/%s", id))
 	if err != nil {
-		return nil, fmt.Errorf("fetching interface type: %w", err)
+		return nil, fmt.Errorf("fetching inter device cluster: %w", err)
 	}
-	device, err := c.client.Get(ctx, fmt.Sprintf("/PROTON/INTER/DEVICE/%s", id))
+	rawConfig, err := c.client.Get(ctx, fmt.Sprintf("/PROTON/INTER/CONFIG/%s", id))
 	if err != nil {
-		return nil, fmt.Errorf("fetching interface device device: %w", err)
+		return nil, fmt.Errorf("fetching inter device config: %w", err)
 	}
 
-	if device == "" {
+	if rawConfig == "" {
 		return nil, fmt.Errorf("device not found")
 	}
 
-	return &structure.Inter{
-		Reqnode:  reqnode,
-		Node:     node,
-		Type:     structure.INTER_TYPE(typ),
-		Device:     device,
+	cluster := &inter.InterCluster{}
+	err = proto.Unmarshal([]byte(rawCluster), cluster)
+	if err != nil {
+		return nil, fmt.Errorf("parsing device cluster: %w", err)
+	}
+
+	config := &inter.InterConfig{}
+	err = proto.Unmarshal([]byte(rawConfig), config)
+	if err != nil {
+		return nil, fmt.Errorf("parsing device config: %w", err)
+	}
+
+	return &inter.Inter{
+		Reqnode: reqnode,
+		Node:    node,
+		Config:  config,
+    Cluster: cluster,
+		Error:   "",
 	}, nil
 }
 
@@ -237,7 +227,7 @@ func (c *Controller) Detach(ctx context.Context, id string) error {
 	return nil
 }
 
-// Delete completely removes a interface device and its associated metadata.
+// Delete completely removes a inter device and its associated metadata.
 func (c *Controller) Delete(ctx context.Context, id string) error {
 	err := c.client.Delete(ctx, fmt.Sprintf("/PROTON/INTER/NODE/%s", id))
 	if err != nil {
@@ -247,11 +237,11 @@ func (c *Controller) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	err = c.client.Delete(ctx, fmt.Sprintf("/PROTON/INTER/TYPE/%s", id))
+	err = c.client.Delete(ctx, fmt.Sprintf("/PROTON/INTER/CLUSTER/%s", id))
 	if err != nil {
 		return err
 	}
-	err = c.client.Delete(ctx, fmt.Sprintf("/PROTON/INTER/DEVICE/%s", id))
+	err = c.client.Delete(ctx, fmt.Sprintf("/PROTON/INTER/CONFIG/%s", id))
 	if err != nil {
 		return err
 	}

@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file granit/v1/disk/config.proto.
  */
 export const file_granit_v1_disk_config: GenFile = /*@__PURE__*/
-  fileDesc("ChtncmFuaXQvdjEvZGlzay9jb25maWcucHJvdG8SDmdyYW5pdC52MS5kaXNrIlgKCkRpc2tDb25maWcSKgoGZm9ybWF0GAEgASgOMhouZ3Jhbml0LnYxLmRpc2suRGlza0Zvcm1hdBIMCgRzaXplGAIgASgDEhAKCHJlcGxpY2FzGAMgASgDKjgKCkRpc2tGb3JtYXQSEwoPRElTS19GT1JNQVRfUkFXEAASFQoRRElTS19GT1JNQVRfUUNPVzIQAUInWiVjdGh1bC5pby9jdGh1bC9wa2cvYXBpL2dyYW5pdC92MS9kaXNrYgZwcm90bzM");
+  fileDesc("ChtncmFuaXQvdjEvZGlzay9jb25maWcucHJvdG8SDmdyYW5pdC52MS5kaXNrIngKCkRpc2tDb25maWcSKgoGZm9ybWF0GAEgASgOMhouZ3Jhbml0LnYxLmRpc2suRGlza0Zvcm1hdBIMCgRwYXRoGAIgASgJEhAKCHJlYWRvbmx5GAMgASgIEgwKBHNpemUYBCABKAMSEAoIcmVwbGljYXMYBSABKAMqOAoKRGlza0Zvcm1hdBITCg9ESVNLX0ZPUk1BVF9SQVcQABIVChFESVNLX0ZPUk1BVF9RQ09XMhABQidaJWN0aHVsLmlvL2N0aHVsL3BrZy9hcGkvZ3Jhbml0L3YxL2Rpc2tiBnByb3RvMw");
 
 /**
  * @generated from message granit.v1.disk.DiskConfig
@@ -22,12 +22,22 @@ export type DiskConfig = Message<"granit.v1.disk.DiskConfig"> & {
   format: DiskFormat;
 
   /**
-   * @generated from field: int64 size = 2;
+   * @generated from field: string path = 2;
+   */
+  path: string;
+
+  /**
+   * @generated from field: bool readonly = 3;
+   */
+  readonly: boolean;
+
+  /**
+   * @generated from field: int64 size = 4;
    */
   size: bigint;
 
   /**
-   * @generated from field: int64 replicas = 3;
+   * @generated from field: int64 replicas = 5;
    */
   replicas: bigint;
 };

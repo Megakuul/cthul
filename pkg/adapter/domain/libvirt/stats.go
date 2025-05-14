@@ -23,13 +23,13 @@ import (
 	"context"
 	"fmt"
 
-	"cthul.io/cthul/pkg/adapter/domain/structure"
+	domainstruct "cthul.io/cthul/pkg/api/wave/v1/domain"
 	"github.com/digitalocean/go-libvirt"
 )
 
 // GetStats collects all domain statistics from the vmm (e.g. qemu) in one batch. Some returned values
 // may be set to 0 or -1 if required guest os drivers or vmm features are missing.
-func (l *Adapter)GetStats(ctx context.Context, id string) (*structure.DomainStats, error) {
+func (l *Adapter)GetStats(ctx context.Context, id string) (*domainstruct.DomainStats, error) {
 	err := l.initClient()
 	if err!=nil {
 		return nil, err
@@ -61,14 +61,14 @@ func (l *Adapter)GetStats(ctx context.Context, id string) (*structure.DomainStat
 		return nil, fmt.Errorf("domain with id '%s' not found", id)
 	}
 
-	domainStats := &structure.DomainStats{}
+	domainStats := &domainstruct.DomainStats{}
 
 	// TODO: Test how this undocumented weird structure actually works and then implement the parsing step.
 	for _, param := range domainRecords[0].Params {
 		val := int64(param.Value.D)
 		switch param.Field {
 		case "state.state":
-			domainStats.State = structure.DOMAIN_STATE(val)
+			domainStats.State = domainstruct.DomainPowerState(val)
 		case "cpu.time":
 			domainStats.Cpu.CpuTime = val
 		case "cpu.user":
@@ -76,7 +76,7 @@ func (l *Adapter)GetStats(ctx context.Context, id string) (*structure.DomainStat
 		case "cpu.system":
 			domainStats.Cpu.KernelTime = val
 		case "vcpu.current":
-			domainStats.Cpu.VCpus = []structure.VCpuStats{}
+			domainStats.Cpu.Vcpus = []*domainstruct.VCpuStats{}
 		case "balloon.current":
 			domainStats.Memory.Balloned = val * 1024
 		case "balloon.available":
@@ -86,7 +86,7 @@ func (l *Adapter)GetStats(ctx context.Context, id string) (*structure.DomainStat
 		case "balloon.unused":
 			domainStats.Memory.Unused = val * 1024
 		case "balloon.rss":
-			domainStats.Memory.HostRSS = val * 1024
+			domainStats.Memory.HostRss = val * 1024
 		case "balloon.swap_in":
 			domainStats.Memory.SwapIn = val * 1024
 		case "balloon.swap_out":
@@ -102,5 +102,5 @@ func (l *Adapter)GetStats(ctx context.Context, id string) (*structure.DomainStat
 		}
 	}
 
-	return nil, fmt.Errorf("not implemented")
+	return domainStats, nil
 }

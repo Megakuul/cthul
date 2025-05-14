@@ -1,3 +1,4 @@
+/**
  * Cthul System
  *
  * Copyright (C) 2024 Linus Ilian Moser <linus.moser@megakuul.ch>
@@ -23,8 +24,8 @@ import (
 	"fmt"
 
 	"cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
+	diskstruct "cthul.io/cthul/pkg/api/granit/v1/disk"
 	"cthul.io/cthul/pkg/api/wave/v1/domain"
-  diskstruct "cthul.io/cthul/pkg/api/granit/v1/disk"
 )
 
 // Explanation: A libvirt disk device represents a device which is provided to the guest os via a custom
@@ -61,7 +62,7 @@ func (g *Generator) generateDisk(ctx context.Context, device *domain.StorageDevi
 		return nil, fmt.Errorf("unknown storage type: %s", device.StorageType)
 	}
 
-	if storageDevice.Readonly {
+	if storageDevice.Config.Readonly {
 		disk.Readonly = &structure.DiskReadonly{}
 	}
 
@@ -78,29 +79,19 @@ func (g *Generator) generateDisk(ctx context.Context, device *domain.StorageDevi
 	}
 
 	// Driver (transfering data between guest and host)
-	switch storageDevice.Format {
-	case diskstruct.DISK_RAW:
+	switch storageDevice.Config.Format {
+	case diskstruct.DiskFormat_DISK_FORMAT_RAW:
 		disk.Driver.MetaType = structure.DISK_STORAGE_RAW
-	case diskstruct.DISK_QCOW2:
+	case diskstruct.DiskFormat_DISK_FORMAT_QCOW2:
 		disk.Driver.MetaType = structure.DISK_STORAGE_QCOW2
 	default:
-		return nil, fmt.Errorf("unsupported device format: %s", storageDevice.Format)
+		return nil, fmt.Errorf("unsupported device format: %s", storageDevice.Config.Format)
 	}
 
 	// Source (on host)
-	switch storageDevice.Type {
-	case diskstruct.DISK_BLOCK:
-		disk.MetaType = structure.DISK_BLOCK
-		disk.Source = &structure.DiskSource{
-			MetaDev: storageDevice.Path,
-		}
-	case diskstruct.DISK_FILE:
-		disk.MetaType = structure.DISK_FILE
-		disk.Source = &structure.DiskSource{
-			MetaFile: storageDevice.Path,
-		}
-	default:
-		return nil, fmt.Errorf("unsupported device type: %s", storageDevice.Type)
+	disk.MetaType = structure.DISK_BLOCK
+	disk.Source = &structure.DiskSource{
+		MetaDev: storageDevice.Config.Path,
 	}
 
 	return disk, nil

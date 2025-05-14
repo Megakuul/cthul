@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package proton.v1.inter;
+
+option go_package = "cthul.io/cthul/pkg/api/proton/v1/inter";
+
+import "google/protobuf/timestamp.proto";
+
+message InterCluster {
+  map<string, google.protobuf.Timestamp> nodes = 1;
+}

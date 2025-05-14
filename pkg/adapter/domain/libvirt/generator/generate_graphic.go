@@ -26,8 +26,7 @@ import (
 	"strings"
 
 	"cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
-  "cthul.io/cthul/pkg/api/wave/v1/domain"
-  "cthul.io/cthul/pkg/api/wave/v1/video"
+	"cthul.io/cthul/pkg/api/wave/v1/domain"
 )
 
 // Explanation: A libvirt graphics device represents a host component that provides an interface for the
@@ -41,22 +40,17 @@ func (g *Generator) generateGraphic(ctx context.Context, adapter *domain.VideoAd
 	}
 
 	graphicDevice, err := g.video.Lookup(ctx, adapter.DeviceId)
-	if err!=nil {
+	if err != nil {
 		return nil, err
 	}
 
-	switch graphicDevice.Type {
-	case video.Video_VIDEO_SPICE:
-		graphics.MetaType = structure.GRAPHICS_SPICE
-		graphics.Listen.MetaType = structure.GRAPHICS_LISTEN_SOCKET
-    path := filepath.Join(g.waveRoot, graphicDevice.Path)
-    if !strings.HasPrefix(filepath.Clean(path), g.waveRoot) {
-      return nil, fmt.Errorf("video device uses a socket path that escapes the run root '%s'", g.waveRoot)
-    }
-		graphics.Listen.MetaPath = path 
-	default:
-		return nil, fmt.Errorf("unsupported device type: %s", graphicDevice.Type)
+	graphics.MetaType = structure.GRAPHICS_SPICE
+	graphics.Listen.MetaType = structure.GRAPHICS_LISTEN_SOCKET
+	path := filepath.Join(g.waveRoot, graphicDevice.Config.Path)
+	if !strings.HasPrefix(filepath.Clean(path), g.waveRoot) {
+		return nil, fmt.Errorf("video device uses a socket path that escapes the run root '%s'", g.waveRoot)
 	}
+	graphics.Listen.MetaPath = path
 
 	return graphics, nil
 }

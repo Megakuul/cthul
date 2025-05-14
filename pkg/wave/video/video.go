@@ -89,7 +89,7 @@ func (c *Controller) List(ctx context.Context) (map[string]*video.Video, error) 
 	}
 	configs, err := c.client.GetRange(ctx, "/WAVE/VIDEO/CONFIG/")
 	if err != nil {
-		return nil, fmt.Errorf("fetching video device type: %w", err)
+		return nil, fmt.Errorf("fetching video device config: %w", err)
 	}
 
 	for key, rawConfig := range configs {

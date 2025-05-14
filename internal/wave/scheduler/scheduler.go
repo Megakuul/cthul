@@ -61,10 +61,10 @@ type Scheduler struct {
 	rescheduleCycles int64
 }
 
-type SchedulerOption func(*Scheduler)
+type Option func(*Scheduler)
 
-// NewScheduler creates a new scheduler instance.
-func NewScheduler(logger *slog.Logger, client db.Client, domain *domain.Controller, node *node.Controller, opts ...SchedulerOption) *Scheduler {
+// New creates a new scheduler instance.
+func New(logger *slog.Logger, client db.Client, domain *domain.Controller, node *node.Controller, opts ...Option) *Scheduler {
 	rootCtx, rootCtxCancel := context.WithCancel(context.Background())
 	workCtx, workCtxCancel := context.WithCancel(rootCtx)
 	scheduler := &Scheduler{
@@ -89,7 +89,7 @@ func NewScheduler(logger *slog.Logger, client db.Client, domain *domain.Controll
 
 
 // WithCycleTTL defines a custom scheduler cycle interval.
-func WithCycleTTL(ttl int64) SchedulerOption {
+func WithCycleTTL(ttl int64) Option {
 	return func(s *Scheduler) {
 		s.cycleTTL = ttl
 	}
@@ -97,7 +97,7 @@ func WithCycleTTL(ttl int64) SchedulerOption {
 
 // WithRescheduleCycles sets a custom number of scheduler cycles a domain must be unmanaged
 // before being rescheduled.
-func WithRescheduleCycles(cycles int64) SchedulerOption {
+func WithRescheduleCycles(cycles int64) Option {
 	return func(s *Scheduler) {
 		s.rescheduleCycles = cycles
 	}

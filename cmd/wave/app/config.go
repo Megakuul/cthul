@@ -62,7 +62,8 @@ type ElectionConfig struct {
 }
 
 type SchedulerConfig struct {
-	CycleTTL int64 `toml:"register_ttl" validate:"required"`
+	CycleTTL int64 `toml:"cycle_ttl" validate:"required"`
+  RescheduleCycles int64 `toml:"reschedule_cycles" validate:"required"`
 	CpuThreshold int64 `toml:"cpu_threshold" validate:"gte=0,lte=1000"`
 	MemThreshold int64 `toml:"mem_threshold" validate:"gte=0,lte=1000"`
 }

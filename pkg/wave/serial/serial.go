@@ -89,7 +89,7 @@ func (c *Controller) List(ctx context.Context) (map[string]*serial.Serial, error
 	}
 	configs, err := c.client.GetRange(ctx, "/WAVE/SERIAL/CONFIG/")
 	if err != nil {
-		return nil, fmt.Errorf("fetching serial device type: %w", err)
+		return nil, fmt.Errorf("fetching serial device config: %w", err)
 	}
 
 	for key, rawConfig := range configs {

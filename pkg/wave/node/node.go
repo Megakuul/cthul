@@ -46,9 +46,9 @@ type Controller struct {
 	client db.Client
 }
 
-type ControllerOption func(*Controller)
+type Option func(*Controller)
 
-func NewController(node string, client db.Client, opts ...ControllerOption) *Controller {
+func New(node string, client db.Client, opts ...Option) *Controller {
 	controller := &Controller{
 		node:   node,
 		client: client,
