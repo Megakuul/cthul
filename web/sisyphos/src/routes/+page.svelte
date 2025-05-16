@@ -3,10 +3,11 @@
   import wave from "$lib/assets/wave.svg";
   import granit from "$lib/assets/granit.svg";
   import proton from "$lib/assets/proton.svg";
+  import waveDomain from "$lib/assets/wave-domain.svg";
+  import waveSerial from "$lib/assets/wave-serial.svg";
+  import waveVideo from "$lib/assets/wave-video.svg";
   import Card from "./Card.svelte";
-    import { Palette } from "$lib/color/color.svelte";
-    import { fade } from "svelte/transition";
-    import { flip } from "svelte/animate";
+  import { Palette } from "$lib/color/color.svelte";
 
   /** @type {"rune" | "wave" | "granit" | "proton" | undefined} */
   let selected = $state(undefined);
@@ -29,17 +30,17 @@
         services = [
           {
             title: "Domain",
-            icon: "",
+            icon: waveDomain,
             route: "/wave/domain",
           },
           {
             title: "Serial",
-            icon: "",
+            icon: waveSerial,
             route: "/wave/serial",
           },
           {
             title: "Video",
-            icon: "",
+            icon: waveVideo,
             route: "/wave/video",
           },
         ];
@@ -94,8 +95,9 @@
     </a>
     {#each services as service}
       <a href="{service.route}" style="border-color: {Palette().fgPrimary()};"
-        class="w-full h-24 p-4 flex flex-row justify-between items-center rounded-lg bg-slate-50/20 shadow-sm shadow-black/20 border-2">
+        class="w-full h-24 p-4 flex flex-row justify-between items-center rounded-lg bg-slate-50/20 shadow-sm hover:shadow-lg shadow-black/20 border-2 transition-all">
         <h1 class="text-2xl font-bold">{service.title}</h1>
+        <img alt="{service.title}" src={service.icon} class="h-full" />
       </a>
     {/each}
   {:else}
