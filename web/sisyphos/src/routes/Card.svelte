@@ -12,7 +12,7 @@
 </script>
 
 <button aria-label="{name}" class:selected={selected === name} style="background-color: {Palette().bgCthul()}; --main-bg: {Palette().bgPrimary()};"
-  class="w-full relative select-none rounded-4xl cursor-pointer overflow-hidden shadow-inner shadow-slate-100/40"
+  class="w-full relative select-none rounded-4xl cursor-pointer overflow-hidden"
   onclick={() => {
     if (selected === name) {
       Play(stoneBackward)

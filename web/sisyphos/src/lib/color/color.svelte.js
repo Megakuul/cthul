@@ -40,8 +40,8 @@ export function NewSandstormPalette() {
 
 export function NewSlatePalette() {
   return {
-    bgPrimary: () => { return "#1e2124" },
-    fgPrimary: () => { return "#7289da" },
+    bgPrimary: () => { return "#252A34" },
+    fgPrimary: () => { return "#B7C4CF" },
     bgCthul: () => { return "#000000" },
     fgRune: () => { return "#5E4A11"},
     fgWave: () => { return "#0D65A4" },
