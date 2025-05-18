@@ -230,6 +230,20 @@ func (c *Controller) Lookup(ctx context.Context, id string) (*video.Video, error
 	}, nil
 }
 
+// Apply upserts the video device configuration.
+func (c *Controller) Apply(ctx context.Context, id string, config *video.VideoConfig) error {
+	rawConfig, err := proto.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("cannot serialize config: %w", err)
+	}
+
+	_, err = c.client.Set(ctx, fmt.Sprintf("/WAVE/VIDEO/CONFIG/%s", id), string(rawConfig), 0)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Attach requests the device to be relocated to the specified node and waits until it's ready (if wait flag is set).
 func (c *Controller) Attach(ctx context.Context, id, node string, wait bool) error {
 	if !wait {

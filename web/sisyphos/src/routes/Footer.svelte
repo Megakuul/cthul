@@ -5,9 +5,6 @@
 </script>
 
 
-<center
-  style="background-color: {Palette().bgCthul()};"
-  class="relative overflow-hidden"
->
+<center class="relative overflow-hidden bg-black">
   <img class="h-48" alt="" src={sisyphos} />
 </center>

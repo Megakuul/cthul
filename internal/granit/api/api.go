@@ -30,8 +30,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"cthul.io/cthul/pkg/api/granit/v1"
-	"cthul.io/cthul/pkg/api/granit/v1/granitv1connect"
+	"cthul.io/cthul/pkg/api/granit/v1/disk/diskconnect"
 )
 
 
@@ -46,7 +45,7 @@ type Option func(*Endpoint)
 
 func NewEndpoint(logger *slog.Logger, addr string, cert tls.Certificate, opts ...Option) *Endpoint {
 	mux := http.NewServeMux()
-	mux.Handle(granitv1connect.NewDomainServiceHandler(&domainService{}))
+	mux.Handle(diskconnect.NewDiskServiceHandler(&domainService{}))
 	endpoint := &Endpoint{
 		addr: addr,
 		tlsConfig: &tls.Config{

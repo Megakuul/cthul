@@ -35,7 +35,7 @@ message ListRequest {
 }
 
 message ListResponse {
-  repeated Domain domains = 1;
+  map<string, Domain> domains = 1;
 }
 
 message CreateRequest {

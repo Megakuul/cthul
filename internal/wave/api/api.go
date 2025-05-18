@@ -24,40 +24,47 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-  "log/slog"
 	golog "log"
+	"log/slog"
 	"net/http"
+	"sync"
 	"time"
 
-	"connectrpc.com/connect"
-	"cthul.io/cthul/pkg/api/wave/v1"
-	"cthul.io/cthul/pkg/api/wave/v1/wavev1connect"
+	"cthul.io/cthul/internal/wave/api/domain"
+	"cthul.io/cthul/internal/wave/api/node"
+	"cthul.io/cthul/internal/wave/api/serial"
+	"cthul.io/cthul/internal/wave/api/video"
+	"cthul.io/cthul/pkg/api/wave/v1/domain/domainconnect"
+	"cthul.io/cthul/pkg/api/wave/v1/node/nodeconnect"
+	"cthul.io/cthul/pkg/api/wave/v1/serial/serialconnect"
+	"cthul.io/cthul/pkg/api/wave/v1/video/videoconnect"
+	domctrl "cthul.io/cthul/pkg/wave/domain"
+	nodectrl "cthul.io/cthul/pkg/wave/node"
+	serialctrl "cthul.io/cthul/pkg/wave/serial"
+	videoctrl "cthul.io/cthul/pkg/wave/video"
 )
 
-
 type Endpoint struct {
-	addr string
-	tlsConfig *tls.Config
-  logger *slog.Logger
-	server *http.Server
+	addr       string
+	tlsConfig  *tls.Config
+	logger     *slog.Logger
+	mux        *http.ServeMux
+	serverLock sync.Mutex
+	server     *http.Server
 }
 
 type Option func(*Endpoint)
 
-func New(logger *slog.Logger, addr string, cert tls.Certificate, opts ...Option) *Endpoint {
-	mux := http.NewServeMux()
-	mux.Handle(wavev1connect.NewDomainServiceHandler(&domainService{}))
+func New(addr string, cert tls.Certificate, opts ...Option) *Endpoint {
 	endpoint := &Endpoint{
 		addr: addr,
 		tlsConfig: &tls.Config{
 			Certificates: []tls.Certificate{cert},
 		},
-		logger: logger.WithGroup("api-endpoint"),
-		server: &http.Server{
-			Handler: mux,
-			ErrorLog: golog.New(io.Discard, "", 0),
-			IdleTimeout: 10 * time.Minute,
-		},
+		logger:     slog.Default().WithGroup("api-endpoint"),
+		mux:        http.NewServeMux(),
+		serverLock: sync.Mutex{},
+		server:     nil,
 	}
 
 	for _, opt := range opts {
@@ -67,38 +74,59 @@ func New(logger *slog.Logger, addr string, cert tls.Certificate, opts ...Option)
 	return endpoint
 }
 
-// WithIdleTimeout sets a custom timeout for idle http connections.
-func WithIdleTimeout(timeout time.Duration) Option {
-	return func (e *Endpoint) {
-		e.server.IdleTimeout = timeout
+// WithLogger adds a custom slog instance for this endpoint.
+func WithLogger(logger *slog.Logger) Option {
+	return func(e *Endpoint) {
+		e.logger = logger.WithGroup("api-endpoint")
 	}
 }
 
-// WithSkipInsecure enables skipping of insecure public certificates when mTLS is used.
-func WithSkipInsecure(skip bool) Option {
-	return func (e *Endpoint) {
-		e.server.TLSConfig.InsecureSkipVerify = skip
+func WithDomain(controller *domctrl.Controller) Option {
+	return func(e *Endpoint) {
+		e.mux.Handle(domainconnect.NewDomainServiceHandler(domain.New(controller)))
 	}
 }
 
-// WithSystemLog enables http system error logs and writes them to the specified logger.
-// The logs are written as "error" with the category "api_server".
-func WithSystemLog(logger log.Logger) Option {
-	return func (e *Endpoint) {
-		e.server.ErrorLog = golog.New(adapter.NewCommonLogAdapter("api_server", logger.Err), "", 0)
+func WithVideo(controller *videoctrl.Controller) Option {
+	return func(e *Endpoint) {
+		e.mux.Handle(videoconnect.NewVideoServiceHandler(video.New(controller)))
+	}
+}
+
+func WithSerial(controller *serialctrl.Controller) Option {
+	return func(e *Endpoint) {
+		e.mux.Handle(serialconnect.NewSerialServiceHandler(serial.New(controller)))
+	}
+}
+
+func WithNode(controller *nodectrl.Controller) Option {
+	return func(e *Endpoint) {
+		e.mux.Handle(nodeconnect.NewNodeServiceHandler(node.New(controller)))
 	}
 }
 
 // ServeAndDetach starts the api endpoint in a seperate goroutine and immediately returns.
 // The server can be started only once.
 func (e *Endpoint) ServeAndDetach() error {
+	e.serverLock.Lock()
+  defer e.serverLock.Unlock()
+	if e.server != nil {
+		return fmt.Errorf("server cannot be started twice")
+	}
+	e.server = &http.Server{
+		Handler:     e.mux,
+		ErrorLog:    golog.New(io.Discard, "", 0),
+		IdleTimeout: 10 * time.Minute,
+	}
+
 	listener, err := tls.Listen("tcp", e.addr, e.tlsConfig)
-	if err!=nil {
+	if err != nil {
 		return err
 	}
+
 	go func() {
-		if err := e.server.Serve(listener); err!=nil {
-			e.logger.Error(fmt.Sprintf("unrecoverable api error: %s", err.Error())) 
+		if err := e.server.Serve(listener); err != nil {
+			e.logger.Error(fmt.Sprintf("unrecoverable api error: %s", err.Error()))
 		}
 	}()
 	return nil
@@ -108,19 +136,13 @@ func (e *Endpoint) ServeAndDetach() error {
 // if this fails or exceeds the provided context window, the connection is forcefully closed.
 // If forcefully closing the connection fails too, an error is returned.
 func (e *Endpoint) Terminate(ctx context.Context) error {
-	if err := e.server.Shutdown(ctx); err!=nil {
+  e.serverLock.Lock()
+  defer e.serverLock.Unlock()
+  if e.server==nil {
+    return nil
+  }
+	if err := e.server.Shutdown(ctx); err != nil {
 		return e.server.Close()
 	}
 	return nil
-}
-
-
-type domainService struct{}
-
-func (d *domainService) GetDomain(
-	ctx context.Context,
-	req *connect.Request[wavev1.GetDomainRequest],
-) (*connect.Response[wavev1.GetDomainResponse], error) {
-	
-	return nil, fmt.Errorf("Not Implemented")
 }

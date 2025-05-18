@@ -10,8 +10,9 @@
 - refactor the operator of node and domain to do the same x
 - implement video + serial device api definition x
 - refactor operator + controller on video + serial dev x
-- define grpc api granit, proton, + wave components that are not domain (+ update libvirtctrlr for them aswell)
+- define grpc api granit, proton, + wave components that are not domain (+ update libvirtctrlr for them aswell) x
 - do the last 3 steps for proton and granit
+- define wave api (internal/api/wave)
 - create startup code + perform initial wave tests
 - Move the NodeMismatchErr anywhere more useful (in a util or something, just that its not seperate for every controller)
 - Implement granit + proton operators (disk / interface)

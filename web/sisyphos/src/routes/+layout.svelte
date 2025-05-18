@@ -41,7 +41,7 @@
 
 {#if Ready}
   <center
-  style="color: {Palette().fgPrimary()}; background-color: {Palette().bgPrimary()};"
+  style="color: {Palette().fgPrimary()}; background-color: {Palette().bgPrimary()}; --btn-shadow: {Palette().btnShadow()};"
   class="min-h-screen box-border transition-all duration-700"
   >
   <div class="w-full h-8 px-4 py-1 flex justify-start gap-2">

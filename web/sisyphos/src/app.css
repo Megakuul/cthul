@@ -38,6 +38,6 @@ html, body {
 }
 
 .btn:hover {
-  box-shadow: rgba(0, 0, 0, 0.2) 5px 5px 0px;
+  box-shadow: var(--btn-shadow);
   transform: translateX(-3px) translateY(-1px);
 }

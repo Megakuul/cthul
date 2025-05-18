@@ -1,5 +1,4 @@
 <script>
-  import { Palette } from "$lib/color/color.svelte";
   import stoneForward from "$lib/assets/stone_forward.mp3";
   import stoneBackward from "$lib/assets/stone_backward.mp3";
   import { Play } from "$lib/sound/sound.svelte";
@@ -11,8 +10,8 @@
   } = $props();
 </script>
 
-<button aria-label="{name}" class:selected={selected === name} style="background-color: {Palette().bgCthul()}; --main-bg: {Palette().bgPrimary()};"
-  class="w-full relative select-none rounded-4xl cursor-pointer overflow-hidden"
+<button aria-label="{name}" class:selected={selected === name}
+  class="w-full relative select-none rounded-4xl bg-black cursor-pointer overflow-hidden"
   onclick={() => {
     if (selected === name) {
       Play(stoneBackward)

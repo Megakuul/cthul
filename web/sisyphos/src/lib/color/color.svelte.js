@@ -2,7 +2,7 @@
  * @typedef {Object} Palette
  * @property {() => string} bgPrimary
  * @property {() => string} fgPrimary
- * @property {() => string} bgCthul
+ * @property {() => string} btnShadow
  * @property {() => string} fgRune
  * @property {() => string} fgWave
  * @property {() => string} fgGranit
@@ -28,7 +28,7 @@ export function NewSandstormPalette() {
   return {
     bgPrimary: () => { return "#E4D4C8" },
     fgPrimary: () => { return "#58391C" },
-    bgCthul: () => { return "#000000" },
+    btnShadow: () => { return "rgba(0, 0, 0, 0.2) 5px 5px 0px" },
     fgRune: () => { return "#5E4A11"},
     fgWave: () => { return "#0D65A4" },
     fgGranit: () => { return "#042F0B"},
@@ -42,7 +42,7 @@ export function NewSlatePalette() {
   return {
     bgPrimary: () => { return "#252A34" },
     fgPrimary: () => { return "#B7C4CF" },
-    bgCthul: () => { return "#000000" },
+    btnShadow: () => { return "rgba(255, 255, 255, 0.6) 5px 5px 0px" },
     fgRune: () => { return "#5E4A11"},
     fgWave: () => { return "#0D65A4" },
     fgGranit: () => { return "#042F0B"},

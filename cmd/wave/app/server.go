@@ -42,15 +42,14 @@ import (
 	"cthul.io/cthul/pkg/wave/node"
 	"cthul.io/cthul/pkg/wave/serial"
 	"cthul.io/cthul/pkg/wave/video"
+	"github.com/lmittmann/tint"
 )
 
 // Run is the root entrypoint of the service.
 // This function does only fail if a critical error occurs while setting up the system,
 // otherwise it will run until an os level signal (SIGINT/TERM) is received.
 func Run(config *BaseConfig) error {
-  logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-    AddSource: true,
-  }))
+  logger := slog.New(tint.NewHandler())
 	lifecycleManager := lifecycle.NewManager(logger.With("comp", "lifecycle-manager"))
 	defer lifecycleManager.TerminateParallel(
 		time.Second * time.Duration(config.Lifecycle.TerminationTTL),
