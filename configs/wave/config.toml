@@ -16,11 +16,6 @@ timeout_ttl = 2 # ttl of db dial (seconds)
 healthcheck = true # perform initial db endpoint healthcheck before launching service.
 skipverify = true # disables verification of the public database cert.
 
-[election]
-contest = true # allow this node to contest the leader
-cash = 10 # cash balance of this node
-contest_ttl = 2 # ttl for every interval cycle (essentially keepalive interval) (seconds)
-
 [scheduler]
 cycle_ttl = 2 # interval of the scheduler cycle (every cycle checks for domains that must be rescheduled).
 domain_reschedule_threshold = 2 # cycles that must evaluate a domain reschedule in a row before rescheduling.
@@ -41,4 +36,3 @@ local_domains_cycle_ttl = 10 # interval the local domain buffer is reloaded from
 addr = "0.0.0.0:1870" # address the api listener is bound to (tcp)
 cert_file = "/etc/wave/cert/cert.pem" # file with public certificate chain (pem)
 key_file = "/etc/wave/cert/key.pem" # file with private key (pem)
-idle_ttl = 600 # ttl of idle connections (seconds)

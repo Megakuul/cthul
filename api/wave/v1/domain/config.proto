@@ -98,7 +98,7 @@ message ResourceConfig {
 }
 
 message VideoDevice {
-  Video video_ = 1;
+  Video video = 1;
   int64 commandbuffer_size = 2;
   int64 videobuffer_size = 3;
   int64 framebuffer_size = 4;

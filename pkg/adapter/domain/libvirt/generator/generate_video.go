@@ -51,17 +51,17 @@ func (l *Generator) generateVideo(device *domain.VideoDevice) (*structure.Video,
 		video.Model.MetaType = structure.VIDEO_MODEL_NONE
 	case domain.Video_VIDEO_VGA:
 		video.Model.MetaType = structure.VIDEO_MODEL_VGA
-		video.Model.MetaVRam = device.VideoBufferSize + device.FramebufferSize // framebuffer is inside vram in vga
+		video.Model.MetaVRam = device.VideobufferSize + device.FramebufferSize // framebuffer is inside vram in vga
 		video.Model.MetaVGAMem = device.FramebufferSize
 	case domain.Video_VIDEO_QXL:
 		video.Model.MetaType = structure.VIDEO_MODEL_QXL
-		video.Model.MetaRam = device.CommandBufferSize + device.FramebufferSize // framebuffer is inside ram in qxl
-		video.Model.MetaVRam = device.VideoBufferSize
+		video.Model.MetaRam = device.CommandbufferSize + device.FramebufferSize // framebuffer is inside ram in qxl
+		video.Model.MetaVRam = device.VideobufferSize
 		video.Model.MetaVGAMem = device.FramebufferSize
 	case domain.Video_VIDEO_HOST:
 		video.Model.MetaType = structure.VIDEO_MODEL_VIRTIO
 	default:
-		return nil, fmt.Errorf("unknown video option: %s", device.VideoOption)
+		return nil, fmt.Errorf("unknown video option: %s", device.Video)
 	}
 
 	return video, nil

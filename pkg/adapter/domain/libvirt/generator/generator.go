@@ -125,7 +125,7 @@ func (l *Generator) Generate(ctx context.Context, id string, config *domain.Doma
 		Features:    []interface{}{},
 	}
 
-	domain.OS, err = l.generateOS(config.SystemConfig, config.FirmwareConfig)
+	domain.OS, err = l.generateOS(ctx, config.SystemConfig, config.FirmwareConfig)
 	if err != nil {
 		return nil, err
 	}

@@ -22,6 +22,8 @@ package generator
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
 	diskstruct "cthul.io/cthul/pkg/api/granit/v1/disk"
@@ -88,10 +90,14 @@ func (g *Generator) generateDisk(ctx context.Context, device *domain.StorageDevi
 		return nil, fmt.Errorf("unsupported device format: %s", storageDevice.Config.Format)
 	}
 
+	storagePath := filepath.Join(g.granitRoot, storageDevice.Config.Path)
+	if !strings.HasPrefix(filepath.Clean(storagePath), g.granitRoot) {
+		return nil, fmt.Errorf("storage device uses a path that escapes the run root '%s'", g.granitRoot)
+	}
 	// Source (on host)
 	disk.MetaType = structure.DISK_BLOCK
 	disk.Source = &structure.DiskSource{
-		MetaDev: storageDevice.Config.Path,
+		MetaDev: storagePath,
 	}
 
 	return disk, nil

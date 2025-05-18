@@ -49,7 +49,11 @@ import (
 // This function does only fail if a critical error occurs while setting up the system,
 // otherwise it will run until an os level signal (SIGINT/TERM) is received.
 func Run(config *BaseConfig) error {
-  logger := slog.New(tint.NewHandler())
+  logger := slog.New(tint.NewHandler(os.Stdout, &tint.Options{
+    AddSource: true,
+    TimeFormat: time.Kitchen,
+  }))
+
 	lifecycleManager := lifecycle.NewManager(logger.With("comp", "lifecycle-manager"))
 	defer lifecycleManager.TerminateParallel(
 		time.Second * time.Duration(config.Lifecycle.TerminationTTL),
@@ -103,8 +107,12 @@ func Run(config *BaseConfig) error {
 	if err!=nil {
 		return err
 	}
-	apiEndpoint := api.New(logger.With("comp", "api"), config.Api.Addr, apiCertificate,
-		api.WithIdleTimeout(time.Second * time.Duration(config.Api.IdleTTL)),
+	apiEndpoint := api.New(config.Api.Addr, apiCertificate,
+    api.WithLogger(logger.With("comp", "api-endpoint")),
+    api.WithDomain(domainController),
+    api.WithVideo(videoController),
+    api.WithSerial(serialController),
+    api.WithNode(nodeController),
 	)
 	if err := apiEndpoint.ServeAndDetach(); err!=nil {
 		return err

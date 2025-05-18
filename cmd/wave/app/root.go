@@ -46,7 +46,7 @@ The service is installed on every cthul node that hosts virtual machines and dir
 	}
 
 	cmd.PersistentFlags().StringVarP(&flags.configPath,
-		"config", "c", "config.toml", "path of the configuration file")
+		"config", "c", "/etc/cthul/wave/config.toml", "path of the configuration file")
 
 	return cmd
 }

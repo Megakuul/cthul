@@ -21,7 +21,6 @@ package app
 
 import (
 	"github.com/BurntSushi/toml"
-	"github.com/go-playground/validator/v10"
 	"os"
 )
 
@@ -31,7 +30,6 @@ type BaseConfig struct {
 	Lifecycle LifecycleConfig `toml:"lifecycle"`
 	Logging   LoggingConfig   `toml:"logging"`
 	Database  DatabaseConfig  `toml:"db"`
-	Election  ElectionConfig  `toml:"election"`
 	Scheduler SchedulerConfig `toml:"scheduler"`
 	Api       ApiConfig       `toml:"api"`
 }
@@ -55,12 +53,6 @@ type DatabaseConfig struct {
 	SkipVerify  bool   `toml:"skipverify"`
 }
 
-type ElectionConfig struct {
-	Contest    bool  `toml:"contest" validate:"required"`
-	Cash       int64 `toml:"cash" validate:"required"`
-	ContestTTL int64 `toml:"contest_ttl" validate:"required"`
-}
-
 type SchedulerConfig struct {
 	CycleTTL int64 `toml:"cycle_ttl" validate:"required"`
   RescheduleCycles int64 `toml:"reschedule_cycles" validate:"required"`
@@ -72,7 +64,6 @@ type ApiConfig struct {
 	Addr     string `toml:"addr" validate:"required,tcp_addr"`
 	CertFile string `toml:"cert_file" validate:"required"`
 	KeyFile  string `toml:"key_file" validate:"required"`
-	IdleTTL  int64  `toml:"idle_ttl" validate:"required"`
 }
 
 // LoadConfig reads the configuration file, decodes it (toml) and validates it.
@@ -85,12 +76,6 @@ func LoadConfig(path string) (*BaseConfig, error) {
 
 	config := &BaseConfig{}
 	_, err = toml.Decode(string(rawConfig), config)
-	if err != nil {
-		return nil, err
-	}
-
-	validate := validator.New(validator.WithRequiredStructEnabled())
-	err = validate.Struct(config)
 	if err != nil {
 		return nil, err
 	}

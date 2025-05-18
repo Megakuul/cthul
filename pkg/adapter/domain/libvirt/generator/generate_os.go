@@ -20,10 +20,14 @@
 package generator
 
 import (
+	"context"
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
-  "cthul.io/cthul/pkg/api/wave/v1/domain"
+	"cthul.io/cthul/pkg/api/granit/v1/disk"
+	"cthul.io/cthul/pkg/api/wave/v1/domain"
 )
 
 // Explanation: A libvirt os tag represents configuration options about the emulated cpu, mainboard and firmware
@@ -41,7 +45,7 @@ import (
 // Loader, template and nvram files are provided by granit devices that are loaded as blockdevs on the host.
 
 // generateOS generates the libvirt operating system configuration from system and firmware information.
-func (l *Generator) generateOS(system *domain.SystemConfig, firmware *domain.FirmwareConfig) (*structure.OS, error) {
+func (g *Generator) generateOS(ctx context.Context, system *domain.SystemConfig, firmware *domain.FirmwareConfig) (*structure.OS, error) {
 	os := &structure.OS{
 		Type: &structure.OSType{
 			Data: "hvm",
@@ -52,28 +56,28 @@ func (l *Generator) generateOS(system *domain.SystemConfig, firmware *domain.Fir
 		},
 	}
 
-	loaderDevice, err := l.granit.LookupStorage(firmware.LoaderDeviceId)
+	loaderDevice, err := g.disk.Lookup(ctx, firmware.LoaderDeviceId)
 	if err!=nil {
 		return nil, fmt.Errorf("firmware loader device lookup: %s", err.Error())
 	}
-	if loaderDevice.Type != granit.STORAGE_FILE {
-		return nil, fmt.Errorf("only supported firmware loader device type is: %s", granit.STORAGE_FILE)
+	if loaderDevice.Config.Format != disk.DiskFormat_DISK_FORMAT_RAW {
+		return nil, fmt.Errorf("only supported firmware loader device format is 'raw'")
 	}
 	
-	templateDevice, err := l.granit.LookupStorage(firmware.TmplDeviceId)
+	templateDevice, err := g.disk.Lookup(ctx, firmware.TmplDeviceId)
 	if err!=nil {
 		return nil, fmt.Errorf("firmware template device lookup: %s", err.Error())
 	}
-	if templateDevice.Type != granit.STORAGE_FILE {
-		return nil, fmt.Errorf("only supported firmware template device type is: %s", granit.STORAGE_FILE)
+	if templateDevice.Config.Format != disk.DiskFormat_DISK_FORMAT_RAW {
+		return nil, fmt.Errorf("only supported firmware template device format is 'raw'")
 	}
 
-	nvramDevice, err := l.granit.LookupStorage(firmware.NvramDeviceId)
+	nvramDevice, err := g.disk.Lookup(ctx, firmware.NvramDeviceId)
 	if err!=nil {
 		return nil, fmt.Errorf("firmware nvram device lookup: %s", err.Error())
 	}
-	if nvramDevice.Type != granit.STORAGE_FILE {
-		return nil, fmt.Errorf("only supported firmware nvram device type is: %s", granit.STORAGE_FILE)
+	if nvramDevice.Config.Format != disk.DiskFormat_DISK_FORMAT_RAW {
+		return nil, fmt.Errorf("only supported firmware nvram device type is 'raw'")
 	}
 
 	// Architecture
@@ -99,22 +103,35 @@ func (l *Generator) generateOS(system *domain.SystemConfig, firmware *domain.Fir
 	}
 
 	// Firmware
-	os.Loader.Data = loaderDevice.Path
+	loaderPath := filepath.Join(g.granitRoot, loaderDevice.Config.Path)
+	if !strings.HasPrefix(filepath.Clean(loaderPath), g.granitRoot) {
+		return nil, fmt.Errorf("loader device uses a path that escapes the run root '%s'", g.granitRoot)
+	}
+	templatePath := filepath.Join(g.granitRoot, templateDevice.Config.Path)
+	if !strings.HasPrefix(filepath.Clean(templatePath), g.granitRoot) {
+		return nil, fmt.Errorf("template device uses a path that escapes the run root '%s'", g.granitRoot)
+	}
+	nvramPath := filepath.Join(g.granitRoot, nvramDevice.Config.Path)
+	if !strings.HasPrefix(filepath.Clean(nvramPath), g.granitRoot) {
+		return nil, fmt.Errorf("nvram device uses a path that escapes the run root '%s'", g.granitRoot)
+	}
+
+	os.Loader.Data = loaderPath
 	
 	switch firmware.Firmware {
 	case domain.Firmware_FIRMWARE_OVMF:
 		os.Loader.MetaType = structure.OS_LOADER_OVMF
 		os.Nvram = &structure.OSNvram{
 			MetaType: structure.OS_NVRAM_FILE,
-			MetaTemplate: templateDevice.Path,
-			Source: nvramDevice.Path,
+			MetaTemplate: templateDevice.Config.Path,
+			Source: structure.OSNvramSource{MetaFile: nvramPath},
 		}
 	case domain.Firmware_FIRMWARE_SEABIOS:
 		os.Loader.MetaType = structure.OS_LOADER_SEABIOS
 		os.Nvrams = &structure.OSNvram{
 			MetaType: structure.OS_NVRAM_FILE,
-			MetaTemplate: templateDevice.Path,
-			Source: nvramDevice.Path,
+			MetaTemplate: templatePath,
+			Source: structure.OSNvramSource{MetaFile: nvramPath},
 		}
 	default:
 		return nil, fmt.Errorf("unknown firmware type: %s", firmware.Firmware)

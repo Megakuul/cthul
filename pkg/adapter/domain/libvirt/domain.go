@@ -79,8 +79,8 @@ func (l *Adapter) Apply(ctx context.Context, id string, domainCfg *domain.Domain
 		return err
 	}
 	
-	hotplugger := hotplug.New(l.client)
-	err = hotplugger.Hotplug(domain)
+	hotplugger := hotplug.New()
+	err = hotplugger.Hotplug(l.client, domain)
 	if err!=nil {
 		return err
 	}
