@@ -4,6 +4,8 @@
   import Footer from "./Footer.svelte";
   import { browser } from "$app/environment";
   import { Mute, Unmute } from "$lib/sound/sound.svelte";
+  import { Exception, SetException } from "$lib/exception/exception.svelte";
+  import { fade } from "svelte/transition";
 
   let { children } = $props();
 
@@ -12,6 +14,10 @@
   let Dark = $state(false)
 
   let Muted = $state(false)
+
+  let Copied = $state(false)
+
+  let ExceptionTimeout = 0;
 
   $effect.root(() => {
     if (browser) {
@@ -37,12 +43,29 @@
     localStorage.setItem("muted", Muted.toString())
     Muted ? Mute() : Unmute()
   })
+
+  $effect(() => {
+    if (Copied) {
+      setTimeout(() => {
+        Copied = false;
+      }, 1000)
+    }
+  })
+
+  $effect(() => {
+  if (Exception()) {
+    clearTimeout(ExceptionTimeout)
+    ExceptionTimeout = setTimeout(() => {
+      SetException(undefined)
+    }, 7000)
+  }
+})
 </script>
 
 {#if Ready}
   <center
   style="color: {Palette().fgPrimary()}; background-color: {Palette().bgPrimary()}; --btn-shadow: {Palette().btnShadow()};"
-  class="min-h-screen box-border transition-all duration-700"
+  class="min-h-screen flex flex-col items-center box-border transition-all duration-700"
   >
   <div class="w-full h-8 px-4 py-1 flex justify-start gap-2">
     <button onclick={() => Muted = !Muted} title="{Muted ? "unmute" : "mute"}"
@@ -66,6 +89,36 @@
     </a>
   </div>
   {@render children()}
+  {#if Exception()}
+    <div transition:fade style="background-color: {Palette().bgPrimary()};"
+      class="fixed z-10 bottom-4 right-4 left-4 p-2 flex flex-col items-start gap-1 rounded-xl border-2 brightness-110 overflow-hidden">
+      <div class="w-full flex flex-row gap-2 items-center justify-start">
+        <h1 class="text-xl font-medium mr-auto">
+          <span class="font-bold text-red-800">ERROR</span>: 
+          <span>{Exception()?.title}</span>
+        </h1>
+        <button title="copy" aria-label="copy" onclick="{() => {
+          navigator.clipboard.writeText(Exception()?.desc ?? "")
+          Copied = true
+        }}" class="rounded-lg p-1 cursor-pointer transition-all hover:bg-slate-800/20">
+          {#if Copied}
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 3h7v18h-14v-18h7Z"/><path d="M14.5 3.5v3h-5v-3"/><path stroke-dasharray="10" stroke-dashoffset="10" d="M9 13l2 2l4 -4"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.2s" values="10;0"/></path></g><path fill="currentColor" fill-opacity="0.3" d="M6 4H10V6H14V4H18V20H6V4Z"/></svg>
+          {:else}
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 3h7v18h-14v-18h7Z"/><path d="M14.5 3.5v3h-5v-3"/><path stroke-dasharray="10" d="M9 13l2 2l4 -4"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.2s" values="0;10"/></path></g><path fill="currentColor" fill-opacity="0.3" d="M6 4H10V6H14V4H18V20H6V4Z"/></svg>
+          {/if}
+        </button>
+        <button title="close" aria-label="close" onclick="{() => {
+          clearTimeout(ExceptionTimeout)
+          SetException(undefined)
+        }}" class="rounded-lg p-1 cursor-pointer transition-all hover:bg-slate-950/20">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-dasharray="24" stroke-dashoffset="24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 5l14 14"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.4s" values="24;0"/></path><path d="M19 5l-14 14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.4s" dur="0.4s" values="24;0"/></path></g></svg>
+        </button>
+      </div>
+      <p class="text-sm text-nowrap">
+        {Exception()?.desc}
+      </p>
+    </div>
+  {/if}
   </center>
 
   <Footer></Footer>

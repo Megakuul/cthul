@@ -7,8 +7,6 @@
  * @property {() => string} fgWave
  * @property {() => string} fgGranit
  * @property {() => string} fgProton
- * @property {() => string} fgSuccess
- * @property {() => string} fgError
  */
 
 /** @type {Palette} */
@@ -33,8 +31,6 @@ export function NewSandstormPalette() {
     fgWave: () => { return "#0D65A4" },
     fgGranit: () => { return "#042F0B"},
     fgProton: () => { return "#57056C"},
-    fgSuccess: () => { return "#255F38" },
-    fgError: () => { return "#A31D1D" },
   }
 }
 
@@ -47,7 +43,5 @@ export function NewSlatePalette() {
     fgWave: () => { return "#0D65A4" },
     fgGranit: () => { return "#042F0B"},
     fgProton: () => { return "#57056C"},
-    fgSuccess: () => { return "#255F38" },
-    fgError: () => { return "#A31D1D" },
   }
 }

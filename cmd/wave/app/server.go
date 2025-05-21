@@ -107,8 +107,10 @@ func Run(config *BaseConfig) error {
 	if err!=nil {
 		return err
 	}
-	apiEndpoint := api.New(config.Api.Addr, apiCertificate,
+  _ = apiCertificate
+	apiEndpoint := api.New(config.Api.Addr,
     api.WithLogger(logger.With("comp", "api-endpoint")),
+    api.WithOrigins(config.Api.Origins),
     api.WithDomain(domainController),
     api.WithVideo(videoController),
     api.WithSerial(serialController),

@@ -34,5 +34,6 @@ local_domains_cycle_ttl = 10 # interval the local domain buffer is reloaded from
 
 [api]
 addr = "0.0.0.0:1870" # address the api listener is bound to (tcp)
+origins = [ "http://localhost:5173" ] # allowed cors origins for the api
 cert_file = "/etc/wave/cert/cert.pem" # file with public certificate chain (pem)
 key_file = "/etc/wave/cert/key.pem" # file with private key (pem)

@@ -80,7 +80,7 @@
   <Card icon={rune} name="rune" bind:selected={selected}></Card>
 </div>
 
-<div class="flex flex-col gap-6 px-4 py-10">
+<div class="w-full flex flex-col gap-6 px-4 py-10">
   {#if services && selected}
     <a href="/{selected}/settings" onclick="{async () => Play(click)}"
       class="btn flex flex-row justify-center items-center gap-2 p-4 rounded-lg cursor-pointer text-2xl transition-all bg-slate-50/40">

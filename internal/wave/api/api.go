@@ -26,6 +26,7 @@ import (
 	"io"
 	golog "log"
 	"log/slog"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -42,12 +43,15 @@ import (
 	nodectrl "cthul.io/cthul/pkg/wave/node"
 	serialctrl "cthul.io/cthul/pkg/wave/serial"
 	videoctrl "cthul.io/cthul/pkg/wave/video"
+
+	"github.com/rs/cors"
 )
 
 type Endpoint struct {
 	addr       string
 	tlsConfig  *tls.Config
 	logger     *slog.Logger
+	origins    []string
 	mux        *http.ServeMux
 	serverLock sync.Mutex
 	server     *http.Server
@@ -55,13 +59,12 @@ type Endpoint struct {
 
 type Option func(*Endpoint)
 
-func New(addr string, cert tls.Certificate, opts ...Option) *Endpoint {
+func New(addr string, opts ...Option) *Endpoint {
 	endpoint := &Endpoint{
-		addr: addr,
-		tlsConfig: &tls.Config{
-			Certificates: []tls.Certificate{cert},
-		},
+		addr:       addr,
+		tlsConfig:  nil,
 		logger:     slog.Default().WithGroup("api-endpoint"),
+		origins:    []string{},
 		mux:        http.NewServeMux(),
 		serverLock: sync.Mutex{},
 		server:     nil,
@@ -78,6 +81,22 @@ func New(addr string, cert tls.Certificate, opts ...Option) *Endpoint {
 func WithLogger(logger *slog.Logger) Option {
 	return func(e *Endpoint) {
 		e.logger = logger.WithGroup("api-endpoint")
+	}
+}
+
+// WithTLS enables tls encryption for the endpoint..
+func WithTLS(cert tls.Certificate) Option {
+	return func(e *Endpoint) {
+		e.tlsConfig = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		}
+	}
+}
+
+// WithOrigins specifies a custom list of allowed CORS origins.
+func WithOrigins(allowed []string) Option {
+	return func(e *Endpoint) {
+		e.origins = allowed
 	}
 }
 
@@ -109,19 +128,34 @@ func WithNode(controller *nodectrl.Controller) Option {
 // The server can be started only once.
 func (e *Endpoint) ServeAndDetach() error {
 	e.serverLock.Lock()
-  defer e.serverLock.Unlock()
+	defer e.serverLock.Unlock()
 	if e.server != nil {
 		return fmt.Errorf("server cannot be started twice")
 	}
 	e.server = &http.Server{
-		Handler:     e.mux,
+		Handler: cors.New(cors.Options{
+			AllowedOrigins: e.origins,
+			AllowedMethods: []string{http.MethodGet, http.MethodPost, http.MethodOptions},
+			AllowedHeaders: []string{"*"},
+		}).Handler(e.mux),
 		ErrorLog:    golog.New(io.Discard, "", 0),
 		IdleTimeout: 10 * time.Minute,
 	}
 
-	listener, err := tls.Listen("tcp", e.addr, e.tlsConfig)
-	if err != nil {
-		return err
+	var (
+		listener net.Listener
+		err      error
+	)
+	if e.tlsConfig == nil {
+		listener, err = net.Listen("tcp", e.addr)
+		if err != nil {
+			return err
+		}
+	} else {
+		listener, err = tls.Listen("tcp", e.addr, e.tlsConfig)
+		if err != nil {
+			return err
+		}
 	}
 
 	go func() {
@@ -136,11 +170,11 @@ func (e *Endpoint) ServeAndDetach() error {
 // if this fails or exceeds the provided context window, the connection is forcefully closed.
 // If forcefully closing the connection fails too, an error is returned.
 func (e *Endpoint) Terminate(ctx context.Context) error {
-  e.serverLock.Lock()
-  defer e.serverLock.Unlock()
-  if e.server==nil {
-    return nil
-  }
+	e.serverLock.Lock()
+	defer e.serverLock.Unlock()
+	if e.server == nil {
+		return nil
+	}
 	if err := e.server.Shutdown(ctx); err != nil {
 		return e.server.Close()
 	}

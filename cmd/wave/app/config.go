@@ -62,6 +62,7 @@ type SchedulerConfig struct {
 
 type ApiConfig struct {
 	Addr     string `toml:"addr" validate:"required,tcp_addr"`
+  Origins []string `toml:"origins"`
 	CertFile string `toml:"cert_file" validate:"required"`
 	KeyFile  string `toml:"key_file" validate:"required"`
 }
