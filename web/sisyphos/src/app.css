@@ -36,8 +36,3 @@ html, body {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
-
-.btn:hover {
-  box-shadow: var(--btn-shadow);
-  transform: translateX(-3px) translateY(-1px);
-}
