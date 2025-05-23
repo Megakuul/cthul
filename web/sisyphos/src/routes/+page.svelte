@@ -7,11 +7,9 @@
   import waveSerial from "$lib/assets/wave-serial.svg";
   import waveVideo from "$lib/assets/wave-video.svg";
   import granitDisk from "$lib/assets/granit-disk.svg";
-  import click from "$lib/assets/click.mp3";
   import Card from "./Card.svelte";
   import { Palette } from "$lib/color/color.svelte";
-  import { Play } from "$lib/sound/sound.svelte";
-    import Link from "$lib/component/Link/Link.svelte";
+  import Link from "$lib/component/Link/Link.svelte";
 
   /** @type {"rune" | "wave" | "granit" | "proton" | undefined} */
   let selected = $state(undefined);

@@ -8,7 +8,7 @@
   import { Arch, Chipset, DomainState, Firmware } from "$lib/types/wave/v1/domain/config_pb";
   import Button from "$lib/component/Button/Button.svelte";
   import Link from "$lib/component/Link/Link.svelte";
-    import { flip } from "svelte/animate";
+  import { flip } from "svelte/animate";
 
   const transport = createConnectTransport({
     baseUrl: "http://127.0.0.1:1870",
@@ -29,41 +29,7 @@
       const response = await client.list(request)
       domains = response.domains
     } catch (err: any) {
-      SetException({title: "Domain List", desc: err.message})
-    }
-  }
-
-  async function createDomain() {
-    try {
-      const request = create(CreateRequestSchema, {
-        config: {
-          name: "test",
-          description: "this is a test",
-          affinity: [""],
-          firmwareConfig: {
-            firmware: Firmware.OVMF,
-            loaderDeviceId: "asdf",
-            nvramDeviceId: "asdf",
-            tmplDeviceId: "asdf",
-            secureBoot: false,
-          },
-          title: "whatistitle",
-          state: DomainState.DOWN,
-          systemConfig: {
-            architecture: Arch.AMD64,
-            chipset: Chipset.Q35,
-          },
-          resourceConfig: {
-            memory: BigInt(2000000000),
-            vcpus: BigInt(2),
-          },
-        }
-      })
-
-      const response = await client.create(request)
-      console.log(response.id)
-    } catch (err: any) {
-      SetException({title: "Domain List", desc: err.message})
+      SetException({title: "LIST DOMAINS", desc: err.message})
     }
   }
 
@@ -88,10 +54,10 @@
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="40" stroke-dashoffset="40" d="M17 15.33c2.41 -0.72 4 -1.94 4 -3.33c0 -2.21 -4.03 -4 -9 -4c-4.97 0 -9 1.79 -9 4c0 2.06 3.5 3.75 8 3.98"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.5s" values="40;0"/></path><path fill="currentColor" d="M12.25 16l0 0l0 0z" opacity="0"><animate fill="freeze" attributeName="d" begin="0.5s" dur="0.2s" values="M12.25 16l0 0l0 0z;M12.25 16L9.5 13.25L9.5 18.75z"/><set fill="freeze" attributeName="opacity" begin="0.5s" to="1"/></path></g></svg>
     </Button>
     
-    <Button onclick={() => createDomain()} scale={0.8} class="flex flex-row gap-2 justify-center w-32 p-2 rounded-lg bg-slate-50/40">
+    <Link href="/wave/domain/new" scale={0.8} class="flex flex-row gap-2 justify-center w-32 p-2 rounded-lg bg-slate-50/40">
       <span>New</span>
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-dasharray="16" stroke-dashoffset="16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 12h14"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.4s" values="16;0"/></path><path d="M12 5v14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.4s" dur="0.4s" values="16;0"/></path></g></svg>
-    </Button>
+    </Link>
   </div>
   <input bind:value={search} placeholder="Search..." class="w-full rounded-lg p-2 bg-slate-50/30 focus:outline-none" />
 
@@ -112,26 +78,27 @@
               node: <span class="font-bold">{domain.node ? domain.node : "none"}</span>
             </p>
             <p class="text-xs">
+              state: <span class="font-bold">
+                {#if domain.config?.state === DomainState.UP}
+                  up
+                {:else if domain.config?.state === DomainState.PAUSE}
+                  paused
+                {:else if domain.config?.state === DomainState.DOWN}
+                  down
+                {:else if domain.config?.state === DomainState.FORCED_DOWN}
+                  forced down
+                {/if}
+              </span>
+            </p>
+            <p class="text-xs">
               affinity: <span class="font-bold">[{domain.config?.affinity.join(", ")}]</span>
             </p>
+            {#if domain.error}
+              <p class="text-xs">
+                error: <span class="font-bold text-red-900">{domain.error}</span>
+              </p>
+            {/if}
           </div>
-          {#if domain.config?.state === DomainState.UP}
-            <div title="up" class="absolute right-10 top-1/2 -translate-y-1/2 text-green-800/80">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" fill-opacity="0" stroke="currentColor" stroke-dasharray="64" stroke-dashoffset="64" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12c0 -4.97 4.03 -9 9 -9c4.97 0 9 4.03 9 9c0 4.97 -4.03 9 -9 9c-4.97 0 -9 -4.03 -9 -9Z"><animate fill="freeze" attributeName="fill-opacity" begin="0.6s" dur="0.15s" values="0;0.3"/><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.6s" values="64;0"/></path></svg>
-            </div>
-          {:else if domain.config?.state === DomainState.PAUSE}
-            <div title="paused" class="absolute right-10 top-1/2 -translate-y-1/2 text-orange-800/60">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" fill-opacity="0" stroke="currentColor" stroke-dasharray="64" stroke-dashoffset="64" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12c0 -4.97 4.03 -9 9 -9c4.97 0 9 4.03 9 9c0 4.97 -4.03 9 -9 9c-4.97 0 -9 -4.03 -9 -9Z"><animate fill="freeze" attributeName="fill-opacity" begin="0.6s" dur="0.15s" values="0;0.3"/><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.6s" values="64;0"/></path></svg>
-            </div>
-          {:else if domain.config?.state === DomainState.DOWN}
-            <div title="down" class="absolute right-10 top-1/2 -translate-y-1/2 text-stone-800/60">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" fill-opacity="0" stroke="currentColor" stroke-dasharray="64" stroke-dashoffset="64" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12c0 -4.97 4.03 -9 9 -9c4.97 0 9 4.03 9 9c0 4.97 -4.03 9 -9 9c-4.97 0 -9 -4.03 -9 -9Z"><animate fill="freeze" attributeName="fill-opacity" begin="0.6s" dur="0.15s" values="0;0.3"/><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.6s" values="64;0"/></path></svg>
-            </div>
-          {:else if domain.config?.state === DomainState.FORCED_DOWN}
-            <div title="forced down" class="absolute right-10 top-1/2 -translate-y-1/2 text-stone-950/70">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" fill-opacity="0" stroke="currentColor" stroke-dasharray="64" stroke-dashoffset="64" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12c0 -4.97 4.03 -9 9 -9c4.97 0 9 4.03 9 9c0 4.97 -4.03 9 -9 9c-4.97 0 -9 -4.03 -9 -9Z"><animate fill="freeze" attributeName="fill-opacity" begin="0.6s" dur="0.15s" values="0;0.3"/><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.6s" values="64;0"/></path></svg>
-            </div>
-          {/if}
         </Link>
       </div>
     {/each}
