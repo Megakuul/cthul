@@ -114,8 +114,7 @@ func (c *Client) Get(ctx context.Context, key string) (string, error) {
 	if len(res.Kvs) < 1 {
 		return "", nil
 	}
-
-	return string(res.Kvs[1].Value), nil
+	return string(res.Kvs[0].Value), nil
 }
 
 // GetRange returns a kv map with all keys that match the prefix.

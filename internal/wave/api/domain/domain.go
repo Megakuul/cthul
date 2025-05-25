@@ -20,11 +20,12 @@
 package domain
 
 import (
-	"connectrpc.com/connect"
 	"context"
+	"errors"
+
+	"connectrpc.com/connect"
 	"cthul.io/cthul/pkg/api/wave/v1/domain"
 	domctrl "cthul.io/cthul/pkg/wave/domain"
-	"errors"
 	"github.com/google/uuid"
 )
 
@@ -34,12 +35,12 @@ type Service struct {
 
 func New(controller *domctrl.Controller) *Service {
 	return &Service{
-    controller: controller,
-  }
+		controller: controller,
+	}
 }
 
 func (d *Service) Get(ctx context.Context, r *connect.Request[domain.GetRequest]) (*connect.Response[domain.GetResponse], error) {
-  // TODO: authorize
+	// TODO: authorize
 	result, err := d.controller.Lookup(ctx, r.Msg.Id)
 	if err != nil {
 		var mismatchErr *domctrl.NodeMismatchErr
@@ -57,7 +58,7 @@ func (d *Service) Get(ctx context.Context, r *connect.Request[domain.GetRequest]
 }
 
 func (d *Service) Stat(ctx context.Context, r *connect.Request[domain.StatRequest]) (*connect.Response[domain.StatResponse], error) {
-  // TODO: authorize
+	// TODO: authorize
 	result, err := d.controller.Stat(ctx, r.Msg.Id)
 	if err != nil {
 		var mismatchErr *domctrl.NodeMismatchErr
@@ -75,7 +76,7 @@ func (d *Service) Stat(ctx context.Context, r *connect.Request[domain.StatReques
 }
 
 func (d *Service) List(ctx context.Context, r *connect.Request[domain.ListRequest]) (*connect.Response[domain.ListResponse], error) {
-  // TODO: authorize
+	// TODO: authorize
 	result, err := d.controller.List(ctx)
 	if err != nil {
 		var mismatchErr *domctrl.NodeMismatchErr
@@ -93,7 +94,7 @@ func (d *Service) List(ctx context.Context, r *connect.Request[domain.ListReques
 }
 
 func (d *Service) Create(ctx context.Context, r *connect.Request[domain.CreateRequest]) (*connect.Response[domain.CreateResponse], error) {
-  // TODO: authorize
+	// TODO: authorize
 	id := uuid.New().String()
 	err := d.controller.Apply(ctx, id, r.Msg.Config)
 	if err != nil {
@@ -112,7 +113,7 @@ func (d *Service) Create(ctx context.Context, r *connect.Request[domain.CreateRe
 }
 
 func (d *Service) Update(ctx context.Context, r *connect.Request[domain.UpdateRequest]) (*connect.Response[domain.UpdateResponse], error) {
-  // TODO: authorize
+	// TODO: authorize
 	err := d.controller.Apply(ctx, r.Msg.Id, r.Msg.Config)
 	if err != nil {
 		var mismatchErr *domctrl.NodeMismatchErr
@@ -130,7 +131,7 @@ func (d *Service) Update(ctx context.Context, r *connect.Request[domain.UpdateRe
 }
 
 func (d *Service) Attach(ctx context.Context, r *connect.Request[domain.AttachRequest]) (*connect.Response[domain.AttachResponse], error) {
-  // TODO: authorize
+	// TODO: authorize
 	err := d.controller.Attach(ctx, r.Msg.Id, r.Msg.Node, false)
 	if err != nil {
 		var mismatchErr *domctrl.NodeMismatchErr
@@ -148,7 +149,7 @@ func (d *Service) Attach(ctx context.Context, r *connect.Request[domain.AttachRe
 }
 
 func (d *Service) Detach(ctx context.Context, r *connect.Request[domain.DetachRequest]) (*connect.Response[domain.DetachResponse], error) {
-  // TODO: authorize
+	// TODO: authorize
 	err := d.controller.Detach(ctx, r.Msg.Id)
 	if err != nil {
 		var mismatchErr *domctrl.NodeMismatchErr
@@ -166,7 +167,7 @@ func (d *Service) Detach(ctx context.Context, r *connect.Request[domain.DetachRe
 }
 
 func (d *Service) Delete(ctx context.Context, r *connect.Request[domain.DeleteRequest]) (*connect.Response[domain.DeleteResponse], error) {
-  // TODO: authorize
+	// TODO: authorize
 	err := d.controller.Delete(ctx, r.Msg.Id)
 	if err != nil {
 		var mismatchErr *domctrl.NodeMismatchErr
