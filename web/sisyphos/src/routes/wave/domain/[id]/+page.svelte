@@ -13,6 +13,8 @@
     import Serial from "$lib/component/Serial/Serial.svelte";
     import Radio from "$lib/component/Radio/Radio.svelte";
     import { DomainPowerState, type DomainStats, DomainStatsSchema } from "$lib/types/wave/v1/domain/stat_pb";
+    import { flip } from "svelte/animate";
+    import Dropdown from "$lib/component/Dropdown/Dropdown.svelte";
 
   const transport = createConnectTransport({
     baseUrl: "http://127.0.0.1:1870",
@@ -148,14 +150,61 @@
     </div>
   </div>
 
-  <div class="w-full h-[400px] flex flex-row rounded-xl bg-slate-950/20">
-    <div class="flex flex-col items-start">
-      <input bind:value={domain.config!.name} />
-      <textarea bind:value={domain.config!.description}></textarea>
+  <div class="w-full h-[400px] flex flex-row p-2 rounded-xl bg-slate-950/20 overflow-scroll-hidden">
+    <div class="w-1/3 flex flex-col items-start gap-4 p-4">
+      <input placeholder="Name" bind:value={domain.config!.name} 
+        class="text-xl w-full p-1 rounded-md bg-slate-50/10 focus:bg-slate-50/20 focus:outline-0 transition-all overflow-hidden" />
+      <input placeholder="Description" bind:value={domain.config!.description} 
+        class="text-sm w-full p-1 rounded-md bg-slate-50/10 focus:bg-slate-50/20 focus:outline-0 transition-all overflow-hidden" />
+      <div class="flex flex-wrap gap-2 justify-stretch">
+        <input placeholder="Tag" onkeyup={(e: any) => {
+          if (e.key === "Enter" && e.target?.value) {
+            domain.config!.affinity.push(e.target.value)
+            domain = domain
+            e.target.value = ""
+          }
+        }} class="w-24 p-1 bg-slate-50/10 rounded-lg focus:outline-0" />
+        {#each domain.config!.affinity as tag, i (i)}
+          <button animate:flip onclick={() => {
+            domain.config!.affinity.splice(i, 1)
+            domain = domain
+          }} class="p-1 flex flex-row gap-1 justify-center items-center cursor-pointer bg-slate-50/10 rounded-lg">
+            <span class="max-w-24 overflow-hidden">{tag}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-dasharray="24" stroke-dashoffset="24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 5l14 14"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.4s" values="24;0"/></path><path d="M19 5l-14 14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.4s" dur="0.4s" values="24;0"/></path></g></svg>
+          </button>
+        {/each}
+      </div>
     </div>
-    <div class="flex flex-col items-start">
-      <input bind:value={domain.config!.name} />
-      <textarea bind:value={domain.config!.description}></textarea>
+    <span class="h-full w-0 border-1 rounded-full"></span>
+    <div class="w-1/3 flex flex-col items-start gap-4 p-4">
+      {#if domain.config!.resourceConfig}
+        <p class="w-full relative">
+          <span class="absolute -top-2 left-1 text-xs font-bold">vCPUs</span>
+          <input placeholder="vCPUs" type="number" bind:value={domain.config!.resourceConfig!.vcpus} 
+            class="text-xl w-full p-1 rounded-md bg-slate-50/10 focus:bg-slate-50/20 focus:outline-0 transition-all overflow-hidden" />
+        </p>
+        <p class="w-full relative flex flex-row gap-2">
+          <span class="absolute -top-2 left-1 text-xs font-bold">Memory (bytes)</span>
+          <input placeholder="Memory" type="number" bind:value={domain.config!.resourceConfig!.memory} 
+            class="text-xl w-full p-1 rounded-md bg-slate-50/10 focus:bg-slate-50/20 focus:outline-0 transition-all overflow-hidden" />
+          <span class="w-40 p-1 rounded-md text-xl text-nowrap overflow-hidden">
+            ~ {(Number(domain.config!.resourceConfig!.memory) / (1000 * 1000 * 1000)).toFixed(2)} GB
+          </span>
+        </p>
+      {/if}
+      {#if domain.config!.firmwareConfig}
+        <Dropdown placeholder="Firmware" bind:value={domain.config!.firmwareConfig!.firmware} loader={() => {
+          return {"OVMF": Firmware.OVMF, "SEABIOS": Firmware.SEABIOS}
+        }} class=""></Dropdown>
+        <button onclick={() => {
+          domain.config!.firmwareConfig!.secureBoot = !domain.config!.firmwareConfig!.secureBoot
+        }} class="w-full p-1 rounded-md cursor-pointer transition-all {domain.config!.firmwareConfig!.secureBoot ? "font-bold bg-slate-50/20" : "bg-slate-50/10"}">
+          Secureboot
+        </button>
+      {/if}
+    </div>
+    <span class="h-full w-0 border-1 rounded-full"></span>
+    <div class="w-1/3 flex flex-col items-start gap-4 p-4">
     </div>
   </div>
 
