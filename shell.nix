@@ -14,10 +14,6 @@ pkgs.mkShell {
 
   shellHook = ''
     echo "Entering cthul dev environment (using shell.nix with system nixpkgs)..."
-    echo "Attempting to start libvirtd and etcd in the background."
-    echo "You might be prompted for your sudo password if not already cached."
-
-    sudo libvirtd &
 
     sudo etcd --name test \
       --listen-client-urls http://127.0.0.1:2379 \

@@ -14,7 +14,10 @@
     import Radio from "$lib/component/Radio/Radio.svelte";
     import { DomainPowerState, type DomainStats, DomainStatsSchema } from "$lib/types/wave/v1/domain/stat_pb";
     import { flip } from "svelte/animate";
+    import VDropdown from "$lib/component/VDropdown/VDropdown.svelte";
     import Dropdown from "$lib/component/Dropdown/Dropdown.svelte";
+    import { type Disk, DiskSchema, ListRequestSchema } from "$lib/types/granit/v1/disk/message_pb";
+    import { DiskService } from "$lib/types/granit/v1/disk/service_pb";
 
   const transport = createConnectTransport({
     baseUrl: "http://127.0.0.1:1870",
@@ -22,8 +25,12 @@
 
   const client = createClient(DomainService, transport)
 
+  const diskClient = createClient(DiskService, transport)
+
   let domain: Domain = $state(create(DomainSchema, {config: {}}))
   let stats: DomainStats = $state(create(DomainStatsSchema, {}))
+
+  let disks: {[key: string]: Disk} = $state({})
 
   let mode: "serial" | "spice" = $state("serial");
 
@@ -80,6 +87,26 @@
       await client.update(request)
     } catch (err: any) {
       SetException({title: "UPDATE DOMAIN", desc: err.message})
+    }
+  }
+
+  async function listDisks() {
+    try {
+      // TODO: Remove, currently test data becuase not implemented
+      disks = {
+        "c056d400-7c56-4c84-827a-d038a4c24b01": create(DiskSchema, {config: {size: 10000}}),
+      }
+      return
+      // TODO: Remove, currently test data becuase not implemented
+
+      const request = create(ListRequestSchema, {});
+
+      const response = await diskClient.list(request)
+      if (response.disks) {
+        disks = response.disks
+      }
+    } catch (err: any) {
+      SetException({title: "LIST DISKS", desc: err.message})
     }
   }
 
@@ -193,9 +220,14 @@
         </p>
       {/if}
       {#if domain.config!.firmwareConfig}
-        <Dropdown placeholder="Firmware" bind:value={domain.config!.firmwareConfig!.firmware} loader={() => {
-          return {"OVMF": Firmware.OVMF, "SEABIOS": Firmware.SEABIOS}
+        <VDropdown placeholder="Firmware" bind:value={domain.config!.firmwareConfig!.firmware} items={{
+          "OVMF": Firmware.OVMF, "SEABIOS": Firmware.SEABIOS
+        }} class=""></VDropdown>
+        <Dropdown placeholder="Loader Device" bind:value={domain.config!.firmwareConfig!.loaderDeviceId} loader={async () => {
+          await listDisks()
+          return disks
         }} class=""></Dropdown>
+
         <button onclick={() => {
           domain.config!.firmwareConfig!.secureBoot = !domain.config!.firmwareConfig!.secureBoot
         }} class="w-full p-1 rounded-md cursor-pointer transition-all {domain.config!.firmwareConfig!.secureBoot ? "font-bold bg-slate-50/20" : "bg-slate-50/10"}">
