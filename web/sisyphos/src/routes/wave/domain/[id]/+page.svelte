@@ -10,14 +10,16 @@
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
   import Spice from "$lib/component/Spice/Spice.svelte";
-    import Serial from "$lib/component/Serial/Serial.svelte";
-    import Radio from "$lib/component/Radio/Radio.svelte";
-    import { DomainPowerState, type DomainStats, DomainStatsSchema } from "$lib/types/wave/v1/domain/stat_pb";
-    import { flip } from "svelte/animate";
-    import VDropdown from "$lib/component/VDropdown/VDropdown.svelte";
-    import Dropdown from "$lib/component/Dropdown/Dropdown.svelte";
-    import { type Disk, DiskSchema, ListRequestSchema } from "$lib/types/granit/v1/disk/message_pb";
-    import { DiskService } from "$lib/types/granit/v1/disk/service_pb";
+  import Serial from "$lib/component/Serial/Serial.svelte";
+  import Radio from "$lib/component/Radio/Radio.svelte";
+  import { DomainPowerState, type DomainStats, DomainStatsSchema } from "$lib/types/wave/v1/domain/stat_pb";
+  import { flip } from "svelte/animate";
+  import VDropdown from "$lib/component/VDropdown/VDropdown.svelte";
+  import Dropdown from "$lib/component/Dropdown/Dropdown.svelte";
+  import { type Disk, DiskSchema, ListRequestSchema } from "$lib/types/granit/v1/disk/message_pb";
+  import { DiskService } from "$lib/types/granit/v1/disk/service_pb";
+  import Input from "$lib/component/Input/Input.svelte";
+  
 
   const transport = createConnectTransport({
     baseUrl: "http://127.0.0.1:1870",
@@ -205,28 +207,22 @@
     <span class="h-full w-0 border-1 rounded-full"></span>
     <div class="w-1/3 flex flex-col items-start gap-4 p-4">
       {#if domain.config!.resourceConfig}
-        <p class="w-full relative">
-          <span class="absolute -top-2 left-1 text-xs font-bold">vCPUs</span>
-          <input placeholder="vCPUs" type="number" bind:value={domain.config!.resourceConfig!.vcpus} 
-            class="text-xl w-full p-1 rounded-md bg-slate-50/10 focus:bg-slate-50/20 focus:outline-0 transition-all overflow-hidden" />
-        </p>
-        <p class="w-full relative flex flex-row gap-2">
-          <span class="absolute -top-2 left-1 text-xs font-bold">Memory (bytes)</span>
-          <input placeholder="Memory" type="number" bind:value={domain.config!.resourceConfig!.memory} 
-            class="text-xl w-full p-1 rounded-md bg-slate-50/10 focus:bg-slate-50/20 focus:outline-0 transition-all overflow-hidden" />
+        <div class="w-full flex flex-row gap-2">
+          <Input title="vCPUs" type="number" class="flex-4/12" bind:value={domain.config!.resourceConfig!.vcpus} />
+          <Input title="Memory (bytes)" type="number" class="flex-8/12" bind:value={domain.config!.resourceConfig!.memory} />
           <span class="w-40 p-1 rounded-md text-xl text-nowrap overflow-hidden">
             ~ {(Number(domain.config!.resourceConfig!.memory) / (1000 * 1000 * 1000)).toFixed(2)} GB
           </span>
-        </p>
+        </div>
       {/if}
       {#if domain.config!.firmwareConfig}
         <VDropdown placeholder="Firmware" bind:value={domain.config!.firmwareConfig!.firmware} items={{
           "OVMF": Firmware.OVMF, "SEABIOS": Firmware.SEABIOS
-        }} class=""></VDropdown>
+        }} class="w-full"></VDropdown>
         <Dropdown placeholder="Loader Device" bind:value={domain.config!.firmwareConfig!.loaderDeviceId} loader={async () => {
           await listDisks()
           return disks
-        }} class=""></Dropdown>
+        }} class="w-full"></Dropdown>
 
         <button onclick={() => {
           domain.config!.firmwareConfig!.secureBoot = !domain.config!.firmwareConfig!.secureBoot

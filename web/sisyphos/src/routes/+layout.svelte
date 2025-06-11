@@ -6,7 +6,9 @@
   import { Mute, Unmute } from "$lib/sound/sound.svelte";
   import { Exception, SetException } from "$lib/exception/exception.svelte";
   import { fade } from "svelte/transition";
-    import Link from "$lib/component/Link/Link.svelte";
+  import Link from "$lib/component/Link/Link.svelte";
+    import { SetTransport } from "$lib/client/client.svelte";
+    import { page } from "$app/state";
 
   let { children } = $props();
 
@@ -51,6 +53,11 @@
         Copied = false;
       }, 1000)
     }
+  })
+
+  $effect.root(() => {
+    if (page.url.host)
+      SetTransport(`https://${page.url.hostname}`)
   })
 
   $effect(() => {
