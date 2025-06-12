@@ -1,20 +1,15 @@
 <script lang="ts">
   import { createClient } from "@connectrpc/connect";
   import { createConnectTransport } from "@connectrpc/connect-web";
-  import {DomainService} from "$lib/types/wave/v1/domain/service_pb"
+  import {DomainService} from "$lib/sdk/types/wave/v1/domain/service_pb"
   import { create } from '@bufbuild/protobuf';
-  import { type Domain, ListRequestSchema, CreateRequestSchema } from "$lib/types/wave/v1/domain/message_pb";
+  import { type Domain, ListRequestSchema, CreateRequestSchema } from "$lib/sdk/types/wave/v1/domain/message_pb";
   import { SetException } from "$lib/exception/exception.svelte";
-  import { Arch, Chipset, DomainState, Firmware } from "$lib/types/wave/v1/domain/config_pb";
+  import { Arch, Chipset, DomainState, Firmware } from "$lib/sdk/types/wave/v1/domain/config_pb";
   import Button from "$lib/component/Button/Button.svelte";
   import Link from "$lib/component/Link/Link.svelte";
   import { flip } from "svelte/animate";
-
-  const transport = createConnectTransport({
-    baseUrl: "http://127.0.0.1:1870",
-  })
-
-  const client = createClient(DomainService, transport)
+    import { DomainClient } from "$lib/client/client.svelte";
 
   let domains: {[key: string]: Domain} = $state({})
 
@@ -26,7 +21,7 @@
     try {
       const request = create(ListRequestSchema, {});
 
-      const response = await client.list(request)
+      const response = await DomainClient().list(request)
       domains = response.domains
     } catch (err: any) {
       SetException({title: "LIST DOMAINS", desc: err.message})

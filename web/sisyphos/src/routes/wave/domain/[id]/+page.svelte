@@ -1,33 +1,25 @@
 <script lang="ts">
   import { createClient } from "@connectrpc/connect";
   import { createConnectTransport } from "@connectrpc/connect-web";
-  import {DomainService} from "$lib/types/wave/v1/domain/service_pb"
+  import {DomainService} from "$lib/sdk/types/wave/v1/domain/service_pb"
   import { create } from '@bufbuild/protobuf';
-  import { type Domain, UpdateRequestSchema, CreateRequestSchema, GetRequestSchema, DomainSchema, StatRequestSchema } from "$lib/types/wave/v1/domain/message_pb";
+  import { type Domain, UpdateRequestSchema, CreateRequestSchema, GetRequestSchema, DomainSchema, StatRequestSchema } from "$lib/sdk/types/wave/v1/domain/message_pb";
   import { SetException } from "$lib/exception/exception.svelte";
-  import { Arch, Chipset, DomainState, Firmware } from "$lib/types/wave/v1/domain/config_pb";
+  import { Arch, Chipset, DomainState, Firmware } from "$lib/sdk/types/wave/v1/domain/config_pb";
   import Button from "$lib/component/Button/Button.svelte";
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
   import Spice from "$lib/component/Spice/Spice.svelte";
   import Serial from "$lib/component/Serial/Serial.svelte";
   import Radio from "$lib/component/Radio/Radio.svelte";
-  import { DomainPowerState, type DomainStats, DomainStatsSchema } from "$lib/types/wave/v1/domain/stat_pb";
+  import { DomainPowerState, type DomainStats, DomainStatsSchema } from "$lib/sdk/types/wave/v1/domain/stat_pb";
   import { flip } from "svelte/animate";
   import VDropdown from "$lib/component/VDropdown/VDropdown.svelte";
   import Dropdown from "$lib/component/Dropdown/Dropdown.svelte";
-  import { type Disk, DiskSchema, ListRequestSchema } from "$lib/types/granit/v1/disk/message_pb";
-  import { DiskService } from "$lib/types/granit/v1/disk/service_pb";
+  import { type Disk, DiskSchema, ListRequestSchema } from "$lib/sdk/types/granit/v1/disk/message_pb";
+  import { DiskService } from "$lib/sdk/types/granit/v1/disk/service_pb";
   import Input from "$lib/component/Input/Input.svelte";
-  
-
-  const transport = createConnectTransport({
-    baseUrl: "http://127.0.0.1:1870",
-  })
-
-  const client = createClient(DomainService, transport)
-
-  const diskClient = createClient(DiskService, transport)
+    import { DiskClient, DomainClient } from "$lib/client/client.svelte";
 
   let domain: Domain = $state(create(DomainSchema, {config: {}}))
   let stats: DomainStats = $state(create(DomainStatsSchema, {}))
@@ -42,7 +34,7 @@
         id: id,
       });
 
-      const response = await client.get(request)
+      const response = await DomainClient().get(request)
       if (response.domain) {
         domain = response.domain
       }
@@ -57,7 +49,7 @@
         id: id,
       });
 
-      const response = await client.stat(request)
+      const response = await DomainClient().stat(request)
       if (response.stats) {
         stats = response.stats
       }
@@ -72,7 +64,7 @@
         config: domain.config,
       })
 
-      const response = await client.create(request)
+      const response = await DomainClient().create(request)
       goto(`/wave/domain/${response.id}`);
     } catch (err: any) {
       SetException({title: "CREATE DOMAIN", desc: err.message})
@@ -86,7 +78,7 @@
         config: domain.config,
       })
 
-      await client.update(request)
+      await DomainClient().update(request)
     } catch (err: any) {
       SetException({title: "UPDATE DOMAIN", desc: err.message})
     }
@@ -103,7 +95,7 @@
 
       const request = create(ListRequestSchema, {});
 
-      const response = await diskClient.list(request)
+      const response = await DiskClient().list(request)
       if (response.disks) {
         disks = response.disks
       }

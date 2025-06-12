@@ -56,8 +56,9 @@
   })
 
   $effect.root(() => {
-    if (page.url.host)
-      SetTransport(`https://${page.url.hostname}`)
+    if (page.url.host) {
+      SetTransport(`${page.url.protocol}//${page.url.hostname}`)
+    }
   })
 
   $effect(() => {
