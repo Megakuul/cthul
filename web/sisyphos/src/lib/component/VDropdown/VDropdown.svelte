@@ -8,11 +8,11 @@
   let {
     value = $bindable(),
     items,
-    placeholder,
+    title,
     class: classNames,
   } = $props()
 
-  const baseValidationClass = "border-2 border-transparent bg-slate-50/10 focus:bg-slate-50/20"
+  const baseValidationClass = ""
   let validationClass = $state(baseValidationClass)
 
   /** @type {boolean} */
@@ -49,9 +49,9 @@
     if (items && items.hasOwnProperty(newValue)) {
       value = items[newValue]
       input = newValue
-      validationClass = "border-2 border-green-900/60 bg-green-900/5 focus:bg-green-900/10";
+      validationClass = "";
     } else {
-      validationClass = "border-2 border-red-900/60 bg-red-900/5 focus:bg-red-900/10";
+      validationClass = "text-red-800/90";
     }
   }
 </script>
@@ -62,10 +62,11 @@
       update(input)
     }
   }}>
-  <input placeholder={placeholder} bind:value={input}
+  <span class="absolute -top-2 left-1 text-xs font-bold">{title}</span>
+  <input placeholder={title} bind:value={input}
     onfocus={() => selected = true}
     oninput={(/** @type {any} */ e) => handleInput(e.target?.value)}
-    class={cn("text-xl w-full p-1 rounded-md focus:outline-0 transition-all overflow-hidden", validationClass)} 
+    class={cn("text-xl w-full p-1 rounded-md focus:outline-0 transition-all overflow-hidden bg-slate-50/10 focus:bg-slate-50/20", validationClass)} 
   />
   {#if selected}
     <div style="background-color: {Palette().bgPrimary()};"

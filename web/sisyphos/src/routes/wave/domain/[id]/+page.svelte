@@ -5,7 +5,7 @@
   import { create } from '@bufbuild/protobuf';
   import { type Domain, UpdateRequestSchema, CreateRequestSchema, GetRequestSchema, DomainSchema, StatRequestSchema } from "$lib/sdk/types/wave/v1/domain/message_pb";
   import { SetException } from "$lib/exception/exception.svelte";
-  import { Arch, Chipset, DomainState, Firmware } from "$lib/sdk/types/wave/v1/domain/config_pb";
+  import { Arch, Chipset, DomainState, Firmware, NetworkBus, NetworkDeviceSchema, SerialBus, SerialDeviceSchema, StorageBus, StorageDeviceSchema, StorageType, Video, VideoAdapterSchema, VideoDeviceSchema } from "$lib/sdk/types/wave/v1/domain/config_pb";
   import Button from "$lib/component/Button/Button.svelte";
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
@@ -19,7 +19,12 @@
   import { type Disk, DiskSchema, ListRequestSchema } from "$lib/sdk/types/granit/v1/disk/message_pb";
   import { DiskService } from "$lib/sdk/types/granit/v1/disk/service_pb";
   import Input from "$lib/component/Input/Input.svelte";
-    import { DiskClient, DomainClient } from "$lib/client/client.svelte";
+  import { DiskClient, DomainClient } from "$lib/client/client.svelte";
+
+  import waveDomain from "$lib/assets/wave-domain.svg";
+  import waveSerial from "$lib/assets/wave-serial.svg";
+  import waveVideo from "$lib/assets/wave-video.svg";
+  import granitDisk from "$lib/assets/granit-disk.svg";
 
   let domain: Domain = $state(create(DomainSchema, {config: {}}))
   let stats: DomainStats = $state(create(DomainStatsSchema, {}))
@@ -86,13 +91,6 @@
 
   async function listDisks() {
     try {
-      // TODO: Remove, currently test data becuase not implemented
-      disks = {
-        "c056d400-7c56-4c84-827a-d038a4c24b01": create(DiskSchema, {config: {size: 10000}}),
-      }
-      return
-      // TODO: Remove, currently test data becuase not implemented
-
       const request = create(ListRequestSchema, {});
 
       const response = await DiskClient().list(request)
@@ -171,7 +169,7 @@
     </div>
   </div>
 
-  <div class="w-full h-[400px] flex flex-row p-2 rounded-xl bg-slate-950/20 overflow-scroll-hidden">
+  <div class="w-full h-[420px] flex flex-row p-2 rounded-xl bg-slate-950/20 overflow-scroll-hidden">
     <div class="w-1/3 flex flex-col items-start gap-4 p-4">
       <input placeholder="Name" bind:value={domain.config!.name} 
         class="text-xl w-full p-1 rounded-md bg-slate-50/10 focus:bg-slate-50/20 focus:outline-0 transition-all overflow-hidden" />
@@ -207,11 +205,29 @@
           </span>
         </div>
       {/if}
+      {#if domain.config!.systemConfig}
+        <div class="w-full flex flex-row gap-2">
+          <VDropdown title="Architecture" bind:value={domain.config!.systemConfig!.architecture} items={{
+            "AMD64": Arch.AMD64, "AARCH64": Arch.AARCH64
+          }} class=""></VDropdown>
+          <VDropdown title="Chipset" bind:value={domain.config!.systemConfig!.chipset} items={{
+            "I440FX": Chipset.I440FX, "Q35": Chipset.Q35, "VirtIO": Chipset.VIRT,
+          }} class=""></VDropdown>
+        </div>
+      {/if}
       {#if domain.config!.firmwareConfig}
-        <VDropdown placeholder="Firmware" bind:value={domain.config!.firmwareConfig!.firmware} items={{
+        <VDropdown title="Firmware" bind:value={domain.config!.firmwareConfig!.firmware} items={{
           "OVMF": Firmware.OVMF, "SEABIOS": Firmware.SEABIOS
         }} class="w-full"></VDropdown>
-        <Dropdown placeholder="Loader Device" bind:value={domain.config!.firmwareConfig!.loaderDeviceId} loader={async () => {
+        <Dropdown title="Firmware Loader" bind:value={domain.config!.firmwareConfig!.loaderDeviceId} loader={async () => {
+          await listDisks()
+          return disks
+        }} class="w-full"></Dropdown>
+        <Dropdown title="Firmware Template" bind:value={domain.config!.firmwareConfig!.tmplDeviceId} loader={async () => {
+          await listDisks()
+          return disks
+        }} class="w-full"></Dropdown>
+        <Dropdown title="Firmware NVRAM" bind:value={domain.config!.firmwareConfig!.nvramDeviceId} loader={async () => {
           await listDisks()
           return disks
         }} class="w-full"></Dropdown>
@@ -223,10 +239,111 @@
         </button>
       {/if}
     </div>
+
     <span class="h-full w-0 border-1 rounded-full"></span>
-    <div class="w-1/3 flex flex-col items-start gap-4 p-4">
+
+    <div class="w-1/3 flex flex-col items-start gap-2 p-4">
+      <div class="w-full flex flex-row justify-between gap-4">
+        <h1 class="text-lg font-medium">Serial devices</h1>
+        <Button class="p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {
+          domain.config!.serialDevices.push(create(SerialDeviceSchema, {
+            deviceId: "",
+            serialBus: SerialBus.ISA,
+          }))
+        }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-dasharray="16" stroke-dashoffset="16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 12h14"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.4s" values="16;0"/></path><path d="M12 5v14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.4s" dur="0.4s" values="16;0"/></path></g></svg>
+        </Button>
+      </div>
+      <div class="flex flex-row justify-start gap-4">
+        {#each domain.config!.serialDevices as device, i}
+          <Button class="w-full p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {}}>
+            <img title="serial device {i}" width="26" alt={i.toString()} src={waveSerial} />
+          </Button>
+        {/each}
+      </div>
+
+      <div class="w-full flex flex-row justify-between gap-2">
+        <h1 class="text-lg font-medium">Video devices</h1>
+        <Button class="p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {
+          domain.config!.videoDevices.push(create(VideoDeviceSchema, {
+            video: Video.QXL,
+            videobufferSize: BigInt(1000 * 1000),
+            commandbufferSize: BigInt(1000 * 1000),
+            framebufferSize: BigInt(1000 * 1000),
+          }))
+        }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-dasharray="16" stroke-dashoffset="16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 12h14"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.4s" values="16;0"/></path><path d="M12 5v14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.4s" dur="0.4s" values="16;0"/></path></g></svg>
+        </Button>
+      </div>
+      <div class="flex flex-row justify-start gap-4">
+        {#each domain.config!.videoDevices as device, i}
+          <Button class="w-full p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {}}>
+            <img title="video device {i}" width="26" alt={i.toString()} src={waveVideo} />
+          </Button>
+        {/each}
+      </div>
+
+      <div class="w-full flex flex-row justify-between gap-4">
+        <h1 class="text-lg font-medium">Video adapters</h1>
+        <Button class="p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {
+          domain.config!.videoAdapters.push(create(VideoAdapterSchema, {
+            deviceId: "",
+          }))
+        }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-dasharray="16" stroke-dashoffset="16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 12h14"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.4s" values="16;0"/></path><path d="M12 5v14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.4s" dur="0.4s" values="16;0"/></path></g></svg>
+        </Button>
+      </div>
+      <div class="flex flex-row justify-start gap-4">
+        {#each domain.config!.videoAdapters as device, i}
+          <Button class="w-full p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {}}>
+            <img title="video adapter {i}" width="26" alt={i.toString()} src={waveVideo} />
+          </Button>
+        {/each}
+      </div>
+      
+      <div class="w-full flex flex-row justify-between gap-4">
+        <h1 class="text-lg font-medium">Storage devices</h1>
+        <Button class="p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {
+          domain.config!.storageDevices.push(create(StorageDeviceSchema, {
+            deviceId: "",
+            bootPriority: BigInt(0),
+            storageBus: StorageBus.IDE,
+            storageType: StorageType.DISK,
+          }))
+        }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-dasharray="16" stroke-dashoffset="16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 12h14"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.4s" values="16;0"/></path><path d="M12 5v14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.4s" dur="0.4s" values="16;0"/></path></g></svg>
+        </Button>
+      </div>
+      <div class="flex flex-row justify-start gap-4">
+        {#each domain.config!.storageDevices as device, i}
+          <Button class="w-full p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {}}>
+            <img title="storage device {i}" width="26" alt={i.toString()} src={granitDisk} />
+          </Button>
+        {/each}
+      </div>
+
+      <div class="w-full flex flex-row justify-between gap-4">
+        <h1 class="text-lg font-medium">Network devices</h1>
+        <Button class="p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {
+          domain.config!.networkDevices.push(create(NetworkDeviceSchema, {
+            deviceId: "",
+            bootPriority: BigInt(10),
+            networkBus: NetworkBus.E1000,
+          }))
+        }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-dasharray="16" stroke-dashoffset="16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 12h14"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.4s" values="16;0"/></path><path d="M12 5v14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.4s" dur="0.4s" values="16;0"/></path></g></svg>
+        </Button>
+      </div>
+      <div class="flex flex-row justify-start gap-4">
+        {#each domain.config!.networkDevices as device, i}
+          <Button class="w-full p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {}}>
+            <img title="network device {i}" width="26" alt={i.toString()} src={"TODO PROTON ICON"} />
+          </Button>
+        {/each}
+      </div>
     </div>
   </div>
+
 
   <div class="w-full flex flex-row justify-between">
     {#if page.params.id === "new"}

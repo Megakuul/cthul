@@ -1,6 +1,6 @@
 <!-- TODO: style + load values from oauth auth source -->
 <script>
-    import { SetTransport } from "$lib/client/client.svelte";
+  import { SetTransport } from "$lib/client/client.svelte";
 
   import Button from "$lib/component/Button/Button.svelte";
   import Input from "$lib/component/Input/Input.svelte";

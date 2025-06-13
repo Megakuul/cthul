@@ -8,7 +8,7 @@
   let {
     value = $bindable(),
     loader,
-    placeholder,
+    title,
     class: classNames,
   } = $props()
 
@@ -36,7 +36,8 @@
       selected = false
     }
   }}>
-  <input placeholder={placeholder} bind:value={value}
+  <span class="absolute -top-2 left-1 text-xs font-bold">{title}</span>
+  <input placeholder={title} bind:value={value}
     onfocus={() => selected = true}
     class="text-xl w-full p-1 rounded-md focus:outline-0 transition-all overflow-hidden bg-slate-50/10 focus:bg-slate-50/20"
   />
