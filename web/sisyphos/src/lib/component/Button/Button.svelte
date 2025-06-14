@@ -12,9 +12,9 @@
   } = $props()
 </script>
 
-<button onclick={async () => {
+<button onclick={async (e) => {
     Play(click);
-    onclick();
+    onclick(e);
   }} style="border-color: {Palette().fgPrimary()}; --shadow: {Palette().btnShadow()} {scale * 5}px {scale * 5}px 0px;" 
   class={cn("btn cursor-pointer transition-all", classNames)}>
   {@render children()}

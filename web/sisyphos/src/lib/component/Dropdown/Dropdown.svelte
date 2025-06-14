@@ -16,7 +16,6 @@
   let selected = $state(false)
 
   let items = $derived.by(async () => {
-    console.log(selected)
     if (selected) {
       return await loader()
     }

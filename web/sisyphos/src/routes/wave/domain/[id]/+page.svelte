@@ -1,37 +1,40 @@
 <script lang="ts">
-  import { createClient } from "@connectrpc/connect";
-  import { createConnectTransport } from "@connectrpc/connect-web";
-  import {DomainService} from "$lib/sdk/types/wave/v1/domain/service_pb"
   import { create } from '@bufbuild/protobuf';
-  import { type Domain, UpdateRequestSchema, CreateRequestSchema, GetRequestSchema, DomainSchema, StatRequestSchema } from "$lib/sdk/types/wave/v1/domain/message_pb";
+  import { type Domain, UpdateRequestSchema, CreateRequestSchema, GetRequestSchema, DomainSchema, StatRequestSchema, AttachRequestSchema, DetachRequestSchema, DeleteRequestSchema } from "$lib/sdk/types/wave/v1/domain/message_pb";
   import { SetException } from "$lib/exception/exception.svelte";
-  import { Arch, Chipset, DomainState, Firmware, NetworkBus, NetworkDeviceSchema, SerialBus, SerialDeviceSchema, StorageBus, StorageDeviceSchema, StorageType, Video, VideoAdapterSchema, VideoDeviceSchema } from "$lib/sdk/types/wave/v1/domain/config_pb";
   import Button from "$lib/component/Button/Button.svelte";
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
-  import Spice from "$lib/component/Spice/Spice.svelte";
-  import Serial from "$lib/component/Serial/Serial.svelte";
-  import Radio from "$lib/component/Radio/Radio.svelte";
-  import { DomainPowerState, type DomainStats, DomainStatsSchema } from "$lib/sdk/types/wave/v1/domain/stat_pb";
-  import { flip } from "svelte/animate";
-  import VDropdown from "$lib/component/VDropdown/VDropdown.svelte";
-  import Dropdown from "$lib/component/Dropdown/Dropdown.svelte";
-  import { type Disk, DiskSchema, ListRequestSchema } from "$lib/sdk/types/granit/v1/disk/message_pb";
-  import { DiskService } from "$lib/sdk/types/granit/v1/disk/service_pb";
-  import Input from "$lib/component/Input/Input.svelte";
-  import { DiskClient, DomainClient } from "$lib/client/client.svelte";
+  import { type DomainStats, DomainStatsSchema } from "$lib/sdk/types/wave/v1/domain/stat_pb";
+  import { DomainClient } from "$lib/client/client.svelte";
 
-  import waveDomain from "$lib/assets/wave-domain.svg";
-  import waveSerial from "$lib/assets/wave-serial.svg";
-  import waveVideo from "$lib/assets/wave-video.svg";
-  import granitDisk from "$lib/assets/granit-disk.svg";
+  import Overview from "./Overview.svelte";
+  import DomainPanel, { type PanelType } from "./DomainPanel.svelte";
+  import SerialPanel from './SerialPanel.svelte';
+  import VideoPanel from './VideoPanel.svelte';
+  import AdapterPanel from './AdapterPanel.svelte';
+  import StoragePanel from './StoragePanel.svelte';
+  import NetworkPanel from './NetworkPanel.svelte';
+  import { Firmware } from '$lib/sdk/types/wave/v1/domain/config_pb';
 
-  let domain: Domain = $state(create(DomainSchema, {config: {}}))
+  let domain: Domain = $state(create(DomainSchema, {node: "", reqnode: "", config: {
+    name: "",
+    description: "",
+    affinity: [],
+    resourceConfig: {vcpus: BigInt(2), memory: BigInt(4 * (1000 * 1000 * 1000))},
+    firmwareConfig: {firmware: Firmware.SEABIOS, 
+      loaderDeviceId: "", tmplDeviceId: "", nvramDeviceId: "", secureBoot: false,
+    },
+    serialDevices: [],
+    videoDevices: [],
+    videoAdapters: [],
+    inputDevices: [],
+    storageDevices: [],
+    networkDevices: [],
+  }}))
   let stats: DomainStats = $state(create(DomainStatsSchema, {}))
 
-  let disks: {[key: string]: Disk} = $state({})
-
-  let mode: "serial" | "spice" = $state("serial");
+  let panel: {type: PanelType, id: number} = $state({type: undefined, id: 0});
 
   async function getDomain(id: string) {
     try {
@@ -89,277 +92,105 @@
     }
   }
 
-  async function listDisks() {
+  async function attachDomain(id: string, node: string) {
     try {
-      const request = create(ListRequestSchema, {});
+      const request = create(AttachRequestSchema, {
+        id: id,
+        node: node,
+      })
 
-      const response = await DiskClient().list(request)
-      if (response.disks) {
-        disks = response.disks
-      }
+      await DomainClient().attach(request)
     } catch (err: any) {
-      SetException({title: "LIST DISKS", desc: err.message})
+      SetException({title: "ATTACH DOMAIN", desc: err.message})
+    }
+  }
+
+  async function detachDomain(id: string) {
+    try {
+      const request = create(DetachRequestSchema, {
+        id: id,
+      })
+
+      await DomainClient().detach(request)
+    } catch (err: any) {
+      SetException({title: "DETACH DOMAIN", desc: err.message})
+    }
+  }
+
+  async function deleteDomain(id: string) {
+    try {
+      const request = create(DeleteRequestSchema, {
+        id: id,
+      })
+
+      await DomainClient().delete(request)
+      goto(`/wave/domain`);
+    } catch (err: any) {
+      SetException({title: "DELETE DOMAIN", desc: err.message})
     }
   }
 
   $effect.root(() => {
     if (page.params.id !== "new") {
       getDomain(page.params.id)
-      if (domain.node !== "") {
-        statDomain(page.params.id)
-      }
+      setInterval(() => {
+        if (domain.node !== "") {
+          statDomain(page.params.id)
+        }
+      }, 1000)
     }
   })
 </script>
 
 <div class="w-11/12 flex flex-col gap-4 p-2 mt-20">
-  <div class="w-full h-[500px] flex flex-row justify-between rounded-xl bg-slate-950/20">
-    <div class="relative w-full flex flex-col items-start p-4">
-      <div class="absolute top-4 right-4 rounded-lg p-2 bg-slate-950/10">
-        {#if stats.state === DomainPowerState.DOMAIN_RUNNING}
-          <span class="font-bold text-green-700/60">running</span>
-        {:else if stats.state === DomainPowerState.DOMAIN_PAUSED}
-          <span class="font-bold text-orange-700/60">paused</span>
-        {:else if stats.state === DomainPowerState.DOMAIN_PMSUSPENDED}
-          <span class="font-bold text-orange-900/60">suspended</span>
-        {:else if stats.state === DomainPowerState.DOMAIN_BLOCKED}
-          <span class="font-bold text-amber-900/60">blocked</span>
-        {:else if stats.state === DomainPowerState.DOMAIN_CRASHED}
-          <span class="font-bold text-red-900/80">crashed</span>
-        {:else if stats.state === DomainPowerState.DOMAIN_SHUTDOWN}
-          <span class="font-bold text-red-800/60">shutdown</span>
-        {:else if stats.state === DomainPowerState.DOMAIN_SHUTOFF}
-          <span class="font-bold text-red-800/60">shutoff</span>
-        {:else if stats.state === DomainPowerState.DOMAIN_NOSTATE}
-          <span class="font-bold text-slate-100/60">nostate</span>
-        {/if}
-      </div>
-      
-      <h1 class="text-2xl">Name: <span class="font-bold">{domain.config?.name}</span></h1>
-      <p class="opacity-70">{page.params.id}</p>
-      <hr class="w-full my-4">
-      <div class="w-full flex flex-row gap-8 justify-start">
-        <h2 class="flex flex-col items-start">
-          <span class="text-sm font-bold">Node</span>
-          <span class="text-2xl font-bold opacity-50">{domain.node !== "" ? domain.node : "<none>"}</span>
-        </h2>
-        <h2 class="flex flex-col items-start">
-          <span class="text-sm font-bold">Reqnode</span>
-          <span class="text-2xl font-bold opacity-50">{domain.reqnode !== "" ? domain.reqnode : "<none>"}</span>
-        </h2>
-      </div>
-      <hr>
-    </div>
-    <div class="w-full flex flex-col items-center bg-slate-600/10">
-      <div class="w-full flex flex-row justify-around gap-8 p-3">
-        <Radio value="serial" bind:group={mode} 
-          class="flex flex-row gap-2 justify-center w-full p-2 rounded-lg bg-slate-200/20" selectedClass="bg-slate-50/30">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none"><path fill="currentColor" fill-opacity="0.16" d="M20.6 4H3.4A2.4 2.4 0 0 0 1 6.4v11.2A2.4 2.4 0 0 0 3.4 20h17.2a2.4 2.4 0 0 0 2.4-2.4V6.4A2.4 2.4 0 0 0 20.6 4"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" stroke-width="1.5" d="m5 16l4-4l-4-4m6 8h8M3.4 4h17.2A2.4 2.4 0 0 1 23 6.4v11.2a2.4 2.4 0 0 1-2.4 2.4H3.4A2.4 2.4 0 0 1 1 17.6V6.4A2.4 2.4 0 0 1 3.4 4"/></g></svg>
-        </Radio>
-        <Radio value="spice" bind:group={mode} 
-          class="flex flex-row gap-2 justify-center w-full p-2 rounded-lg bg-slate-200/20" selectedClass="bg-slate-50/30">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M4 17h16V5H4zm11-2.5h2.5V12H19v4h-4zM5 6h4v1.5H6.5V10H5z" opacity="0.3"/><path fill="currentColor" d="M20 3H4c-1.11 0-2 .89-2 2v12a2 2 0 0 0 2 2h4v2h8v-2h4c1.1 0 2-.9 2-2V5a2 2 0 0 0-2-2m0 14H4V5h16z"/><path fill="currentColor" d="M6.5 7.5H9V6H5v4h1.5zM19 12h-1.5v2.5H15V16h4z"/></svg>
-        </Radio>
-      </div>
-      {#if mode === "serial"}
-        <Serial></Serial>
-      {:else if mode === "spice"}
-        <Spice></Spice>
-      {/if}
-    </div>
-  </div>
+  <Overview bind:domain={domain} bind:stats={stats}></Overview>
 
-  <div class="w-full h-[420px] flex flex-row p-2 rounded-xl bg-slate-950/20 overflow-scroll-hidden">
-    <div class="w-1/3 flex flex-col items-start gap-4 p-4">
-      <input placeholder="Name" bind:value={domain.config!.name} 
-        class="text-xl w-full p-1 rounded-md bg-slate-50/10 focus:bg-slate-50/20 focus:outline-0 transition-all overflow-hidden" />
-      <input placeholder="Description" bind:value={domain.config!.description} 
-        class="text-sm w-full p-1 rounded-md bg-slate-50/10 focus:bg-slate-50/20 focus:outline-0 transition-all overflow-hidden" />
-      <div class="flex flex-wrap gap-2 justify-stretch">
-        <input placeholder="Tag" onkeyup={(e: any) => {
-          if (e.key === "Enter" && e.target?.value) {
-            domain.config!.affinity.push(e.target.value)
-            domain = domain
-            e.target.value = ""
-          }
-        }} class="w-24 p-1 bg-slate-50/10 rounded-lg focus:outline-0" />
-        {#each domain.config!.affinity as tag, i (i)}
-          <button animate:flip onclick={() => {
-            domain.config!.affinity.splice(i, 1)
-            domain = domain
-          }} class="p-1 flex flex-row gap-1 justify-center items-center cursor-pointer bg-slate-50/10 rounded-lg">
-            <span class="max-w-24 overflow-hidden">{tag}</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-dasharray="24" stroke-dashoffset="24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 5l14 14"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.4s" values="24;0"/></path><path d="M19 5l-14 14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.4s" dur="0.4s" values="24;0"/></path></g></svg>
-          </button>
-        {/each}
-      </div>
-    </div>
-    <span class="h-full w-0 border-1 rounded-full"></span>
-    <div class="w-1/3 flex flex-col items-start gap-4 p-4">
-      {#if domain.config!.resourceConfig}
-        <div class="w-full flex flex-row gap-2">
-          <Input title="vCPUs" type="number" class="flex-4/12" bind:value={domain.config!.resourceConfig!.vcpus} />
-          <Input title="Memory (bytes)" type="number" class="flex-8/12" bind:value={domain.config!.resourceConfig!.memory} />
-          <span class="w-40 p-1 rounded-md text-xl text-nowrap overflow-hidden">
-            ~ {(Number(domain.config!.resourceConfig!.memory) / (1000 * 1000 * 1000)).toFixed(2)} GB
-          </span>
-        </div>
-      {/if}
-      {#if domain.config!.systemConfig}
-        <div class="w-full flex flex-row gap-2">
-          <VDropdown title="Architecture" bind:value={domain.config!.systemConfig!.architecture} items={{
-            "AMD64": Arch.AMD64, "AARCH64": Arch.AARCH64
-          }} class=""></VDropdown>
-          <VDropdown title="Chipset" bind:value={domain.config!.systemConfig!.chipset} items={{
-            "I440FX": Chipset.I440FX, "Q35": Chipset.Q35, "VirtIO": Chipset.VIRT,
-          }} class=""></VDropdown>
-        </div>
-      {/if}
-      {#if domain.config!.firmwareConfig}
-        <VDropdown title="Firmware" bind:value={domain.config!.firmwareConfig!.firmware} items={{
-          "OVMF": Firmware.OVMF, "SEABIOS": Firmware.SEABIOS
-        }} class="w-full"></VDropdown>
-        <Dropdown title="Firmware Loader" bind:value={domain.config!.firmwareConfig!.loaderDeviceId} loader={async () => {
-          await listDisks()
-          return disks
-        }} class="w-full"></Dropdown>
-        <Dropdown title="Firmware Template" bind:value={domain.config!.firmwareConfig!.tmplDeviceId} loader={async () => {
-          await listDisks()
-          return disks
-        }} class="w-full"></Dropdown>
-        <Dropdown title="Firmware NVRAM" bind:value={domain.config!.firmwareConfig!.nvramDeviceId} loader={async () => {
-          await listDisks()
-          return disks
-        }} class="w-full"></Dropdown>
+  <DomainPanel bind:domain={domain} bind:panel={panel}></DomainPanel>
 
-        <button onclick={() => {
-          domain.config!.firmwareConfig!.secureBoot = !domain.config!.firmwareConfig!.secureBoot
-        }} class="w-full p-1 rounded-md cursor-pointer transition-all {domain.config!.firmwareConfig!.secureBoot ? "font-bold bg-slate-50/20" : "bg-slate-50/10"}">
-          Secureboot
-        </button>
-      {/if}
-    </div>
+  {#if panel.type === "serial"}
+    <SerialPanel id={panel.id} bind:device={domain.config!.serialDevices[panel.id]}></SerialPanel>
+  {:else if panel.type === "video"}
+    <VideoPanel id={panel.id} bind:device={domain.config!.videoDevices[panel.id]}></VideoPanel>
+  {:else if panel.type === "adapter"}
+    <AdapterPanel id={panel.id} bind:device={domain.config!.videoAdapters[panel.id]}></AdapterPanel>
+  {:else if panel.type === "storage"}
+    <StoragePanel id={panel.id} bind:device={domain.config!.storageDevices[panel.id]}></StoragePanel>
+  {:else if panel.type === "network"}
+    <NetworkPanel id={panel.id} bind:device={domain.config!.networkDevices[panel.id]}></NetworkPanel>
+  {/if}
 
-    <span class="h-full w-0 border-1 rounded-full"></span>
-
-    <div class="w-1/3 flex flex-col items-start gap-2 p-4">
-      <div class="w-full flex flex-row justify-between gap-4">
-        <h1 class="text-lg font-medium">Serial devices</h1>
-        <Button class="p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {
-          domain.config!.serialDevices.push(create(SerialDeviceSchema, {
-            deviceId: "",
-            serialBus: SerialBus.ISA,
-          }))
-        }}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-dasharray="16" stroke-dashoffset="16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 12h14"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.4s" values="16;0"/></path><path d="M12 5v14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.4s" dur="0.4s" values="16;0"/></path></g></svg>
-        </Button>
-      </div>
-      <div class="flex flex-row justify-start gap-4">
-        {#each domain.config!.serialDevices as device, i}
-          <Button class="w-full p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {}}>
-            <img title="serial device {i}" width="26" alt={i.toString()} src={waveSerial} />
-          </Button>
-        {/each}
-      </div>
-
-      <div class="w-full flex flex-row justify-between gap-2">
-        <h1 class="text-lg font-medium">Video devices</h1>
-        <Button class="p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {
-          domain.config!.videoDevices.push(create(VideoDeviceSchema, {
-            video: Video.QXL,
-            videobufferSize: BigInt(1000 * 1000),
-            commandbufferSize: BigInt(1000 * 1000),
-            framebufferSize: BigInt(1000 * 1000),
-          }))
-        }}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-dasharray="16" stroke-dashoffset="16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 12h14"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.4s" values="16;0"/></path><path d="M12 5v14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.4s" dur="0.4s" values="16;0"/></path></g></svg>
-        </Button>
-      </div>
-      <div class="flex flex-row justify-start gap-4">
-        {#each domain.config!.videoDevices as device, i}
-          <Button class="w-full p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {}}>
-            <img title="video device {i}" width="26" alt={i.toString()} src={waveVideo} />
-          </Button>
-        {/each}
-      </div>
-
-      <div class="w-full flex flex-row justify-between gap-4">
-        <h1 class="text-lg font-medium">Video adapters</h1>
-        <Button class="p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {
-          domain.config!.videoAdapters.push(create(VideoAdapterSchema, {
-            deviceId: "",
-          }))
-        }}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-dasharray="16" stroke-dashoffset="16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 12h14"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.4s" values="16;0"/></path><path d="M12 5v14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.4s" dur="0.4s" values="16;0"/></path></g></svg>
-        </Button>
-      </div>
-      <div class="flex flex-row justify-start gap-4">
-        {#each domain.config!.videoAdapters as device, i}
-          <Button class="w-full p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {}}>
-            <img title="video adapter {i}" width="26" alt={i.toString()} src={waveVideo} />
-          </Button>
-        {/each}
-      </div>
-      
-      <div class="w-full flex flex-row justify-between gap-4">
-        <h1 class="text-lg font-medium">Storage devices</h1>
-        <Button class="p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {
-          domain.config!.storageDevices.push(create(StorageDeviceSchema, {
-            deviceId: "",
-            bootPriority: BigInt(0),
-            storageBus: StorageBus.IDE,
-            storageType: StorageType.DISK,
-          }))
-        }}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-dasharray="16" stroke-dashoffset="16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 12h14"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.4s" values="16;0"/></path><path d="M12 5v14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.4s" dur="0.4s" values="16;0"/></path></g></svg>
-        </Button>
-      </div>
-      <div class="flex flex-row justify-start gap-4">
-        {#each domain.config!.storageDevices as device, i}
-          <Button class="w-full p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {}}>
-            <img title="storage device {i}" width="26" alt={i.toString()} src={granitDisk} />
-          </Button>
-        {/each}
-      </div>
-
-      <div class="w-full flex flex-row justify-between gap-4">
-        <h1 class="text-lg font-medium">Network devices</h1>
-        <Button class="p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {
-          domain.config!.networkDevices.push(create(NetworkDeviceSchema, {
-            deviceId: "",
-            bootPriority: BigInt(10),
-            networkBus: NetworkBus.E1000,
-          }))
-        }}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-dasharray="16" stroke-dashoffset="16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 12h14"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.4s" values="16;0"/></path><path d="M12 5v14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.4s" dur="0.4s" values="16;0"/></path></g></svg>
-        </Button>
-      </div>
-      <div class="flex flex-row justify-start gap-4">
-        {#each domain.config!.networkDevices as device, i}
-          <Button class="w-full p-1 rounded-lg bg-slate-50/20" scale={0.5} onclick={() => {}}>
-            <img title="network device {i}" width="26" alt={i.toString()} src={"TODO PROTON ICON"} />
-          </Button>
-        {/each}
-      </div>
-    </div>
-  </div>
-
-
-  <div class="w-full flex flex-row justify-between">
+  <div class="w-full flex flex-row justify-start gap-3 my-2">
     {#if page.params.id === "new"}
-      <Button onclick={() => domain = create(DomainSchema, {config: {}})} scale={0.8} class="flex flex-row gap-2 justify-center w-32 p-2 rounded-lg bg-slate-50/40">
+      <Button onclick={() => domain = create(DomainSchema, {config: {}})} scale={0.8} class="flex flex-row gap-2 justify-center w-32 p-2 rounded-lg bg-slate-50/30">
         <span>Reset</span>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="40" stroke-dashoffset="40" d="M17 15.33c2.41 -0.72 4 -1.94 4 -3.33c0 -2.21 -4.03 -4 -9 -4c-4.97 0 -9 1.79 -9 4c0 2.06 3.5 3.75 8 3.98"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.5s" values="40;0"/></path><path fill="currentColor" d="M12.25 16l0 0l0 0z" opacity="0"><animate fill="freeze" attributeName="d" begin="0.5s" dur="0.2s" values="M12.25 16l0 0l0 0z;M12.25 16L9.5 13.25L9.5 18.75z"/><set fill="freeze" attributeName="opacity" begin="0.5s" to="1"/></path></g></svg>      </Button>
-      <Button onclick={() => createDomain()} scale={0.8} class="flex flex-row gap-2 justify-center w-32 p-2 rounded-lg bg-slate-50/40">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="40" stroke-dashoffset="40" d="M17 15.33c2.41 -0.72 4 -1.94 4 -3.33c0 -2.21 -4.03 -4 -9 -4c-4.97 0 -9 1.79 -9 4c0 2.06 3.5 3.75 8 3.98"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.5s" values="40;0"/></path><path fill="currentColor" d="M12.25 16l0 0l0 0z" opacity="0"><animate fill="freeze" attributeName="d" begin="0.5s" dur="0.2s" values="M12.25 16l0 0l0 0z;M12.25 16L9.5 13.25L9.5 18.75z"/><set fill="freeze" attributeName="opacity" begin="0.5s" to="1"/></path></g></svg>      
+      </Button>
+      <Button onclick={() => createDomain()} scale={0.8} class="flex flex-row gap-2 justify-center w-32 p-2 rounded-lg bg-slate-50/30">
         <span>Create</span>
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-dasharray="16" stroke-dashoffset="16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 12h14"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.4s" values="16;0"/></path><path d="M12 5v14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.4s" dur="0.4s" values="16;0"/></path></g></svg>
       </Button>
     {:else}
-      <Button onclick={() => getDomain(page.params.id)} scale={0.8} class="flex flex-row gap-2 justify-center w-32 p-2 rounded-lg bg-slate-50/40">
+      {#if domain.reqnode !== ""}
+        <Button onclick={() => detachDomain(page.params.id)} scale={0.8} class="flex flex-row gap-2 justify-center w-32 p-2 rounded-lg bg-slate-50/30">
+          <span>Detach</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><mask id="lineMdEngineOff0"><g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="48" stroke-dashoffset="48" d="M11 9h6v10h-6.5l-2 -2h-2.5v-6.5l1.5 -1.5Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.6s" values="48;0"/></path><path fill="#fff" fill-opacity="0" d="M17 13h0v-3h0v8h0v-3h0z" opacity="0"><animate fill="freeze" attributeName="d" begin="0.6s" dur="0.2s" values="M17 13h0v-3h0v8h0v-3h0z;M17 13h4v-3h1v8h-1v-3h-4z"/><set fill="freeze" attributeName="fill-opacity" begin="0.8s" to="1"/><set fill="freeze" attributeName="opacity" begin="0.6s" to="1"/></path><path d="M6 14h0M6 11v6" opacity="0"><animate fill="freeze" attributeName="d" begin="0.8s" dur="0.2s" values="M6 14h0M6 11v6;M6 14h-4M2 11v6"/><set fill="freeze" attributeName="opacity" begin="0.8s" to="1"/></path><path d="M11 9v0M8 9h6" opacity="0"><animate fill="freeze" attributeName="d" begin="1s" dur="0.2s" values="M11 9v0M8 9h6;M11 9v-4M8 5h6"/><set fill="freeze" attributeName="opacity" begin="1s" to="1"/></path><path stroke="#000" stroke-dasharray="28" stroke-dashoffset="28" d="M0 11h26" transform="rotate(45 12 12)"><animate fill="freeze" attributeName="stroke-dashoffset" begin="1.3s" dur="0.4s" values="28;0"/></path><path stroke-dasharray="28" stroke-dashoffset="28" d="M0 13h26" transform="rotate(45 12 12)"><animate fill="freeze" attributeName="stroke-dashoffset" begin="1.3s" dur="0.4s" values="28;0"/></path></g></mask><rect width="24" height="24" fill="currentColor" mask="url(#lineMdEngineOff0)"/></svg>
+        </Button>
+      {:else}
+        <Button onclick={() => attachDomain(page.params.id, "")} scale={0.8} class="flex flex-row gap-2 justify-center w-32 p-2 rounded-lg bg-slate-50/30">
+          <span>Attach</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="48" stroke-dashoffset="48" d="M11 9h6v10h-6.5l-2 -2h-2.5v-6.5l1.5 -1.5Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.6s" values="48;0"/></path><path fill="currentColor" fill-opacity="0" d="M17 13h0v-3h0v8h0v-3h0z" opacity="0"><animate fill="freeze" attributeName="d" begin="0.6s" dur="0.2s" values="M17 13h0v-3h0v8h0v-3h0z;M17 13h4v-3h1v8h-1v-3h-4z"/><set fill="freeze" attributeName="fill-opacity" begin="0.8s" to="1"/><set fill="freeze" attributeName="opacity" begin="0.6s" to="1"/></path><path d="M6 14h0M6 11v6" opacity="0"><animate fill="freeze" attributeName="d" begin="0.8s" dur="0.2s" values="M6 14h0M6 11v6;M6 14h-4M2 11v6"/><set fill="freeze" attributeName="opacity" begin="0.8s" to="1"/></path><path d="M11 9v0M8 9h6" opacity="0"><animate fill="freeze" attributeName="d" begin="1s" dur="0.2s" values="M11 9v0M8 9h6;M11 9v-4M8 5h6"/><set fill="freeze" attributeName="opacity" begin="1s" to="1"/></path></g></svg>
+        </Button>
+      {/if}
+
+      <Button onclick={() => deleteDomain(page.params.id)} scale={0.8} class="ml-auto flex flex-row gap-2 justify-center w-32 p-2 rounded-lg text-slate-50/80 bg-red-900/80">
+        <span>Delete</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="64" stroke-dashoffset="64" d="M12 3c4.97 0 9 4.03 9 9c0 4.97 -4.03 9 -9 9c-4.97 0 -9 -4.03 -9 -9c0 -4.97 4.03 -9 9 -9Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.6s" values="64;0"/></path><path stroke-dasharray="8" stroke-dashoffset="8" d="M12 12l4 4M12 12l-4 -4M12 12l-4 4M12 12l4 -4"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.6s" dur="0.2s" values="8;0"/></path></g></svg>
+      </Button>
+      <Button onclick={() => getDomain(page.params.id)} scale={0.8} class="flex flex-row gap-2 justify-center w-32 p-2 rounded-lg bg-slate-50/30">
         <span>Reset</span>
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="40" stroke-dashoffset="40" d="M17 15.33c2.41 -0.72 4 -1.94 4 -3.33c0 -2.21 -4.03 -4 -9 -4c-4.97 0 -9 1.79 -9 4c0 2.06 3.5 3.75 8 3.98"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.5s" values="40;0"/></path><path fill="currentColor" d="M12.25 16l0 0l0 0z" opacity="0"><animate fill="freeze" attributeName="d" begin="0.5s" dur="0.2s" values="M12.25 16l0 0l0 0z;M12.25 16L9.5 13.25L9.5 18.75z"/><set fill="freeze" attributeName="opacity" begin="0.5s" to="1"/></path></g></svg>
       </Button>
-      <Button onclick={() => updateDomain(page.params.id)} scale={0.8} class="flex flex-row gap-2 justify-center w-32 p-2 rounded-lg bg-slate-50/40">
+      <Button onclick={() => updateDomain(page.params.id)} scale={0.8} class="flex flex-row gap-2 justify-center w-32 p-2 rounded-lg bg-slate-50/30">
         <span>Update</span>
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="64" stroke-dashoffset="64" d="M3 12c0 -4.97 4.03 -9 9 -9c4.97 0 9 4.03 9 9c0 4.97 -4.03 9 -9 9c-4.97 0 -9 -4.03 -9 -9Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.6s" values="64;0"/></path><path stroke-dasharray="14" stroke-dashoffset="14" d="M8 12l3 3l5 -5"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.6s" dur="0.2s" values="14;0"/></path></g></svg>
       </Button>
