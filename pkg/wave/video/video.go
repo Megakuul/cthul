@@ -30,6 +30,7 @@ import (
 
 	"cthul.io/cthul/pkg/api/wave/v1/video"
 	"cthul.io/cthul/pkg/db"
+	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/proto"
 )
@@ -137,10 +138,11 @@ func (c *Controller) Connect(ctx context.Context, id string, reader chan<-[]byte
     return fmt.Errorf("parsing device config: %w", err)
   }
 
-  path := filepath.Clean(filepath.Join(c.runRoot, config.Path))
-  if !strings.HasPrefix(path, c.runRoot) {
-    return fmt.Errorf("device socket path escapes the run root '%s'", c.runRoot)
-  }
+	// ensure no path escape is possible if every barrier breaks.
+	if _, err := uuid.Parse(id); err!=nil {
+		return fmt.Errorf("invalid device id")
+	}
+  path := filepath.Join(c.runRoot, "video", id)
   conn, err := net.Dial("unix", path) 
   if err!=nil {
     return err

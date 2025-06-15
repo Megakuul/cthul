@@ -7,8 +7,8 @@
   import { Exception, SetException } from "$lib/exception/exception.svelte";
   import { fade } from "svelte/transition";
   import Link from "$lib/component/Link/Link.svelte";
-    import { SetTransport } from "$lib/client/client.svelte";
-    import { page } from "$app/state";
+  import { SetTransport } from "$lib/client/client.svelte";
+  import { page } from "$app/state";
 
   let { children } = $props();
 
@@ -77,7 +77,7 @@
   class="min-h-screen flex flex-col items-center box-border transition-all duration-700"
   >
   <div class="w-full h-8 px-4 py-1 flex justify-start gap-2">
-    <Link href="/" scale={0.5} class="flex justify-center items-center w-12 rounded-lg bg-slate-50/40">
+    <Link href="." scale={0.5} class="flex justify-center items-center w-12 rounded-lg bg-slate-50/40">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="16" stroke-dashoffset="16" d="M19 12h-13.5"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.2s" values="16;0"/></path><path stroke-dasharray="10" stroke-dashoffset="10" d="M5 12l5 5M5 12l5 -5"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.2s" dur="0.2s" values="10;0"/></path></g></svg>
     </Link>
     <button onclick={() => Muted = !Muted} title="{Muted ? "unmute" : "mute"}"

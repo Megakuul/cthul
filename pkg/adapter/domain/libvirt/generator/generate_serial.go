@@ -23,7 +23,6 @@ import (
 	"context"
 	"fmt"
   "path/filepath"
-  "strings"
 
 	"cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
   "cthul.io/cthul/pkg/api/wave/v1/domain"
@@ -45,19 +44,10 @@ func (g *Generator) generateSerial(ctx context.Context, device *domain.SerialDev
 		},
 	}
 
-	serialDevice, err := g.serial.Lookup(ctx, device.DeviceId)
-	if err != nil {
-		return nil, err
-	}
-
 	// Source (on host)
 	serial.MetaType = structure.SERIAL_UNIX
 	serial.Source.MetaMode = structure.SERIAL_SOURCE_BIND
-	path := filepath.Join(g.waveRoot, serialDevice.Config.Path)
-	if !strings.HasPrefix(filepath.Clean(path), g.waveRoot) {
-		return nil, fmt.Errorf("serial device uses a socket path that escapes the run root '%s'", g.waveRoot)
-	}
-	serial.Source.MetaPath = path
+	serial.Source.MetaPath = filepath.Join(g.waveRoot, "serial", device.DeviceId)
 
 	// Target (on guest)
 	switch device.SerialBus {

@@ -5,5 +5,5 @@ package wave.v1.video;
 option go_package = "cthul.io/cthul/pkg/api/wave/v1/video";
 
 message VideoConfig {
-  string path = 1;
+  string name = 1;
 }

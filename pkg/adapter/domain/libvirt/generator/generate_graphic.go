@@ -21,9 +21,7 @@ package generator
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
-	"strings"
 
 	"cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
 	"cthul.io/cthul/pkg/api/wave/v1/domain"
@@ -39,18 +37,8 @@ func (g *Generator) generateGraphic(ctx context.Context, adapter *domain.VideoAd
 		Listen: &structure.GraphicsListen{},
 	}
 
-	graphicDevice, err := g.video.Lookup(ctx, adapter.DeviceId)
-	if err != nil {
-		return nil, err
-	}
-
 	graphics.MetaType = structure.GRAPHICS_SPICE
 	graphics.Listen.MetaType = structure.GRAPHICS_LISTEN_SOCKET
-	path := filepath.Join(g.waveRoot, graphicDevice.Config.Path)
-	if !strings.HasPrefix(filepath.Clean(path), g.waveRoot) {
-		return nil, fmt.Errorf("video device uses a socket path that escapes the run root '%s'", g.waveRoot)
-	}
-	graphics.Listen.MetaPath = path
-
+	graphics.Listen.MetaPath = filepath.Join(g.waveRoot, "video", adapter.DeviceId)
 	return graphics, nil
 }

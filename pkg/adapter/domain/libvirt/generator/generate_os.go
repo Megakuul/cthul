@@ -23,7 +23,6 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
 	"cthul.io/cthul/pkg/api/granit/v1/disk"
@@ -103,18 +102,9 @@ func (g *Generator) generateOS(ctx context.Context, system *domain.SystemConfig,
 	}
 
 	// Firmware
-	loaderPath := filepath.Join(g.granitRoot, loaderDevice.Config.Path)
-	if !strings.HasPrefix(filepath.Clean(loaderPath), g.granitRoot) {
-		return nil, fmt.Errorf("loader device uses a path that escapes the run root '%s'", g.granitRoot)
-	}
-	templatePath := filepath.Join(g.granitRoot, templateDevice.Config.Path)
-	if !strings.HasPrefix(filepath.Clean(templatePath), g.granitRoot) {
-		return nil, fmt.Errorf("template device uses a path that escapes the run root '%s'", g.granitRoot)
-	}
-	nvramPath := filepath.Join(g.granitRoot, nvramDevice.Config.Path)
-	if !strings.HasPrefix(filepath.Clean(nvramPath), g.granitRoot) {
-		return nil, fmt.Errorf("nvram device uses a path that escapes the run root '%s'", g.granitRoot)
-	}
+	loaderPath := filepath.Join(g.granitRoot, "disk", firmware.LoaderDeviceId)
+	templatePath := filepath.Join(g.granitRoot, "disk", firmware.TmplDeviceId)
+	nvramPath := filepath.Join(g.granitRoot, "disk", firmware.NvramDeviceId)
 
 	os.Loader.Data = loaderPath
 	
@@ -123,7 +113,7 @@ func (g *Generator) generateOS(ctx context.Context, system *domain.SystemConfig,
 		os.Loader.MetaType = structure.OS_LOADER_OVMF
 		os.Nvram = &structure.OSNvram{
 			MetaType: structure.OS_NVRAM_FILE,
-			MetaTemplate: templateDevice.Config.Path,
+			MetaTemplate: templatePath,
 			Source: structure.OSNvramSource{MetaFile: nvramPath},
 		}
 	case domain.Firmware_FIRMWARE_SEABIOS:

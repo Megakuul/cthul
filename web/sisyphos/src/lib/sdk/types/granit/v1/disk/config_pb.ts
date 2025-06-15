@@ -10,21 +10,21 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file granit/v1/disk/config.proto.
  */
 export const file_granit_v1_disk_config: GenFile = /*@__PURE__*/
-  fileDesc("ChtncmFuaXQvdjEvZGlzay9jb25maWcucHJvdG8SDmdyYW5pdC52MS5kaXNrIngKCkRpc2tDb25maWcSKgoGZm9ybWF0GAEgASgOMhouZ3Jhbml0LnYxLmRpc2suRGlza0Zvcm1hdBIMCgRwYXRoGAIgASgJEhAKCHJlYWRvbmx5GAMgASgIEgwKBHNpemUYBCABKAMSEAoIcmVwbGljYXMYBSABKAMqOAoKRGlza0Zvcm1hdBITCg9ESVNLX0ZPUk1BVF9SQVcQABIVChFESVNLX0ZPUk1BVF9RQ09XMhABQidaJWN0aHVsLmlvL2N0aHVsL3BrZy9hcGkvZ3Jhbml0L3YxL2Rpc2tiBnByb3RvMw");
+  fileDesc("ChtncmFuaXQvdjEvZGlzay9jb25maWcucHJvdG8SDmdyYW5pdC52MS5kaXNrIngKCkRpc2tDb25maWcSDAoEbmFtZRgBIAEoCRIqCgZmb3JtYXQYAiABKA4yGi5ncmFuaXQudjEuZGlzay5EaXNrRm9ybWF0EhAKCHJlYWRvbmx5GAMgASgIEgwKBHNpemUYBCABKAMSEAoIcmVwbGljYXMYBSABKAMqOAoKRGlza0Zvcm1hdBITCg9ESVNLX0ZPUk1BVF9SQVcQABIVChFESVNLX0ZPUk1BVF9RQ09XMhABQidaJWN0aHVsLmlvL2N0aHVsL3BrZy9hcGkvZ3Jhbml0L3YxL2Rpc2tiBnByb3RvMw");
 
 /**
  * @generated from message granit.v1.disk.DiskConfig
  */
 export type DiskConfig = Message<"granit.v1.disk.DiskConfig"> & {
   /**
-   * @generated from field: granit.v1.disk.DiskFormat format = 1;
+   * @generated from field: string name = 1;
    */
-  format: DiskFormat;
+  name: string;
 
   /**
-   * @generated from field: string path = 2;
+   * @generated from field: granit.v1.disk.DiskFormat format = 2;
    */
-  path: string;
+  format: DiskFormat;
 
   /**
    * @generated from field: bool readonly = 3;

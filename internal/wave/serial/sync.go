@@ -36,7 +36,7 @@ func (o *Operator) synchronize() {
     configKey := fmt.Sprintf("/WAVE/SERIAL/CONFIG/%s", id)
     if reqnode == o.nodeId {
       o.syncer.Add(configKey, o.syncCycleTTL, func(ctx context.Context, k, v string) error {
-        err := o.applyConfig(v)
+        err := o.applyConfig(id, v)
         if err!=nil {
           return err
         }
@@ -53,20 +53,17 @@ func (o *Operator) synchronize() {
   })
 }
 
-func (o *Operator) applyConfig(rawConfig string) error {
+func (o *Operator) applyConfig(id, rawConfig string) error {
   config := &serial.SerialConfig{}
   err := proto.Unmarshal([]byte(rawConfig), config)
   if err!=nil {
 		return fmt.Errorf("failed to parse config: %w", err)
   }
 
-  cleanPath := filepath.Join(o.runRoot, config.Path)  
-  if !strings.HasPrefix(cleanPath, o.runRoot) {
-    return fmt.Errorf("device socket path is not allowed to escape the run root ('%s' => '%s')", o.runRoot, cleanPath)
-  }
-  err = os.MkdirAll(filepath.Dir(cleanPath), 0600)
+  path := filepath.Join(o.runRoot, "serial", id)  
+  err = os.MkdirAll(filepath.Dir(path), 0600)
   if err!=nil {
     return err
   }
-  return os.Chmod(filepath.Dir(cleanPath), 0600)
+  return os.Chmod(filepath.Dir(path), 0600)
 }

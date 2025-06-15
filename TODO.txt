@@ -1,20 +1,7 @@
-- move domain operator to reqnode pattern (always one core field which must be done before the others) x
-- refactor to slog instead of internal logger x
-- update controllers with reqnode (domain, video) x
-- refactor controllers to use core property as anchor x
-- fix the detach logic (-> device is just never detached by the libvirt adapter) x
-- implement other devices (video x serial x disk x interface x)
-- refactor wave domain controller + operator to only use serialized config (proto) x
-- refactor libvirtctrlr to use serialized config instead of the struct defined x
-- refactor the scheduler to do the same x
-- refactor the operator of node and domain to do the same x
-- implement video + serial device api definition x
-- refactor operator + controller on video + serial dev x
-- define grpc api granit, proton, + wave components that are not domain (+ update libvirtctrlr for them aswell) x
-- do the last 3 steps for proton and granit
-- define wave api (internal/api/wave)
-- create startup code + perform initial wave tests
+- Implement sisyphos
 - Move the NodeMismatchErr anywhere more useful (in a util or something, just that its not seperate for every controller)
 - Implement granit + proton operators (disk / interface)
 - Check if granit must store device FORMAT on database (should that not be rather important in the config and not to the underlying granit)
 - implement flow (collect systemd-journal-gatewayd + metrics)
+
+- does it make sense to define the protocol type on the domain config instead of the device config (videoDevice)?

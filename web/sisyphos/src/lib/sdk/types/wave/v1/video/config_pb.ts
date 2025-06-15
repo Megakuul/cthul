@@ -10,16 +10,16 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file wave/v1/video/config.proto.
  */
 export const file_wave_v1_video_config: GenFile = /*@__PURE__*/
-  fileDesc("Chp3YXZlL3YxL3ZpZGVvL2NvbmZpZy5wcm90bxINd2F2ZS52MS52aWRlbyIbCgtWaWRlb0NvbmZpZxIMCgRwYXRoGAEgASgJQiZaJGN0aHVsLmlvL2N0aHVsL3BrZy9hcGkvd2F2ZS92MS92aWRlb2IGcHJvdG8z");
+  fileDesc("Chp3YXZlL3YxL3ZpZGVvL2NvbmZpZy5wcm90bxINd2F2ZS52MS52aWRlbyIbCgtWaWRlb0NvbmZpZxIMCgRuYW1lGAEgASgJQiZaJGN0aHVsLmlvL2N0aHVsL3BrZy9hcGkvd2F2ZS92MS92aWRlb2IGcHJvdG8z");
 
 /**
  * @generated from message wave.v1.video.VideoConfig
  */
 export type VideoConfig = Message<"wave.v1.video.VideoConfig"> & {
   /**
-   * @generated from field: string path = 1;
+   * @generated from field: string name = 1;
    */
-  path: string;
+  name: string;
 };
 
 /**
