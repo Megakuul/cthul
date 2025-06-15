@@ -32,7 +32,7 @@
     const newVideos: {[key: string]: Video} = {};
     for (const [k, v] of Object.entries(videos)) {
       if (k.includes(search) || v.config?.name.includes(search))
-        newVideos[k] = v
+      newVideos[k] = v
     }
     filteredVideos = newVideos
   })

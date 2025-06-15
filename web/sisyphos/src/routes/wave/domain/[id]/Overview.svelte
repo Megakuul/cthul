@@ -17,7 +17,7 @@
   let mode: "serial" | "spice" = $state("serial");
 </script>
 
-<div class="w-full h-[500px] flex flex-row justify-between rounded-xl bg-slate-950/20">
+<div class="w-full h-[500px] flex flex-row justify-between rounded-xl bg-slate-950/20 overflow-hidden">
   <div class="relative w-full flex flex-col items-start p-4">
     <div class="absolute top-4 right-4 rounded-lg p-2 bg-slate-950/10">
       {#if stats.state === DomainPowerState.DOMAIN_RUNNING}
@@ -81,7 +81,7 @@
       </Radio>
     </div>
     {#if mode === "serial"}
-      <Serial></Serial>
+      <Serial devices={domain.config?.serialDevices ?? []}></Serial>
     {:else if mode === "spice"}
       <Spice></Spice>
     {/if}

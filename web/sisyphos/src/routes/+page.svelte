@@ -4,9 +4,11 @@
   import granit from "$lib/assets/granit.svg";
   import proton from "$lib/assets/proton.svg";
   import waveDomain from "$lib/assets/wave-domain.svg";
+  import waveNode from "$lib/assets/wave-node.svg";
   import waveSerial from "$lib/assets/wave-serial.svg";
   import waveVideo from "$lib/assets/wave-video.svg";
   import granitDisk from "$lib/assets/granit-disk.svg";
+  import protonInterface from "$lib/assets/proton-interface.svg";
   import Card from "./Card.svelte";
   import { Palette } from "$lib/color/color.svelte";
   import Link from "$lib/component/Link/Link.svelte";
@@ -36,6 +38,11 @@
             route: "/wave/domain",
           },
           {
+            title: "Node",
+            icon: waveNode,
+            route: "/wave/node",
+          },
+          {
             title: "Serial",
             icon: waveSerial,
             route: "/wave/serial",
@@ -60,7 +67,7 @@
         services = [
           {
             title: "Inter",
-            icon: "",
+            icon: protonInterface,
             route: "/proton/inter",
           },
         ];

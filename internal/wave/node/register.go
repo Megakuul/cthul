@@ -35,7 +35,7 @@ import (
 // associated state and allows other wave components like the scheduler to discover it.
 // On every cycle the node state & resources are measured and reevaluated.
 func (n *Operator) register() {
-	nodeController := node.NewController(n.nodeId, n.client)
+	nodeController := node.New(n.nodeId, n.client)
 	
 	for {
 		ctx, cancel := context.WithTimeout(n.workCtx, time.Second*time.Duration(n.cycleTTL))

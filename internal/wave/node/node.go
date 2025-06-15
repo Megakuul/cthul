@@ -59,7 +59,7 @@ type Operator struct {
 
 type OperatorOption func(*Operator)
 
-func NewOperator(logger *slog.Logger, client db.Client, opts ...OperatorOption) *Operator {
+func New(logger *slog.Logger, client db.Client, opts ...OperatorOption) *Operator {
 	rootCtx, rootCtxCancel := context.WithCancel(context.Background())
 	workCtx, workCtxCancel := context.WithCancel(rootCtx)
 	operator := &Operator{
@@ -110,7 +110,7 @@ func WithMaintenance(maintenance bool) OperatorOption {
 }
 
 // WithAffinity defines custom affinity tags. The defined affinity tags are reported to the cluster.
-func WithAffinity(tags []string) OperatorOption {
+func WithAffinity(tags ...string) OperatorOption {
 	return func(n *Operator) {
 		n.affinity = tags
 	}

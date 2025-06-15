@@ -42,6 +42,10 @@ import (
 	"cthul.io/cthul/pkg/wave/node"
 	"cthul.io/cthul/pkg/wave/serial"
 	"cthul.io/cthul/pkg/wave/video"
+	domainop "cthul.io/cthul/internal/wave/domain"
+	nodeop "cthul.io/cthul/internal/wave/node"
+	serialop "cthul.io/cthul/internal/wave/serial"
+	videoop "cthul.io/cthul/internal/wave/video"
 	"github.com/lmittmann/tint"
 )
 
@@ -102,6 +106,31 @@ func Run(config *BaseConfig) error {
 	)
 	scheduler.ServeAndDetach()
 	lifecycleManager.AddHook(scheduler.Terminate)
+
+	domainOperator := domainop.New(logger.With("comp", "domain-operator"), dbClient, domainAdapter,
+		// TODO
+	)
+	domainOperator.ServeAndDetach()
+	lifecycleManager.AddHook(domainOperator.Terminate)
+
+	nodeOperator := nodeop.New(logger.With("comp", "node-operator"), dbClient, 
+		nodeop.WithAffinity("todo", "todo2"),
+		// TODO
+	)
+	nodeOperator.ServeAndDetach()
+	lifecycleManager.AddHook(nodeOperator.Terminate)
+
+	serialOperator := serialop.New(logger.With("comp", "serial-operator"), dbClient, 
+		// TODO
+	)
+	serialOperator.ServeAndDetach()
+	lifecycleManager.AddHook(serialOperator.Terminate)
+	
+	videoOperator := videoop.New(logger.With("comp", "video-operator"), dbClient, 
+		// TODO
+	)
+	videoOperator.ServeAndDetach()
+	lifecycleManager.AddHook(videoOperator.Terminate)
 
 	apiCertificate, err := tls.LoadX509KeyPair(config.Api.CertFile, config.Api.KeyFile)
 	if err!=nil {
