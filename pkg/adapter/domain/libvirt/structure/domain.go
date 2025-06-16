@@ -19,6 +19,8 @@
 
 package structure
 
+import "encoding/xml"
+
 type DOMAIN_TYPE string
 
 const (
@@ -28,13 +30,14 @@ const (
 // Domain structure holds the relevant libvirt xml structure. It generally follows the rule that everything
 // currently not required by cthul is not defined in this configuration.
 type Domain struct {
+	XMLName     xml.Name      `xml:"domain"`
 	MetaType    DOMAIN_TYPE   `xml:"type,attr"`
 	UUID        string        `xml:"uuid,omitempty"`
 	Name        string        `xml:"name,omitempty"`
 	Title       string        `xml:"title,omitempty"`
 	Description string        `xml:"description,omitempty"`
-	VCPU        *VCPU         `xml:"vcpu,omitempty"`
 	Memory      *Memory       `xml:"memory,omitempty"`
+	VCPU        *VCPU         `xml:"vcpu,omitempty"`
 	OS          *OS           `xml:"os,omitempty"`
 	Devices     []interface{} `xml:"devices,omitempty"`
 	Features    []interface{} `xml:"features,omitempty"`
@@ -48,7 +51,7 @@ const (
 
 type VCPU struct {
 	MetaPlacement CPU_PLACEMENT `xml:"placement,attr"`
-	Data          int64  `xml:",charset"`
+	Data          int64         `xml:",chardata"`
 }
 
 type MEMORY_UNIT string
@@ -59,5 +62,5 @@ const (
 
 type Memory struct {
 	MetaUnit MEMORY_UNIT `xml:"unit,attr"`
-	Data     int64  `xml:",charset"`
+	Data     int64       `xml:",chardata"`
 }

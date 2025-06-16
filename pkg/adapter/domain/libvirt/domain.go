@@ -74,6 +74,10 @@ func (l *Adapter) Apply(ctx context.Context, id string, domainCfg *domain.Domain
 		return fmt.Errorf("failed to parse generated domain xml")
 	}
 
+	println()
+	println(string(domainXML))
+	println()
+
 	_, err = l.client.DomainDefineXMLFlags(string(domainXML), libvirt.DomainDefineValidate)
 	if err!=nil {
 		return err

@@ -105,15 +105,18 @@ func Run(config *BaseConfig) error {
     scheduler.WithRescheduleCycles(config.Scheduler.RescheduleCycles),
 	)
 	scheduler.ServeAndDetach()
+	scheduler.SetLeaderState("", true) // TODO use this in elect controller or not at all
 	lifecycleManager.AddHook(scheduler.Terminate)
 
 	domainOperator := domainop.New(logger.With("comp", "domain-operator"), dbClient, domainAdapter,
+		domainop.WithNodeId(config.NodeId),
 		// TODO
 	)
 	domainOperator.ServeAndDetach()
 	lifecycleManager.AddHook(domainOperator.Terminate)
 
 	nodeOperator := nodeop.New(logger.With("comp", "node-operator"), dbClient, 
+		nodeop.WithNodeId(config.NodeId),
 		nodeop.WithAffinity("todo", "todo2"),
 		// TODO
 	)
@@ -121,12 +124,14 @@ func Run(config *BaseConfig) error {
 	lifecycleManager.AddHook(nodeOperator.Terminate)
 
 	serialOperator := serialop.New(logger.With("comp", "serial-operator"), dbClient, 
+		serialop.WithNodeId(config.NodeId),
 		// TODO
 	)
 	serialOperator.ServeAndDetach()
 	lifecycleManager.AddHook(serialOperator.Terminate)
 	
 	videoOperator := videoop.New(logger.With("comp", "video-operator"), dbClient, 
+		videoop.WithNodeId(config.NodeId),
 		// TODO
 	)
 	videoOperator.ServeAndDetach()

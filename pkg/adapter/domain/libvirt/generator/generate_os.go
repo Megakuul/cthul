@@ -25,7 +25,7 @@ import (
 	"path/filepath"
 
 	"cthul.io/cthul/pkg/adapter/domain/libvirt/structure"
-	"cthul.io/cthul/pkg/api/granit/v1/disk"
+	// "cthul.io/cthul/pkg/api/granit/v1/disk"
 	"cthul.io/cthul/pkg/api/wave/v1/domain"
 )
 
@@ -51,33 +51,38 @@ func (g *Generator) generateOS(ctx context.Context, system *domain.SystemConfig,
 		},
 		Loader: &structure.OSLoader{
 			MetaReadonly: true,
-			MetaSecure: firmware.SecureBoot,
+			MetaSecure: "no",
 		},
 	}
 
-	loaderDevice, err := g.disk.Lookup(ctx, firmware.LoaderDeviceId)
-	if err!=nil {
-		return nil, fmt.Errorf("firmware loader device lookup: %s", err.Error())
-	}
-	if loaderDevice.Config.Format != disk.DiskFormat_DISK_FORMAT_RAW {
-		return nil, fmt.Errorf("only supported firmware loader device format is 'raw'")
-	}
-	
-	templateDevice, err := g.disk.Lookup(ctx, firmware.TmplDeviceId)
-	if err!=nil {
-		return nil, fmt.Errorf("firmware template device lookup: %s", err.Error())
-	}
-	if templateDevice.Config.Format != disk.DiskFormat_DISK_FORMAT_RAW {
-		return nil, fmt.Errorf("only supported firmware template device format is 'raw'")
+	if firmware.SecureBoot {
+		os.Loader.MetaSecure = "yes"
 	}
 
-	nvramDevice, err := g.disk.Lookup(ctx, firmware.NvramDeviceId)
-	if err!=nil {
-		return nil, fmt.Errorf("firmware nvram device lookup: %s", err.Error())
-	}
-	if nvramDevice.Config.Format != disk.DiskFormat_DISK_FORMAT_RAW {
-		return nil, fmt.Errorf("only supported firmware nvram device type is 'raw'")
-	}
+	// TODO (temporary removed to test seabios)
+	// loaderDevice, err := g.disk.Lookup(ctx, firmware.LoaderDeviceId)
+	// if err!=nil {
+	// 	return nil, fmt.Errorf("firmware loader device lookup: %s", err.Error())
+	// }
+	// if loaderDevice.Config.Format != disk.DiskFormat_DISK_FORMAT_RAW {
+	// 	return nil, fmt.Errorf("only supported firmware loader device format is 'raw'")
+	// }
+	//
+	// templateDevice, err := g.disk.Lookup(ctx, firmware.TmplDeviceId)
+	// if err!=nil {
+	// 	return nil, fmt.Errorf("firmware template device lookup: %s", err.Error())
+	// }
+	// if templateDevice.Config.Format != disk.DiskFormat_DISK_FORMAT_RAW {
+	// 	return nil, fmt.Errorf("only supported firmware template device format is 'raw'")
+	// }
+	//
+	// nvramDevice, err := g.disk.Lookup(ctx, firmware.NvramDeviceId)
+	// if err!=nil {
+	// 	return nil, fmt.Errorf("firmware nvram device lookup: %s", err.Error())
+	// }
+	// if nvramDevice.Config.Format != disk.DiskFormat_DISK_FORMAT_RAW {
+	// 	return nil, fmt.Errorf("only supported firmware nvram device type is 'raw'")
+	// }
 
 	// Architecture
 	switch system.Architecture {
@@ -107,25 +112,23 @@ func (g *Generator) generateOS(ctx context.Context, system *domain.SystemConfig,
 	nvramPath := filepath.Join(g.granitRoot, "disk", firmware.NvramDeviceId)
 
 	os.Loader.Data = loaderPath
-	
+
 	switch firmware.Firmware {
 	case domain.Firmware_FIRMWARE_OVMF:
 		os.Loader.MetaType = structure.OS_LOADER_OVMF
 		os.Nvram = &structure.OSNvram{
-			MetaType: structure.OS_NVRAM_FILE,
 			MetaTemplate: templatePath,
-			Source: structure.OSNvramSource{MetaFile: nvramPath},
+			Data:         nvramPath,
 		}
 	case domain.Firmware_FIRMWARE_SEABIOS:
 		os.Loader.MetaType = structure.OS_LOADER_SEABIOS
 		os.Nvrams = &structure.OSNvram{
-			MetaType: structure.OS_NVRAM_FILE,
 			MetaTemplate: templatePath,
-			Source: structure.OSNvramSource{MetaFile: nvramPath},
+			Data:         nvramPath,
 		}
 	default:
 		return nil, fmt.Errorf("unknown firmware type: %s", firmware.Firmware)
 	}
-	
+
 	return os, nil
 }

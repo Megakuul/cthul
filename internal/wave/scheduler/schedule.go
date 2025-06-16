@@ -30,7 +30,7 @@ import (
   "cthul.io/cthul/pkg/api/wave/v1/node"
 )
 
-// startSchedulerCycle starts a scheduler cycle. This cycle executes periodically based next schedule stored
+// startSchedulerCycle starts a scheduler cycle. This cycle executes periodically based on the next schedule stored
 // in the database. When starting a cycle, the scheduler updates this schedule with the current time + cycleTTL,
 // if multiple schedulers run at the same time (usually not the case) the first one updating the schedule key
 // will executes the cycle, all others wait till the next cycle.
@@ -111,6 +111,7 @@ func (s *Scheduler) startSchedulerCycle(schedulerCtx context.Context) {
 				))
 				continue
 			}
+			domain.Node = targetNodeId
 
 			err = s.domainController.Attach(s.workCtx, domainId, domain.Node, false)
 			if err!=nil {

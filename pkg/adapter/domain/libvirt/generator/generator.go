@@ -21,6 +21,7 @@ package generator
 
 import (
 	"context"
+	"fmt"
 
 	"cthul.io/cthul/pkg/granit/disk"
 	"cthul.io/cthul/pkg/proton/inter"
@@ -121,11 +122,14 @@ func (l *Generator) Generate(ctx context.Context, id string, config *domain.Doma
 		Description: config.Description,
 		VCPU:        l.generateVCPU(config.ResourceConfig),
 		Memory:      l.generateMemory(config.ResourceConfig),
-		Devices:     []interface{}{},
-		Features:    []interface{}{},
+		Devices:     []any{},
+		Features:    []any{},
 	}
 
-	domain.OS, err = l.generateOS(ctx, config.SystemConfig, config.FirmwareConfig)
+	if config.GetSystemConfig() == nil || config.GetFirmwareConfig() == nil {
+		return nil, fmt.Errorf("TODO: check failed, nil")
+	}
+	domain.OS, err = l.generateOS(ctx, config.GetSystemConfig(), config.GetFirmwareConfig())
 	if err != nil {
 		return nil, err
 	}

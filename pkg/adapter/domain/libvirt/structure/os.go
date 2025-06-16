@@ -44,35 +44,24 @@ const (
 type OSType struct {
 	Arch    OS_ARCH    `xml:"arch,attr,omitempty"`
 	Machine OS_CHIPSET `xml:"machine,attr,omitempty"`
-	Data    string     `xml:",charset"`
+	Data    string     `xml:",chardata"`
 }
 
 type OS_LOADER_TYPE string
 
 const (
 	OS_LOADER_SEABIOS OS_LOADER_TYPE = "seabios"
-	OS_LOADER_OVMF    OS_LOADER_TYPE     = "pflash"
+	OS_LOADER_OVMF    OS_LOADER_TYPE = "pflash"
 )
 
 type OSLoader struct {
 	MetaReadonly bool           `xml:"readonly,attr,omitempty"`
-	MetaSecure   bool           `xml:"secure,attr,omitempty"`
+	MetaSecure   string           `xml:"secure,attr,omitempty"`
 	MetaType     OS_LOADER_TYPE `xml:"type,attr,omitempty"`
-	Data         string         `xml:",charset"`
+	Data         string         `xml:",chardata"`
 }
-
-type OS_NVRAM_TYPE string
-
-const (
-	OS_NVRAM_FILE OS_NVRAM_TYPE = "file"
-)
 
 type OSNvram struct {
-	MetaType     OS_NVRAM_TYPE `xml:"type,attr,omitempty"`
-	MetaTemplate string        `xml:"template,attr,omitempty"`
-	Source       OSNvramSource `xml:"source"`
-}
-
-type OSNvramSource struct {
-	MetaFile string `xml:"file,attr,omitempty"`
+	MetaTemplate string `xml:"template,attr,omitempty"`
+	Data         string `xml:",chardata,omitempty"`
 }

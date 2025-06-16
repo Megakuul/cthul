@@ -75,6 +75,8 @@ func New(logger *slog.Logger, client db.Client, domain *domain.Controller, node 
 		finChan:         make(chan struct{}),
 		client:          client,
     logger: logger.WithGroup("scheduler"),
+		domainController: domain,
+		nodeController: node,
 		leaderStateChan: make(chan bool),
 		cycleTTL: 5,
 		rescheduleCycles: 2,
