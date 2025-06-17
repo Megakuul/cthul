@@ -71,6 +71,7 @@ func (l *Adapter) Apply(ctx context.Context, id string, domainCfg *domain.Domain
 
 	domainXML, err := xml.Marshal(domain)
 	if err!=nil {
+		println(err.Error())
 		return fmt.Errorf("failed to parse generated domain xml")
 	}
 

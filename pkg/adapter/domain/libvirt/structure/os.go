@@ -19,11 +19,21 @@
 
 package structure
 
+type OS_FIRMWARE string
+
+const (
+	OS_FIRMWARE_EFI  OS_FIRMWARE = "efi"
+	OS_FIRMWARE_BIOS OS_FIRMWARE = "bios"
+)
+
 type OS struct {
-	Type   *OSType   `xml:"type,omitempty"`
-	Loader *OSLoader `xml:"loader,omitempty"`
-	Nvram  *OSNvram  `xml:"nvram,omitempty"`
-	Nvrams *OSNvram  `xml:"nvrams,omitempty"`
+	MetaFirmware OS_FIRMWARE `xml:"firmware,attr,omitempty"`
+	Type         *OSType     `xml:"type,omitempty"`
+	Loader       *OSLoader   `xml:"loader,omitempty"`
+	Nvram        *OSNvram    `xml:"nvram,omitempty"`
+	Boot         *OSBoot     `xml:"boot,omitempty"`
+	Smbios       *OSSMBios   `xml:"smbios,omitempty"`
+	Bios         *OSBios     `xml:"bios,omitempty"`
 }
 
 type OS_ARCH string
@@ -50,18 +60,51 @@ type OSType struct {
 type OS_LOADER_TYPE string
 
 const (
-	OS_LOADER_SEABIOS OS_LOADER_TYPE = "seabios"
-	OS_LOADER_OVMF    OS_LOADER_TYPE = "pflash"
+	OS_LOADER_ROM    OS_LOADER_TYPE = "rom"
+	OS_LOADER_PFLASH OS_LOADER_TYPE = "pflash"
 )
 
 type OSLoader struct {
 	MetaReadonly bool           `xml:"readonly,attr,omitempty"`
-	MetaSecure   string           `xml:"secure,attr,omitempty"`
+	MetaSecure   bool           `xml:"secure,attr,omitempty"`
 	MetaType     OS_LOADER_TYPE `xml:"type,attr,omitempty"`
 	Data         string         `xml:",chardata"`
 }
 
+type OS_NVRAM_TYPE string
+
+const (
+	OS_NVRAM_FILE OS_NVRAM_TYPE = "file"
+)
+
 type OSNvram struct {
-	MetaTemplate string `xml:"template,attr,omitempty"`
-	Data         string `xml:",chardata,omitempty"`
+	MetaType     OS_NVRAM_TYPE `xml:"type,attr,omitempty"`
+	MetaTemplate string        `xml:"template,attr,omitempty"`
+	Source       OSNvramSource `xml:"source"`
+}
+
+type OSNvramSource struct {
+	MetaFile string `xml:"file,attr,omitempty"`
+}
+
+type OS_BOOT_OPTION string
+
+const (
+	OS_BOOT_HD      OS_BOOT_OPTION = "hd"
+	OS_BOOT_CDROM   OS_BOOT_OPTION = "cdrom"
+	OS_BOOT_NETWORK OS_BOOT_OPTION = "network"
+)
+
+type OSBoot struct {
+	MetaDev OS_BOOT_OPTION `xml:"dev,attr,omitempty"`
+}
+
+
+type OSSMBios struct {
+	MetaMode string `xml:"mode,attr,omitempty"`
+}
+
+type OSBios struct {
+	MetaUseserial     string `xml:"useserial,attr,omitempty"`
+	MetaRebootTimeout int    `xml:"rebootTimeout,attr,omitempty"`
 }

@@ -39,8 +39,8 @@ type Domain struct {
 	Memory      *Memory       `xml:"memory,omitempty"`
 	VCPU        *VCPU         `xml:"vcpu,omitempty"`
 	OS          *OS           `xml:"os,omitempty"`
-	Devices     []interface{} `xml:"devices,omitempty"`
-	Features    []interface{} `xml:"features,omitempty"`
+	Features    *Features `xml:"features,omitempty"`
+	Devices     *Devices `xml:"devices,omitempty"`
 }
 
 type CPU_PLACEMENT string
@@ -63,4 +63,12 @@ const (
 type Memory struct {
 	MetaUnit MEMORY_UNIT `xml:"unit,attr"`
 	Data     int64       `xml:",chardata"`
+}
+
+type Devices struct {
+	Devices []any `xml:"devices"`
+}
+
+type Features struct {
+	Features []any `xml:"features"`
 }

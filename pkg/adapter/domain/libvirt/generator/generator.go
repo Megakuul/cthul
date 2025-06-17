@@ -122,9 +122,12 @@ func (l *Generator) Generate(ctx context.Context, id string, config *domain.Doma
 		Description: config.Description,
 		VCPU:        l.generateVCPU(config.ResourceConfig),
 		Memory:      l.generateMemory(config.ResourceConfig),
-		Devices:     []any{},
-		Features:    []any{},
+		Devices:     &structure.Devices{},
+		Features:    &structure.Features{},
 	}
+	domain.Devices.Devices = append(domain.Devices.Devices, structure.Emulator{
+		Data: "/run/libvirt/nix-emulators/qemu-system-x86_64",	
+	})
 
 	if config.GetSystemConfig() == nil || config.GetFirmwareConfig() == nil {
 		return nil, fmt.Errorf("TODO: check failed, nil")
@@ -139,7 +142,7 @@ func (l *Generator) Generate(ctx context.Context, id string, config *domain.Doma
 		if err != nil {
 			return nil, err
 		}
-		domain.Devices = append(domain.Devices, device)
+		domain.Devices.Devices = append(domain.Devices.Devices, device)
 	}
 
 	for _, videoAdapter := range config.VideoAdapters {
@@ -147,7 +150,7 @@ func (l *Generator) Generate(ctx context.Context, id string, config *domain.Doma
 		if err != nil {
 			return nil, err
 		}
-		domain.Devices = append(domain.Devices, device)
+		domain.Devices.Devices = append(domain.Devices.Devices, device)
 	}
 
 	for _, serialDevice := range config.SerialDevices {
@@ -155,7 +158,7 @@ func (l *Generator) Generate(ctx context.Context, id string, config *domain.Doma
 		if err != nil {
 			return nil, err
 		}
-		domain.Devices = append(domain.Devices, device)
+		domain.Devices.Devices = append(domain.Devices.Devices, device)
 	}
 
 	for _, serialDevice := range config.SerialDevices {
@@ -163,7 +166,7 @@ func (l *Generator) Generate(ctx context.Context, id string, config *domain.Doma
 		if err != nil {
 			return nil, err
 		}
-		domain.Devices = append(domain.Devices, device)
+		domain.Devices.Devices = append(domain.Devices.Devices, device)
 	}
 
 	for _, inputDevice := range config.InputDevices {
@@ -171,7 +174,7 @@ func (l *Generator) Generate(ctx context.Context, id string, config *domain.Doma
 		if err != nil {
 			return nil, err
 		}
-		domain.Devices = append(domain.Devices, device)
+		domain.Devices.Devices = append(domain.Devices.Devices, device)
 	}
 
 	for _, storageDevice := range config.StorageDevices {
@@ -179,7 +182,7 @@ func (l *Generator) Generate(ctx context.Context, id string, config *domain.Doma
 		if err != nil {
 			return nil, err
 		}
-		domain.Devices = append(domain.Devices, device)
+		domain.Devices.Devices = append(domain.Devices.Devices, device)
 	}
 
 	for _, networkDevice := range config.NetworkDevices {
@@ -187,7 +190,7 @@ func (l *Generator) Generate(ctx context.Context, id string, config *domain.Doma
 		if err != nil {
 			return nil, err
 		}
-		domain.Devices = append(domain.Devices, device)
+		domain.Devices.Devices = append(domain.Devices.Devices, device)
 	}
 
 	return domain, nil
