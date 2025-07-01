@@ -1,17 +1,61 @@
 # Cthul
+---
 
-Work in progress - The stuff below is irrelevant, just notes so my sievebrain doesn't forget to document it.
+![overview](/assets/overview.jpg)
 
 
-Components:
-- wave -> domain manager
-- granit -> storage manager
-- proton -> network manager
-- rune -> trust + authentication manager (iam)
-- sisyphos -> webinterface
-- flow -> log + metric collector/distributor
+## Development setup
+---
 
-### Cthul api
+### Linux / WSL
+
+#### Services
+
+Prerequisites:
+- `go`
+- `etcd` (config located at `/configs/etcd/config.yaml`)
+- `qemu-system`
+- `virt-manager`
+
+Launch all services you need with:
+```bash
+go run cmd/<service>/<service>.go --config ../../configs/<service>/config.toml`
+```
+
+#### Web
+
+Prerequisites:
+- `npm`
+- `nodejs`
+
+Launch the sisyphos webservice with:
+```bash
+cd web/sisyphos
+npm i
+npm run dev
+```
+
+
+When developing the sisyphos web interface, you don't need to run live backend services (especially in early phases where services may be subject to heavy refactorings).
+
+Instead, you can rely on the stable central protobuf API. For testing purposes, use the provided types at `/web/sisyphos/lib/sdk/types` to generate mock data. e.g.:
+
+```javascript
+import { create } from '@bufbuild/protobuf';
+import { type Domain, DomainSchema } from "$lib/sdk/types/wave/v1/domain/message_pb";
+
+let domain: Domain = $state(create(DomainSchema, {node: "", reqnode: "", config: {
+  name: "test",
+  description: "blub",
+  affinity: [],
+  resourceConfig: {vcpus: BigInt(2), memory: BigInt(4 * (1000 * 1000 * 1000))},
+  firmwareConfig: {firmware: Firmware.SEABIOS, 
+    loaderDeviceId: "", tmplDeviceId: "", nvramDeviceId: "", secureBoot: false,
+  },
+}}))
+```
+
+## Cthul api
 ---
 
 Cthul components implement a gRPC (ConnectRPC) api for internal and external communication.
